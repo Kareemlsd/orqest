@@ -1,0 +1,75 @@
+[project]
+name = "orqest"
+version = "0.0.1"
+description = "Building framework for scalable advanced agentic system using OOP"
+authors = [
+  { name="Kareem El Sayed", email="k.elsayed@outlook.com" }
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "azure-keyvault-secrets>=4.10.0",
+  "azure-mgmt-compute>=34.1.0",
+  "azure-mgmt-resource>=24.0.0",
+  "azure-mgmt-storage>=23.0.1",
+  "azure-storage-blob>=12.25.1",
+  "dotenv>=0.9.9",
+  "lancedb>=0.24.0",
+  "langchain>=0.3.26",
+  "langchain-chroma>=0.2.4",
+  "langchain-community>=0.3.27",
+  "langchain-core>=0.3.68",
+  "langchain-huggingface>=0.3.0",
+  "langchain-openai>=0.3.27",
+  "langchain-text-splitters>=0.3.8",
+  "langgraph>=0.5.1",
+  "markdown>=3.8.2",
+  "openai>=1.93.0",
+  "pandas>=2.3.1",
+  "pandoc>=2.4",
+  "pydantic>=2.11.7",
+  "pydantic-ai>=0.3.6",
+  "pypandoc>=1.15",
+  "pytest>=8.4.1",
+  "pytest-asyncio>=1.0.0",
+  "rank-bm25>=0.2.2",
+  "sentence-transformers>=5.0.0",
+  "streamlit>=1.46.1",
+  "tiktoken>=0.9.0",
+  "unstructured>=0.18.3"
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.0.1",
+    "ruff>=0.7.3",
+    "pytest>=8.3.3",
+    "pytest-md>=0.2.0",
+    "pytest-emoji>=0.2.0"
+]
+
+[tool.ruff]
+lint.select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "C",
+    "C90",
+    "S",
+    "A",
+    "D",
+]
+
+lint.ignore = [
+    "D203",
+    "D213"
+]
+
+[tool.ruff.lint.per-file-ignores]
+
+[tool.ruff.lint.isort]
+known-third-party = ["pandas", "pydantic", "matplotlib", "shapely", "scipy", "munch"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
