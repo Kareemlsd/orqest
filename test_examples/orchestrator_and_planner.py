@@ -5,7 +5,7 @@ import asyncio
 
 from pydantic import BaseModel, Field
 
-from orqest.agents.base_agent import BaseAgent
+from orqest.agents.base_agent import BaseAgent, NoValidResponse
 
 logger = logging.getLogger(__name__)
 
@@ -37,12 +37,6 @@ class GlobalState(BaseModel):
                 return message["content"]
         return None
 
-class NoValidResponse(BaseModel):
-    """No valid response from the planner agent"""
-    messages: str = Field(
-        description="No valid response from the planner agent",
-        default_factory=list
-    )
 
 class PlannerAgent(BaseAgent[GlobalState]):
     """Planner agent created using the base agent from Orqest"""
@@ -79,6 +73,32 @@ class PlannerAgent(BaseAgent[GlobalState]):
         state.chat_history.extend(response.all_messages())
 
         return await self._process_agent_response(response, state)
+        
+    async def _process_agent_response(self, response, state: GlobalState, **kwargs) -> GlobalState:
+        """Process the agent response and update the state.
+        
+        Args:
+            response: The response from the agent.
+            state: The current state of the agent.
+            
+        Returns:
+            Updated state after processing the response.
+        """
+        # Check if the response is valid
+        if hasattr(response, "output") and response.output:
+            # Extract plan from the response if available
+            if hasattr(response.output, "plan") and response.output.plan:
+                state.plan = response.output.plan
+            
+            # Add the assistant's response to the messages
+            content = response.content if hasattr(response, "content") else str(response.output)
+            state.add_message("assistant", content)
+            
+            return state
+        else:
+            # Handle invalid response
+            state.add_message("assistant", "I couldn't generate a valid plan. Please try again.")
+            return state
 
     def _analyze_task_complexity(self, task_description: str) -> dict[str, str]:
         # Simple complexity analysis, return always the same
@@ -129,7 +149,54 @@ class OrchestratorAgent(BaseAgent[GlobalState]):
         response = await self.agent.run(prompt, message_history=state.chat_history, **kwargs)
         state.chat_history.extend(response.all_messages())
 
-        return state
+        return await self._process_agent_response(response, state)
+        
+    async def _call_planner_agent(self, query: str) -> dict[str, list[str]]:
+        """Call the planner agent to create a plan for the given query.
+        
+        Args:
+            query: The query to plan for.
+            
+        Returns:
+            A dictionary containing the plan.
+        """
+        # Create a temporary state for the planner agent
+        temp_state = GlobalState()
+        temp_state.add_message("user", query)
+        
+        # Run the planner agent
+        result_state = await self.planner_agent.run(temp_state)
+        
+        # Return the plan
+        return {
+            "plan": result_state.plan
+        }
+        
+    async def _process_agent_response(self, response, state: GlobalState, **kwargs) -> GlobalState:
+        """Process the agent response and update the state.
+        
+        Args:
+            response: The response from the agent.
+            state: The current state of the agent.
+            
+        Returns:
+            Updated state after processing the response.
+        """
+        # Check if the response is valid
+        if hasattr(response, "output") and response.output:
+            # Extract plan from the response if available
+            if hasattr(response.output, "plan") and response.output.plan:
+                state.plan = response.output.plan
+            
+            # Add the assistant's response to the messages
+            content = response.content if hasattr(response, "content") else str(response.output)
+            state.add_message("assistant", content)
+            
+            return state
+        else:
+            # Handle invalid response
+            state.add_message("assistant", "I couldn't process your request. Please try again.")
+            return state
 
 
 orchestrator = OrchestratorAgent()
@@ -141,6 +208,12 @@ async def run_orchestrator():
     """Run the orchestrator agent"""
     return await orchestrator.run(state)
 
-result_state = run_orchestrator()
+async def main():
+    """Main function to run the orchestrator agent"""
+    result_state = await run_orchestrator()
+    print(result_state.plan)
 
-print(result_state.plan)
+# Run the main function if this script is executed directly
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())

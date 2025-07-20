@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Type, TypeVar, Union, Generic
 
 from langchain_core.documents import Document
 from pydantic_ai import Tool, Agent, RunContext, ModelRetry
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from orqest.utils.llm_model import model as get_model
 
@@ -13,6 +13,13 @@ logger = logging.getLogger(__name__)
 
 # Type variable for the output state
 OutputT = TypeVar("OutputT", bound=BaseModel)
+
+class NoValidResponse(BaseModel):
+    """No valid response from the agent"""
+    messages: str = Field(
+        description="No valid response from the agent",
+        default_factory=list
+    )
 
 
 class BaseAgent(Generic[OutputT]):
