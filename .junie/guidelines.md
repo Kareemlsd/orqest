@@ -20,15 +20,23 @@ The core architecture is built around a few key concepts:
 ```
 orqest/
 ├── agents/                  # Agent implementations
-│   └── base_agent.py        # Abstract base class for all agents
+│   ├── base_agent.py        # Abstract base class for all agents
+│   ├── state.py             # State models for agents
+│   ├── planner.py           # PlannerAgent implementation
+│   └── orchestrator.py      # OrchestratorAgent implementation
+├── errors/                  # Error handling
+│   ├── error_format.py      # Error classes and formatting
+│   └── README.md            # Documentation for error handling
 ├── io_utils/                # Input/output utilities (planned)
 ├── utils/                   # Utility functions
 │   └── llm_model.py         # LLM model initialization
 ├── config.py                # Configuration management
 └── __init__.py              # Package initialization
-test_examples/               # Example implementations and tests
-├── orchestrator_and_planner.py  # Example of agent composition
-└── test_orchestrator_and_planner.py  # Tests for the example
+tests/                       # Tests for the framework
+├── agents/                  # Tests for agent implementations
+├── errors/                  # Tests for error handling
+├── conftest.py              # Common test fixtures
+└── README.md                # Documentation for tests
 ```
 
 ### Key Components
@@ -38,17 +46,24 @@ test_examples/               # Example implementations and tests
    - Provides common functionality for agent initialization, execution, and response processing
    - Manages LLM model initialization and agent configuration
 
-2. **Configuration** (`orqest/config.py`):
+2. **State Models** (`orqest/agents/state.py`):
+   - Defines Pydantic models for agent state
+   - Provides methods for managing messages and retrieving state information
+
+3. **Agent Implementations**:
+   - **PlannerAgent** (`orqest/agents/planner.py`): Agent for creating plans and decomposing tasks
+   - **OrchestratorAgent** (`orqest/agents/orchestrator.py`): Agent for orchestrating other agents
+
+4. **Error Handling** (`orqest/errors/`):
+   - Provides standardized error handling for the framework
+   - Includes error categories, severity levels, and context information
+
+5. **Configuration** (`orqest/config.py`):
    - Handles loading environment variables from a `.env` file
    - Provides configuration values for LLM and embedding models
 
-3. **LLM Model** (`orqest/utils/llm_model.py`):
+6. **LLM Model** (`orqest/utils/llm_model.py`):
    - Initializes and returns the OpenAI model using pydantic-ai
-
-4. **Example Implementation** (`test_examples/orchestrator_and_planner.py`):
-   - Demonstrates how to create specialized agents (PlannerAgent and OrchestratorAgent)
-   - Shows how to compose agents hierarchically using the "Agent as Tools" pattern
-   - Provides a complete working example of the framework
 
 ## Development Guidelines
 
@@ -77,14 +92,23 @@ The project uses ruff for linting and code formatting with the following guideli
 
 1. Tests are written using pytest and pytest-asyncio.
 2. Each agent implementation should have corresponding tests.
-3. Tests should be organized in a way that mirrors the structure of the code being tested.
-4. Run tests using:
+3. Tests are organized in a way that mirrors the structure of the code being tested:
+   - `tests/agents/`: Tests for agent implementations
+   - `tests/errors/`: Tests for error handling
+   - `tests/utils/`: Tests for utility functions
+4. Common test fixtures are defined in `tests/conftest.py`.
+5. Run all tests using:
    ```
-   pytest test_examples/
+   python -m pytest tests/
    ```
-5. For specific test files:
+6. Run tests for a specific module:
    ```
-   python test_examples/test_orchestrator_and_planner.py
+   python -m pytest tests/agents/
+   python -m pytest tests/errors/
+   ```
+7. Run a specific test file:
+   ```
+   python -m pytest tests/agents/test_planner.py
    ```
 
 ### Creating New Agents
@@ -95,9 +119,10 @@ When creating new agents:
 2. Implement the required abstract methods:
    - `run`: Execute the agent with a given state
    - `_process_agent_response`: Process the agent's response and update the state
-3. Define a Pydantic model for the agent's state.
+3. Define a Pydantic model for the agent's state or use the existing `GlobalState` from `orqest.agents.state`.
 4. Use tools to extend the agent's capabilities.
-5. Follow the example in `test_examples/orchestrator_and_planner.py`.
+5. Follow the examples in `orqest/agents/planner.py` and `orqest/agents/orchestrator.py`.
+6. Add tests for your agent in the `tests/agents/` directory.
 
 ### Pull Request Guidelines
 
@@ -113,7 +138,7 @@ When submitting changes:
 
 When working with this project, Junie should:
 
-1. **Run tests** to verify changes: Use pytest to run the tests in the test_examples directory.
+1. **Run tests** to verify changes: Use pytest to run the tests in the tests directory.
 2. **Write code using TDD**: Add features by following the 'Test Driven Development' concept.
 3. **Check code style**: Ensure changes follow the project's code style guidelines using ruff.
 4. **Maintain type hints**: All new code should include proper type hints.
@@ -121,6 +146,7 @@ When working with this project, Junie should:
 6. **Follow the architecture**: New components should align with the existing architecture patterns.
 7. **Minimize dependencies**: Avoid adding new dependencies unless necessary.
 8. **Verify environment compatibility**: Ensure changes work with the configured environment variables.
+9. **Add examples**: For new features, add example scripts to the examples directory.
 
 ## Project Roadmap
 

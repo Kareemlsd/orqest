@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Standardized error handling system
+  - Created a new `errors` module with a comprehensive error class hierarchy
+  - Added error severity levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  - Added error categories (AGENT, LLM, VALIDATION, TOOL, GENERAL)
+  - Added context-rich error messages with agent name, operation, and details
+  - Added utility functions for error handling and formatting
+  - Added documentation for the error handling system
+- Enhanced NoValidResponse class with more detailed error information
+- Added helper methods to BaseAgent for standardized error handling
+  - _create_error_context: Creates an ErrorContext with agent information
+  - _handle_agent_error: Handles errors and returns a NoValidResponse
+- Updated PlannerAgent and OrchestratorAgent to use the standardized error handling
+- Added comprehensive tests for the error handling system
+
 ## [0.0.1] - 2025-07-21
 
 ### Added
