@@ -1,8 +1,14 @@
-"""Tests for the PlannerAgent class."""
+"""Tests for the PlannerAgent class.
+
+These tests verify the functionality of the PlannerAgent, including its ability
+to analyze task complexity and generate plans. The tests use mock RunContext objects
+to simulate the context that would be passed to the agent's tools in a real execution.
+"""
 import pytest
 import logging
 from unittest.mock import patch, MagicMock
 
+from pydantic_ai import RunContext
 from examples.agents import GlobalState, PlannerAgent
 from orqest.agents.base_agent import NoValidResponse
 
@@ -90,7 +96,13 @@ async def test_planner_agent_invalid_response(planner_agent, global_state):
 @pytest.mark.asyncio
 async def test_analyze_task_complexity(planner_agent):
     """Test the _analyze_task_complexity method."""
-    result = planner_agent._analyze_task_complexity("Test task")
+    # Create a mock RunContext with a GlobalState
+    # This simulates the context that would be passed to the tool in a real execution
+    # The deps attribute is set to a GlobalState instance, which is what the tool expects
+    mock_ctx = MagicMock(spec=RunContext)
+    mock_ctx.deps = GlobalState()
+    
+    result = planner_agent._analyze_task_complexity(mock_ctx, "Test task")
     assert result is not None
     assert "complexity" in result
     assert result["complexity"] == "simple"

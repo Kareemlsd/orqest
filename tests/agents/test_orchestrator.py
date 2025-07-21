@@ -1,8 +1,14 @@
-"""Tests for the OrchestratorAgent class."""
+"""Tests for the OrchestratorAgent class.
+
+These tests verify the functionality of the OrchestratorAgent, including its ability
+to call the PlannerAgent as a tool. The tests use mock RunContext objects to simulate
+the context that would be passed to the agent's tools in a real execution.
+"""
 import pytest
 import logging
 from unittest.mock import patch, MagicMock
 
+from pydantic_ai import RunContext
 from examples.agents import GlobalState, OrchestratorAgent, PlannerAgent
 from orqest.agents.base_agent import NoValidResponse
 from orqest.errors import ToolError, ErrorSeverity
@@ -96,10 +102,16 @@ async def test_call_planner_agent_success(orchestrator_agent):
     mock_result_state = GlobalState()
     mock_result_state.plan = ["Step 1: Preheat oven", "Step 2: Mix ingredients"]
     
+    # Create a mock RunContext with a GlobalState
+    # This simulates the context that would be passed to the tool in a real execution
+    # The deps attribute is set to a GlobalState instance, which is what the tool expects
+    mock_ctx = MagicMock(spec=RunContext)
+    mock_ctx.deps = GlobalState()
+    
     # Mock the planner_agent.run method to return our mock result state
     with patch.object(orchestrator_agent.planner_agent, 'run', return_value=mock_result_state):
         # Call the planner agent
-        result = await orchestrator_agent._call_planner_agent("How do I bake a cake?")
+        result = await orchestrator_agent._call_planner_agent(mock_ctx, "How do I bake a cake?")
         
         # Verify the result
         assert result is not None
@@ -118,11 +130,17 @@ async def test_call_planner_agent_error(orchestrator_agent):
         operation="run"
     )
     
+    # Create a mock RunContext with a GlobalState
+    # This simulates the context that would be passed to the tool in a real execution
+    # The deps attribute is set to a GlobalState instance, which is what the tool expects
+    mock_ctx = MagicMock(spec=RunContext)
+    mock_ctx.deps = GlobalState()
+    
     # Mock the planner_agent.run method to return our mock error response
     with patch.object(orchestrator_agent.planner_agent, 'run', return_value=mock_error_response):
         # Call the planner agent and expect a ToolError
         with pytest.raises(ToolError) as excinfo:
-            await orchestrator_agent._call_planner_agent("How do I bake a cake?")
+            await orchestrator_agent._call_planner_agent(mock_ctx, "How do I bake a cake?")
         
         # Verify the error
         assert "Planner agent failed to generate a plan" in str(excinfo.value)
@@ -131,11 +149,17 @@ async def test_call_planner_agent_error(orchestrator_agent):
 @pytest.mark.asyncio
 async def test_call_planner_agent_exception(orchestrator_agent):
     """Test the _call_planner_agent method when an exception occurs."""
+    # Create a mock RunContext with a GlobalState
+    # This simulates the context that would be passed to the tool in a real execution
+    # The deps attribute is set to a GlobalState instance, which is what the tool expects
+    mock_ctx = MagicMock(spec=RunContext)
+    mock_ctx.deps = GlobalState()
+    
     # Mock the planner_agent.run method to raise an exception
     with patch.object(orchestrator_agent.planner_agent, 'run', side_effect=Exception("Test error")):
         # Call the planner agent and expect a ToolError
         with pytest.raises(ToolError) as excinfo:
-            await orchestrator_agent._call_planner_agent("How do I bake a cake?")
+            await orchestrator_agent._call_planner_agent(mock_ctx, "How do I bake a cake?")
         
         # Verify the error
         assert "Error calling planner agent" in str(excinfo.value)
