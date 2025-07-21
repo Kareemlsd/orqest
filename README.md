@@ -68,7 +68,8 @@ This example demonstrates how to use the Orqest framework to create and compose 
    ```python
    from pydantic import BaseModel, Field
    from typing import List, Dict, Any
-   from orqest.agents.base_agent import BaseAgent
+   from orqest.agents.base_agent import BaseAgent, NoValidResponse
+   from orqest.errors import ErrorSeverity
    
    # Define your state model
    class MyState(BaseModel):
@@ -84,9 +85,44 @@ This example demonstrates how to use the Orqest framework to create and compose 
                retries=2
            )
        
-       async def run(self, state: MyState, **kwargs):
-           # Implement your agent logic
-           pass
+       async def run(self, state: MyState, **kwargs) -> MyState:
+           """Run the agent with the provided state.
+           
+           Args:
+               state: The current state of the conversation.
+               **kwargs: Additional keyword arguments to pass to the agent.
+               
+           Returns:
+               Updated state after the agent has processed it.
+           """
+           try:
+               # Analyze current state and determine next steps
+               prompt = f"""
+               Current state: {state.messages[-1] if state.messages else "No messages yet"}
+               
+               Please analyze the current state and determine the next steps.
+               """
+               
+               # Execute the agent
+               response = await self.agent.run(prompt, deps=state, **kwargs)
+               
+               # Process the response
+               return await self._process_agent_response(response, state)
+               
+           except Exception as e:
+               # Handle the error using standardized error handling
+               details = {
+                   "state_messages_count": len(state.messages),
+                   "error_type": type(e).__name__
+               }
+               
+               # Return a NoValidResponse with error information
+               return self._handle_agent_error(
+                   error=e,
+                   operation="run",
+                   severity=ErrorSeverity.ERROR,
+                   details=details
+               )
            
        async def _process_agent_response(self, response, state, **kwargs):
            # Process the agent's response
@@ -98,7 +134,8 @@ This example demonstrates how to use the Orqest framework to create and compose 
    from pydantic import BaseModel, Field
    from typing import List, Dict, Any
    from pydantic_ai import RunContext
-   from orqest.agents.base_agent import BaseAgent
+   from orqest.agents.base_agent import BaseAgent, NoValidResponse
+   from orqest.errors import ErrorSeverity
    
    # Define your state models
    class ChildState(BaseModel):
@@ -124,6 +161,49 @@ This example demonstrates how to use the Orqest framework to create and compose 
                deps_type=ParentState,  # Specify the type for RunContext
                tools=[self._call_child_agent]
            )
+       
+       async def run(self, state: ParentState, **kwargs) -> ParentState:
+           """Run the coordinator agent to manage the workflow.
+           
+           Args:
+               state: The current state of the conversation.
+               **kwargs: Additional keyword arguments to pass to the agent.
+               
+           Returns:
+               Updated state after the agent has processed it.
+           """
+           try:
+               # Analyze current state and determine next steps
+               prompt = f"""
+               Current workflow state: {state.plan if hasattr(state, 'plan') else []}
+               Current messages: {state.messages[-1] if state.messages else "No messages yet"}
+               
+               Please analyze the current workflow state and determine the next steps.
+               Consider what information is missing and what tools are available.
+               """
+
+               # Execute the agent
+               response = await self.agent.run(prompt, deps=state, message_history=state.messages, **kwargs)
+               
+               # Process the response
+               return await self._process_agent_response(response, state)
+               
+           except Exception as e:
+               # Handle the error using the standardized error handling
+               # Create error details
+               details = {
+                   "user_message": state.messages[-1]["content"] if state.messages else None,
+                   "state_messages_count": len(state.messages) if hasattr(state, 'messages') else 0,
+                   "state_plan_count": len(state.plan) if hasattr(state, 'plan') else 0
+               }
+               
+               # Return a NoValidResponse with error information
+               return self._handle_agent_error(
+                   error=e,
+                   operation="run",
+                   severity=ErrorSeverity.ERROR,
+                   details=details
+               )
        
        async def _call_child_agent(self, ctx: RunContext[ParentState], query: str):
            # Access the parent state directly from the context
