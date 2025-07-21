@@ -5,7 +5,12 @@ from the Orqest framework to create a plan for a user query.
 """
 import asyncio
 import logging
+import sys
+from pathlib import Path
 from typing import List
+
+# Add the project root to the Python path
+sys.path.append(str(Path(__file__).parent.parent))
 
 from examples.agents import GlobalState, OrchestratorAgent
 

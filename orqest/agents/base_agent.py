@@ -79,6 +79,7 @@ class BaseAgent(Generic[OutputT]):
             system_prompt: str,
             output_type: Type[OutputT] | Type[Union[OutputT, NoValidResponse]],
             retries: int = 3,
+            deps_type: Optional[Type[BaseModel]] = None,
             tools: Optional[List[Tool]] = None,
     ):
         """Initialize the BaseAgent instance."""
@@ -87,6 +88,7 @@ class BaseAgent(Generic[OutputT]):
         self.output_type = output_type
         self.retries = retries
         self.tools = [Tool(tool) for tool in tools] if tools else []
+        self.deps_type = deps_type
         self._model = None
         self._agent = None
         

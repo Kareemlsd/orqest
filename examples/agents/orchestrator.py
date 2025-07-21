@@ -6,6 +6,8 @@ It demonstrates how to extend the BaseAgent class to create a specialized agent 
 import logging
 from typing import Any, Dict, List, Optional
 
+from pydantic_ai import RunContext
+
 from orqest.agents.base_agent import BaseAgent, NoValidResponse
 from orqest.errors import ErrorSeverity, ErrorContext, ToolError
 
@@ -75,7 +77,7 @@ class OrchestratorAgent(BaseAgent[GlobalState]):
             logger.info(f"Running orchestrator agent with prompt: {prompt[:100]}...")
 
             # Execute the agent
-            response = await self.agent.run(prompt, message_history=state.chat_history, **kwargs)
+            response = await self.agent.run(prompt, deps=state, message_history=state.chat_history, **kwargs)
             state.chat_history.extend(response.all_messages())
 
             # Process the response
@@ -100,13 +102,14 @@ class OrchestratorAgent(BaseAgent[GlobalState]):
                 details=details
             )
         
-    async def _call_planner_agent(self, query: str) -> Dict[str, List[str]]:
+    async def _call_planner_agent(self, ctx: RunContext[GlobalState], query: str) -> Dict[str, List[str]]:
         """Call the planner agent to create a plan for the given query.
         
         This method demonstrates how to use one agent as a tool for another agent,
         implementing the "Agent as Tools" pattern.
         
         Args:
+            ctx: The run context containing the global state.
             query: The query to plan for.
             
         Returns:
@@ -116,12 +119,14 @@ class OrchestratorAgent(BaseAgent[GlobalState]):
             # Log the operation
             logger.info(f"Calling planner agent with query: {query[:100]}...")
             
-            # Create a temporary state for the planner agent
-            temp_state = GlobalState()
-            temp_state.add_message("user", query)
+            # Get the state from the context
+            state = ctx.deps
+            
+            # Add the query to the state
+            state.add_message("user", query)
             
             # Run the planner agent
-            result_state = await self.planner_agent.run(temp_state)
+            result_state = await self.planner_agent.run(state)
             
             # Check if the result is a NoValidResponse
             if isinstance(result_state, NoValidResponse):

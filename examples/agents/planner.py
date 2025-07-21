@@ -6,6 +6,8 @@ It demonstrates how to extend the BaseAgent class to create a specialized agent.
 import logging
 from typing import Any, Dict, Optional
 
+from pydantic_ai import RunContext
+
 from orqest.agents.base_agent import BaseAgent, NoValidResponse
 from orqest.errors import ErrorSeverity
 
@@ -61,7 +63,7 @@ class PlannerAgent(BaseAgent[GlobalState]):
             logger.info(f"Running planner agent with prompt: {prompt[:100]}...")
 
             # Execute the agent
-            response = await self.agent.run(prompt, message_history=state.chat_history, **kwargs)
+            response = await self.agent.run(prompt, deps=state, message_history=state.chat_history, **kwargs)
             state.chat_history.extend(response.all_messages())
 
             # Process the response
@@ -163,7 +165,7 @@ class PlannerAgent(BaseAgent[GlobalState]):
                 details=details
             )
 
-    def _analyze_task_complexity(self, task_description: str) -> Dict[str, str]:
+    def _analyze_task_complexity(self, ctx:RunContext[GlobalState], task_description: str) -> Dict[str, str]:
         """Analyze the complexity of a task.
         
         Args:

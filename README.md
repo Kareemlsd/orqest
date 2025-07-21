@@ -55,7 +55,7 @@ if __name__ == "__main__":
     asyncio.run(run_example())
 ```
 
-This example demonstrates how to use the Orqest framework to create and compose agents. The actual implementation of these agents can be found in the `examples/agents` directory.
+This example demonstrates how to use the Orqest framework to create and compose agents. The actual implementation of these agents can be found in the `examples/agents` directory. Behind the scenes, the OrchestratorAgent uses RunContext to pass the state to its tools, including when calling the PlannerAgent.
 
 ## Getting Started
 
@@ -93,10 +93,11 @@ This example demonstrates how to use the Orqest framework to create and compose 
            pass
    ```
 
-3. Use agents as tools for other agents:
+3. Use agents as tools for other agents with RunContext:
    ```python
    from pydantic import BaseModel, Field
    from typing import List, Dict, Any
+   from pydantic_ai import RunContext
    from orqest.agents.base_agent import BaseAgent
    
    # Define your state models
@@ -120,18 +121,30 @@ This example demonstrates how to use the Orqest framework to create and compose 
                agent_name="parent_agent",
                output_type=ParentState,
                system_prompt="You are a parent agent.",
+               deps_type=ParentState,  # Specify the type for RunContext
                tools=[self._call_child_agent]
            )
        
-       async def _call_child_agent(self, query: str):
-           # Create a temporary state for the child agent
-           child_state = ChildState()
-           # Add the query to the child state
+       async def _call_child_agent(self, ctx: RunContext[ParentState], query: str):
+           # Access the parent state directly from the context
+           parent_state = ctx.deps
+           
+           # Add the query to the parent state if needed
+           parent_state.messages.append({"role": "user", "content": query})
+           
            # Call the child agent with the state
-           result = await self.child_agent.run(child_state)
+           result = await self.child_agent.run(parent_state)
+           
            # Return the result
            return {"result": result}
    ```
+   
+   **Note on RunContext**: Orqest now uses RunContext from pydantic-ai to pass down the state when calling subagents. This eliminates the need to create temporary states and allows tools to access and update the global state directly. This approach provides several benefits:
+   
+   - **Shared State**: All agents and tools can access and modify the same state object
+   - **Simplified Code**: No need to manually transfer information between temporary states
+   - **Improved Consistency**: Ensures all components work with the same state data
+   - **Better Context Awareness**: Tools have access to the full context of the parent agent
 
 ## Contributing
 

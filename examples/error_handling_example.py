@@ -6,7 +6,12 @@ error messages.
 """
 import asyncio
 import logging
+import sys
+from pathlib import Path
 from typing import Dict, Any, Optional
+
+# Add the project root to the Python path
+sys.path.append(str(Path(__file__).parent.parent))
 
 from orqest.agents.base_agent import BaseAgent, NoValidResponse
 from examples.agents import GlobalState
