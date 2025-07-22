@@ -1,6 +1,6 @@
-"""Standardized error format for Orqest framework.
+"""Standardized error formatting for Orqest framework.
 
-This module defines a standardized error format for the Orqest framework,
+This module defines a standardized error formatting for the Orqest framework,
 including error categories, severity levels, and context information.
 """
 import enum
