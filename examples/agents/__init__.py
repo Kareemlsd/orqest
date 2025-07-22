@@ -8,9 +8,11 @@ and how to compose agents hierarchically using the "Agent as Tools" pattern.
 from examples.agents.state import GlobalState
 from examples.agents.planner import PlannerAgent
 from examples.agents.orchestrator import OrchestratorAgent
+from examples.agents.flexible_orchestrator import FlexibleOrchestratorAgent
 
 __all__ = [
     "GlobalState",
     "PlannerAgent",
-    "OrchestratorAgent"
+    "OrchestratorAgent",
+    "FlexibleOrchestratorAgent"
 ]

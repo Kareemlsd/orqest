@@ -4,8 +4,9 @@ This module contains an example implementation of an orchestrator agent using th
 It demonstrates how to extend the BaseAgent class to create a specialized agent that can use other agents as tools.
 """
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type, Union, Callable
 
+from pydantic import BaseModel
 from pydantic_ai import RunContext
 
 from orqest.agents.base_agent import BaseAgent, NoValidResponse
@@ -24,20 +25,49 @@ class OrchestratorAgent(BaseAgent[GlobalState]):
     This demonstrates how to compose agents hierarchically using the "Agent as Tools" pattern.
     """
 
-    def __init__(self):
-        """Initialize the orchestrator agent."""
+    def __init__(
+        self,
+        agent_name: str = "orchestrator",
+        system_prompt: Optional[str] = None,
+        output_type: Optional[Type] = None,
+        retries: int = 2,
+        deps_type: Optional[Type[BaseModel]] = None,
+        tools: Optional[List[Any]] = None,
+        planner_agent: Optional[PlannerAgent] = None,
+        planner_config: Optional[Dict[str, Any]] = None,
+    ):
+        """Initialize the orchestrator agent.
+        
+        Args:
+            agent_name: Name of the agent for logging and identification.
+            system_prompt: The system prompt that defines the agent's behavior.
+            output_type: The type of the output state.
+            retries: Number of retries for failed agent executions.
+            deps_type: Optional type for RunContext dependencies.
+            tools: List of tools that the agent can use.
+            planner_agent: Optional custom PlannerAgent instance.
+            planner_config: Optional configuration for creating a PlannerAgent.
+        """
+        # Set default values if not provided
+        _system_prompt = system_prompt or self._build_system_prompt()
+        _output_type = output_type or (GlobalState | NoValidResponse)
+        _tools = tools or [self._call_planner_agent]
+        
         super().__init__(
-            agent_name="orchestrator",
-            output_type=GlobalState | NoValidResponse,
-            system_prompt=self._build_system_prompt(),
-            retries=2,
-            tools=[
-                self._call_planner_agent,
-            ]
+            agent_name=agent_name,
+            output_type=_output_type,
+            system_prompt=_system_prompt,
+            retries=retries,
+            deps_type=deps_type or GlobalState,
+            tools=_tools
         )
 
         # Initialize sub-agent planner:
-        self.planner_agent = PlannerAgent()
+        if planner_agent:
+            self.planner_agent = planner_agent
+        else:
+            planner_config = planner_config or {}
+            self.planner_agent = PlannerAgent(**planner_config)
 
     def _build_system_prompt(self) -> str:
         """Build the system prompt for the orchestrator agent.

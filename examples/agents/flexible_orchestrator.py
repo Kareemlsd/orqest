@@ -1,38 +1,42 @@
-"""Example planner agent implementation.
+"""Flexible orchestrator agent implementation.
 
-This module contains an example implementation of a planner agent using the Orqest framework.
-It demonstrates how to extend the BaseAgent class to create a specialized agent.
+This module contains an implementation of a flexible orchestrator agent using the Orqest framework.
+It demonstrates how to create an agent that can use any other agent as a tool without hardcoded references.
 """
 import logging
-from typing import Any, Dict, Optional, List, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union, Callable
 
 from pydantic import BaseModel
 from pydantic_ai import RunContext
 
 from orqest.agents.base_agent import BaseAgent, NoValidResponse
-from orqest.errors import ErrorSeverity
+from orqest.errors import ErrorSeverity, ErrorContext, ToolError
+from orqest.utils.agent_tools import create_agent_tool
 
 from examples.agents.state import GlobalState
 
 logger = logging.getLogger(__name__)
 
-class PlannerAgent(BaseAgent[GlobalState]):
-    """Example planner agent created using the base agent from Orqest.
+class FlexibleOrchestratorAgent(BaseAgent[GlobalState]):
+    """Flexible orchestrator agent created using the base agent from Orqest.
     
-    This agent is responsible for decomposing user questions into subquestions
-    and creating detailed plans for tasks.
+    This agent is responsible for orchestrating the execution of tasks by using
+    other agents as tools. Unlike the original OrchestratorAgent, this agent
+    doesn't have hardcoded references to specific agent types and can use any
+    agent as a tool.
     """
 
     def __init__(
         self,
-        agent_name: str = "planner_agent",
+        agent_name: str = "flexible_orchestrator",
         system_prompt: Optional[str] = None,
         output_type: Optional[Type] = None,
         retries: int = 2,
         deps_type: Optional[Type[BaseModel]] = None,
         tools: Optional[List[Any]] = None,
+        subagents: Optional[Dict[str, BaseAgent]] = None,
     ):
-        """Initialize the planner agent.
+        """Initialize the flexible orchestrator agent.
         
         Args:
             agent_name: Name of the agent for logging and identification.
@@ -41,11 +45,31 @@ class PlannerAgent(BaseAgent[GlobalState]):
             retries: Number of retries for failed agent executions.
             deps_type: Optional type for RunContext dependencies.
             tools: List of tools that the agent can use.
+            subagents: Dictionary of subagents to use as tools, where the key is the tool name
+                and the value is the agent instance.
         """
         # Set default values if not provided
-        _system_prompt = system_prompt or "You are a planning agent. Your goal is to decompose the user's question into subquestions."
+        _system_prompt = system_prompt or self._build_system_prompt()
         _output_type = output_type or (GlobalState | NoValidResponse)
-        _tools = tools or [self._analyze_task_complexity]
+        
+        # Create tools from subagents if provided
+        subagent_tools = []
+        if subagents:
+            for name, agent in subagents.items():
+                # Create a tool function for each subagent
+                tool_func = create_agent_tool(
+                    agent=agent,
+                    name=name,
+                    description=f"Call the {agent.agent_name} to process a query."
+                )
+                subagent_tools.append(tool_func)
+        
+        # Combine provided tools and subagent tools
+        _tools = (tools or []) + subagent_tools
+        
+        # If no tools are provided, add a default tool that returns a message
+        if not _tools:
+            _tools = [self._default_tool]
         
         super().__init__(
             agent_name=agent_name,
@@ -55,9 +79,47 @@ class PlannerAgent(BaseAgent[GlobalState]):
             deps_type=deps_type or GlobalState,
             tools=_tools
         )
+        
+        # Store the subagents for reference
+        self.subagents = subagents or {}
+
+    def _build_system_prompt(self) -> str:
+        """Build the system prompt for the orchestrator agent.
+        
+        Returns:
+            The system prompt string.
+        """
+        return """
+            You are a flexible orchestrator agent. Your goal is to orchestrate the execution of tasks
+            by using other agents as tools. You can call any of the available tools to help you
+            complete the task.
+            
+            Your role is to:
+            1. Analyze the user's request and determine what tools are needed.
+            2. Call the appropriate tools to complete the task.
+            3. Integrate the results from different tools into a coherent response.
+            
+            Use the tools strategically based on the current workflow state and user needs.
+            """
+
+    async def _default_tool(self, ctx: RunContext[GlobalState], query: str) -> Dict[str, Any]:
+        """Default tool that returns a message.
+        
+        This tool is used when no other tools are provided.
+        
+        Args:
+            ctx: The run context containing the global state.
+            query: The query to process.
+            
+        Returns:
+            A dictionary with a message.
+        """
+        return {
+            "message": "No tools are available. Please add some tools to the orchestrator agent."
+        }
 
     async def run(self, state: GlobalState, **kwargs) -> GlobalState:
-        """Run the planner agent.
+        """Run the orchestrator agent to manage the workflow.
         
         Args:
             state: The current state of the conversation.
@@ -67,22 +129,17 @@ class PlannerAgent(BaseAgent[GlobalState]):
             Updated state after the agent has processed it.
         """
         try:
-            # Ensure a starting user message is present
-            if not state.get_latest_user_message():
-                state.messages.append({"role": "user", "content": "What is your question?"})
-
-            user_message = state.get_latest_user_message()
-
-            # Enhanced prompt that encourages tool use
-            prompt = (
-                f"You are a planning agent. Your goal is to decompose the user's question into subquestions. "
-                f"Please create a detailed plan for this task. User message: {user_message}"
-                f"1. Analyze the complexity of the task."
-                f" Then provide a comprehensive plan with clear steps."
-            )
+            # Analyze current state and determine next steps
+            prompt = f"""
+            Current workflow state: {state.plan}
+            Current messages: {state.get_latest_user_message()}
+            
+            Please analyze the current workflow state and determine the next steps.
+            Consider what information is missing and what tools are available.
+            """
 
             # Log the operation
-            logger.info(f"Running planner agent with prompt: {prompt[:100]}...")
+            logger.info(f"Running {self.agent_name} with prompt: {prompt[:100]}...")
 
             # Execute the agent
             response = await self.agent.run(prompt, deps=state, message_history=state.chat_history, **kwargs)
@@ -93,11 +150,11 @@ class PlannerAgent(BaseAgent[GlobalState]):
             
         except Exception as e:
             # Handle the error using the standardized error handling
-            logger.error(f"Error running planner agent: {str(e)}")
+            logger.error(f"Error running {self.agent_name}: {str(e)}")
             
             # Create error details
             details = {
-                "user_message": user_message if 'user_message' in locals() else None,
+                "user_message": state.get_latest_user_message() if hasattr(state, 'get_latest_user_message') else None,
                 "state_messages_count": len(state.messages) if hasattr(state, 'messages') else 0,
                 "state_plan_count": len(state.plan) if hasattr(state, 'plan') else 0
             }
@@ -133,12 +190,12 @@ class PlannerAgent(BaseAgent[GlobalState]):
                 state.add_message("assistant", content)
                 
                 # Log successful processing
-                logger.info(f"Successfully processed response for planner agent")
+                logger.info(f"Successfully processed response for {self.agent_name}")
                 
                 return state
             else:
                 # Handle invalid response with standardized error handling
-                logger.warning("Received invalid response from planner agent")
+                logger.warning(f"Received invalid response from {self.agent_name}")
                 
                 # Create error details
                 details = {
@@ -160,14 +217,14 @@ class PlannerAgent(BaseAgent[GlobalState]):
                 )
                 
                 # Add a user-friendly message to the state
-                state.add_message("assistant", "I couldn't generate a valid plan. Please try again.")
+                state.add_message("assistant", "I couldn't process your request. Please try again.")
                 
                 # Return the state with the error message
                 return state
                 
         except Exception as e:
             # Handle any exceptions during processing
-            logger.error(f"Error processing agent response: {str(e)}")
+            logger.error(f"Error processing {self.agent_name} response: {str(e)}")
             
             # Create error details
             details = {
@@ -177,7 +234,7 @@ class PlannerAgent(BaseAgent[GlobalState]):
             }
             
             # Add a user-friendly message to the state
-            state.add_message("assistant", "An error occurred while processing the response. Please try again.")
+            state.add_message("assistant", "An error occurred while processing your request. Please try again.")
             
             # Return a NoValidResponse with error information
             return self._handle_agent_error(
@@ -186,17 +243,3 @@ class PlannerAgent(BaseAgent[GlobalState]):
                 severity=ErrorSeverity.ERROR,
                 details=details
             )
-
-    def _analyze_task_complexity(self, ctx:RunContext[GlobalState], task_description: str) -> Dict[str, str]:
-        """Analyze the complexity of a task.
-        
-        Args:
-            task_description: The description of the task to analyze.
-            
-        Returns:
-            A dictionary containing the complexity assessment.
-        """
-        # Simple complexity analysis, return always the same
-        return {
-            "complexity": "simple"
-        }

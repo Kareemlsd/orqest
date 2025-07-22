@@ -21,6 +21,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - _handle_agent_error: Handles errors and returns a NoValidResponse
 - Updated PlannerAgent and OrchestratorAgent to use the standardized error handling
 - Added comprehensive tests for the error handling system
+- Flexible agent composition
+  - Created a utility function `create_agent_tool` to wrap any agent as a tool
+  - Implemented FlexibleOrchestratorAgent that can use any agent as a tool
+  - Added examples demonstrating flexible agent composition
+  - Added documentation for flexible agent composition
+- RunContext implementation for state passing
+  - Updated agents to use RunContext for passing state to tools
+  - Eliminated the need for temporary states when calling sub-agents
+  - Improved state sharing between agents
+  - Updated documentation to explain RunContext usage
+- Project restructuring
+  - Moved agent implementations to examples/ directory
+  - Organized tests into a structured directory hierarchy
+  - Added comprehensive documentation in docs/ directory
+  - Created a clean project structure with clear separation of concerns
 
 ## [0.0.1] - 2025-07-21
 

@@ -22,6 +22,15 @@ This example demonstrates how to use the error handling system in Orqest. It sho
 - How to handle errors and return NoValidResponse
 - How to process and log error information
 
+### flexible_orchestrator_example.py
+
+This example demonstrates the flexible agent composition approach in Orqest. It shows:
+
+- How to create different types of agents (PlannerAgent, ResearchAgent, SummaryAgent)
+- How to use the FlexibleOrchestratorAgent to compose agents dynamically
+- How to pass any agent as a tool to another agent without hardcoded references
+- How to run different agent compositions with the same code
+
 ## Running the Examples
 
 Before running the examples, make sure you have:
@@ -76,4 +85,4 @@ You can use these examples as a starting point for creating your own agent imple
        asyncio.run(run_my_agent())
    ```
 
-For more detailed examples, refer to the implementation of PlannerAgent and OrchestratorAgent in the `orqest/agents/` directory.
+For more detailed examples, refer to the implementation of PlannerAgent and OrchestratorAgent in the `examples/agents/` directory.
