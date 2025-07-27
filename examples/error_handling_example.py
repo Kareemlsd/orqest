@@ -1,8 +1,8 @@
-"""Example of using the error handling system in Orqest.
+"""Example of using the error handling system in Orqest with lifecycle hooks.
 
 This example demonstrates how to use the error handling system in Orqest,
-including creating and handling errors, using error context, and formatting
-error messages.
+including creating and handling errors, using error context, formatting
+error messages, and using lifecycle hooks for error handling.
 """
 import asyncio
 import logging
@@ -13,7 +13,9 @@ from typing import Dict, Any, Optional
 # Add the project root to the Python path
 sys.path.append(str(Path(__file__).parent.parent))
 
+from pydantic import BaseModel
 from orqest.agents.base_agent import BaseAgent, NoValidResponse
+from orqest.agents.hooks import HookPoint, Middleware, hook
 from examples.agents import GlobalState
 from orqest.errors import (
     ErrorSeverity,
@@ -32,8 +34,47 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+class ErrorHandlingMiddleware(Middleware):
+    """Middleware that handles errors during agent execution."""
+    
+    def __init__(self, logger=None):
+        """Initialize the error handling middleware.
+        
+        Args:
+            logger: Logger to use for logging errors. Defaults to the module logger.
+        """
+        self.logger = logger or logging.getLogger(__name__)
+    
+    async def on_error(self, error: Exception, state: BaseModel, operation: str, **kwargs) -> Any:
+        """Execute when an error occurs during the agent's execution.
+        
+        Args:
+            error: The exception that occurred.
+            state: The state that was being processed.
+            operation: The operation being performed when the error occurred.
+            **kwargs: Additional keyword arguments.
+            
+        Returns:
+            The result to be returned from the agent's method, or re-raises the error.
+        """
+        self.logger.error(f"Error in {operation}: {error}")
+        
+        # Log detailed information about the error
+        if isinstance(error, OrqestError):
+            formatted_message = format_error_message(error)
+            self.logger.error(f"Formatted error message: {formatted_message}")
+        
+        # Return the NoValidResponse if it's provided in kwargs
+        response = kwargs.get("response")
+        if response and isinstance(response, NoValidResponse):
+            return response
+        
+        # Otherwise, re-raise the error
+        raise error
+
 class ErrorDemoAgent(BaseAgent[GlobalState]):
-    """Demo agent that showcases error handling in Orqest."""
+    """Demo agent that showcases error handling in Orqest using lifecycle hooks."""
     
     def __init__(self):
         """Initialize the error demo agent."""
@@ -46,9 +87,37 @@ class ErrorDemoAgent(BaseAgent[GlobalState]):
                 self._simulate_tool_error,
             ]
         )
+        
+        # Add error handling middleware
+        self.use_middleware(ErrorHandlingMiddleware())
+        
+        # Add a direct hook for error handling
+        self.add_hook(HookPoint.ON_ERROR, self._log_error_details)
     
-    async def run(self, state: GlobalState, **kwargs) -> GlobalState:
-        """Run the agent with error handling demonstrations.
+    async def _log_error_details(self, error: Exception, state: BaseModel, operation: str, **kwargs) -> Any:
+        """Log detailed information about errors.
+        
+        Args:
+            error: The exception that occurred.
+            state: The state that was being processed.
+            operation: The operation being performed when the error occurred.
+            **kwargs: Additional keyword arguments.
+            
+        Returns:
+            The result to be returned from the agent's method, or re-raises the error.
+        """
+        logger.error(f"Custom error hook: Error in {operation}: {error}")
+        
+        # Return the NoValidResponse if it's provided in kwargs
+        response = kwargs.get("response")
+        if response and isinstance(response, NoValidResponse):
+            return response
+        
+        # Otherwise, let the middleware handle it
+        return error
+    
+    async def _run_implementation(self, state: GlobalState, **kwargs) -> GlobalState:
+        """Implement the agent's run logic with error handling demonstrations.
         
         Args:
             state: The current state.
@@ -57,50 +126,31 @@ class ErrorDemoAgent(BaseAgent[GlobalState]):
         Returns:
             Updated state or NoValidResponse if an error occurs.
         """
-        try:
-            # Get the error type to simulate from the state
-            error_type = state.get_latest_user_message() or "none"
-            
-            # Simulate different error scenarios based on the error type
-            if error_type.lower() == "agent":
-                # Simulate an agent error
-                raise AgentError(
-                    message="Simulated agent error",
-                    severity=ErrorSeverity.ERROR,
-                    context=self._create_error_context(
-                        operation="run",
-                        details={"error_type": "agent"}
-                    )
-                )
-            elif error_type.lower() == "tool":
-                # Simulate a tool error by calling the tool
-                await self._simulate_tool_error("This will fail")
-            elif error_type.lower() == "validation":
-                # Simulate a validation error
-                state.add_message("assistant", "Simulating a validation error")
-                return state
-            else:
-                # No error, just return the state with a success message
-                state.add_message("assistant", "No error was simulated")
-                return state
-                
-        except Exception as e:
-            # Handle the error using the standardized error handling
-            logger.error(f"Error in ErrorDemoAgent: {str(e)}")
-            
-            # Create error details
-            details = {
-                "error_type": type(e).__name__,
-                "state_messages_count": len(state.messages) if hasattr(state, 'messages') else 0
-            }
-            
-            # Return a NoValidResponse with error information
-            return self._handle_agent_error(
-                error=e,
-                operation="run",
+        # Get the error type to simulate from the state
+        error_type = state.get_latest_user_message() or "none"
+        
+        # Simulate different error scenarios based on the error type
+        if error_type.lower() == "agent":
+            # Simulate an agent error
+            raise AgentError(
+                message="Simulated agent error",
                 severity=ErrorSeverity.ERROR,
-                details=details
+                context=self._create_error_context(
+                    operation="_run_implementation",
+                    details={"error_type": "agent"}
+                )
             )
+        elif error_type.lower() == "tool":
+            # Simulate a tool error by calling the tool
+            await self._simulate_tool_error("This will fail")
+        elif error_type.lower() == "validation":
+            # Simulate a validation error
+            state.add_message("assistant", "Simulating a validation error")
+            return state
+        else:
+            # No error, just return the state with a success message
+            state.add_message("assistant", "No error was simulated")
+            return state
     
     async def _process_agent_response(self, response, state: GlobalState, **kwargs) -> GlobalState:
         """Process the agent response.
@@ -147,7 +197,7 @@ class ErrorDemoAgent(BaseAgent[GlobalState]):
         )
 
 async def demonstrate_error_handling(error_type: Optional[str] = None):
-    """Demonstrate error handling with different error types.
+    """Demonstrate error handling with different error types using lifecycle hooks.
     
     Args:
         error_type: The type of error to simulate (agent, tool, validation, or None).
@@ -162,6 +212,9 @@ async def demonstrate_error_handling(error_type: Optional[str] = None):
     
     # Run the agent
     logger.info(f"Demonstrating error handling with error_type={error_type}")
+    logger.info(f"Using lifecycle hooks for error handling")
+    
+    # The agent.run method will now use hooks for error handling
     result = await agent.run(state)
     
     # Check the result
@@ -171,6 +224,7 @@ async def demonstrate_error_handling(error_type: Optional[str] = None):
         logger.info(f"  Error type: {result.error_type}")
         logger.info(f"  Agent name: {result.agent_name}")
         logger.info(f"  Operation: {result.operation}")
+        logger.info(f"  This error was handled by the ON_ERROR hook")
     else:
         logger.info("Received valid response:")
         for message in result.messages:

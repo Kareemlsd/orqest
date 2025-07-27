@@ -226,6 +226,44 @@ This example demonstrates how to use the Orqest framework to create and compose 
    - **Improved Consistency**: Ensures all components work with the same state data
    - **Better Context Awareness**: Tools have access to the full context of the parent agent
 
+## Tutorials
+
+To help you learn how to use Orqest, we've created a series of tutorial notebooks that guide you through the framework's features and capabilities. These tutorials are designed to be followed in sequence, starting with basic concepts and progressing to more advanced topics.
+
+### Available Tutorials
+
+1. **Getting Started**: Introduction to the Orqest framework, including installation, basic concepts, and a simple example of creating and running an agent.
+
+2. **Creating Custom Agents**: Learn how to extend the BaseAgent class to create your own specialized agents, implement the required methods, and add tools.
+
+3. **State Management**: Understand how to define state models with Pydantic, validate and transform state, manage conversation history, and share state between agents.
+
+4. **Agent Composition**: Discover how to create agent tools, use RunContext for state passing, compose agents hierarchically, and build dynamic orchestration patterns.
+
+5. **Lifecycle Hooks**: Explore how to inject custom logic at different points in an agent's lifecycle, use middleware for cross-cutting concerns, and create reusable hooks.
+
+6. **Error Handling**: Learn how to create robust agents that handle errors gracefully, use the error hierarchy, create and handle errors, and use error context.
+
+7. **Flexible Orchestration**: Build dynamic orchestration patterns without hardcoded agent graphs, using the FlexibleOrchestratorAgent and agent tools.
+
+### Using the Tutorials
+
+The tutorials are available as Jupyter notebooks in the `docs/tutorials/notebooks` directory. To use them:
+
+1. Install Jupyter:
+   ```
+   pip install jupyter
+   ```
+
+2. Open the notebooks in Jupyter:
+   ```
+   jupyter notebook docs/tutorials/notebooks/
+   ```
+
+The tutorials are also available as Python scripts (`.py` files) in the same directory, which can be useful for version control and code review.
+
+For more information about the tutorials, see the [Tutorials README](docs/tutorials/README.md).
+
 ## Contributing
 
 Contributions are welcome! This framework is in active development, and we're looking for feedback and improvements.
