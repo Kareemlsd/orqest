@@ -1,269 +1,168 @@
-# Orqest
+# Orqest: Enterprise-Grade AI Agent Orchestration Framework
 
-Orqest is a scalable framework for advanced agentic workflows, designed to help developers build and manage complex agent-based systems.
+<p align="center">
+  <em>Transform how you build, deploy, and scale AI agent systems</em>
+</p>
 
-## Overview
+## The Next Evolution in AI Orchestration
 
-Orqest is primarily a wrapper around [pydantic-ai](https://github.com/pydantic-ai/pydantic-ai), providing a structured approach to building scalable agent systems. The framework allows developers to:
+Orqest is an advanced framework for developing sophisticated AI agent systems with unparalleled flexibility and control. Whether implementing complex multi-agent workflows or streamlined single-agent applications, Orqest provides the robust architecture and comprehensive tooling required for production-grade AI systems.
 
-- Create modular, reusable agents with a consistent interface
-- Compose agents hierarchically, where agents can use other agents as tools
-- Build dynamic orchestration patterns without hardcoded agent graphs
-- Manage state and context across agent interactions
+**Elevate your AI development capabilities with a framework designed for the challenges of modern AI orchestration.**
 
-## Key Features
+## What Sets Orqest Apart
 
-- **Agent as Tools**: Assign agents as tools to other agents, enabling dynamic orchestration without hardcoded graphs
-- **Base Agent Framework**: Extensible base agent class that provides a foundation for creating specialized agents
-- **State Management**: Structured approach to managing state between agent interactions
-- **Async Support**: Built with asyncio for efficient concurrent operations
+In the rapidly evolving landscape of AI agent frameworks, Orqest stands as a transformative solution that addresses the fundamental challenges of building complex, production-ready agent systems:
 
-## Architecture
+- **Hierarchical Agent Composition** - Unlike traditional frameworks that limit agent interactions to predefined patterns, Orqest enables true hierarchical composition where any agent can leverage other agents as tools, creating powerful emergent capabilities
+- **Dynamic Execution Paths** - Orqest eliminates rigid, hardcoded agent graphs in favor of flexible, context-aware orchestration that adapts to changing requirements at runtime
+- **Enterprise-Ready Architecture** - Built from the ground up with production use cases in mind, featuring comprehensive error handling, state management, and performance optimization
+- **Unified Development Experience** - Provides a consistent interface across different agent types, significantly reducing the learning curve and development time
 
-Orqest is built around a few core concepts:
+## Why Choose Orqest
 
-1. **BaseAgent**: An abstract class that provides the foundation for all agents in the system
-2. **Tools**: Functions that agents can use to perform specific tasks, including calling other agents
-3. **State Management**: Using Pydantic models to define and validate state between agent interactions
+- **Modular Agent Architecture** - Develop specialized agents that can be composed to address complex problems with unprecedented flexibility
+- **Adaptive Workflow Orchestration** - Implement sophisticated workflows that dynamically adjust based on context and requirements
+- **Comprehensive State Management** - Maintain coherent context across agent interactions with structured, type-safe state handling
+- **Production-Optimized Design** - Deploy with confidence using robust error handling, lifecycle hooks, and asynchronous processing
+- **Developer Productivity** - Accelerate development with clean, consistent interfaces and minimal boilerplate code
 
-The framework is designed to be extended by developers to create their own specialized agents. Example implementations like PlannerAgent and OrchestratorAgent are provided in the examples directory to demonstrate how to use the framework.
+## Ideal For
 
-## Example: Orchestrator and Planner
+- **AI Research Teams** - Accelerate experimentation with complex agent architectures while maintaining research-grade code quality
+- **Enterprise AI Departments** - Implement production-ready agent systems that meet stringent reliability and scalability requirements
+- **Product Development Organizations** - Reduce time-to-market for AI-powered features with a framework designed for collaboration and maintainability
+- **System Integrators** - Deliver customized AI solutions that can adapt to evolving business requirements with minimal refactoring
 
-The framework's power is demonstrated in the examples directory, which includes an implementation of an OrchestratorAgent that can dynamically call a PlannerAgent as a tool:
+## Implementation Example
+
+Here's how easy it is to create a multi-agent workflow with Orqest:
 
 ```python
 import asyncio
-from examples.agents import GlobalState, OrchestratorAgent
+from examples.agents import GlobalState, OrchestratorAgent, PlannerAgent
 
-async def run_example():
-    # Create an orchestrator agent with a planner agent as a tool
-    orchestrator = OrchestratorAgent()
+# Create a planner agent
+planner = PlannerAgent()
 
-    # Initialize state with a user query
+# Create an orchestrator that can use the planner
+orchestrator = OrchestratorAgent()
+
+# Process a user query through the orchestrator
+async def process_query(query: str):
+    # Initialize state with user query
     state = GlobalState()
-    state.add_message("user", "What are the steps to bake a cake?")
-
-    # Run the orchestrator, which can dynamically call the planner
-    result_state = await orchestrator.run(state)
-
-    # The result includes a plan generated by the planner agent
-    print(result_state.plan)
+    state.add_message("user", query)
+    
+    # The orchestrator will automatically use the planner when needed
+    result = await orchestrator.run(state)
+    
+    return result
 
 # Run the example
-if __name__ == "__main__":
-    asyncio.run(run_example())
+query = "I need to plan a birthday party for a chocolate lover. Can you help?"
+result = asyncio.run(process_query(query))
+
+# Display the results
+print("Assistant response:", result.get_latest_assistant_message())
+if result.plan:
+    print("\nGenerated plan:")
+    for i, step in enumerate(result.plan, 1):
+        print(f"{i}. {step}")
 ```
 
-This example demonstrates how to use the Orqest framework to create and compose agents. The actual implementation of these agents can be found in the `examples/agents` directory. Behind the scenes, the OrchestratorAgent uses RunContext to pass the state to its tools, including when calling the PlannerAgent.
+## Core Capabilities
+
+### Agent Composition Framework
+Leverage a sophisticated composition model where agents can be assigned as tools to other agents, enabling dynamic orchestration without predefined interaction patterns. This architecture facilitates complex collaboration patterns that emerge naturally from your system design.
+
+### Flexible Execution Architecture
+Implement virtually any agent architecture required by your use case. From linear processing chains to complex directed graphs with feedback loops and conditional branching, Orqest provides the foundation for your specific implementation needs.
+
+### Comprehensive Lifecycle Management
+Integrate custom logic at any point in an agent's execution lifecycle through a powerful hooks system. Implement logging, performance monitoring, error handling, or domain-specific behaviors with precision and control.
+
+### Enterprise-Grade Error Handling
+Deploy with confidence using standardized error handling that includes severity classification, detailed context information, and configurable recovery strategies, significantly reducing debugging time and improving system reliability.
+
+### Structured State Management
+Maintain system coherence with a type-safe, structured approach to state management between agent interactions. This ensures consistent context propagation and eliminates an entire class of state-related errors common in complex agent systems.
+
+### High-Performance Asynchronous Processing
+Scale efficiently with native asyncio support, enabling concurrent operations and optimal resource utilization even under high load conditions.
 
 ## Getting Started
 
-1. Install the package:
-   ```
-   pip install orqest
-   ```
+### Installation
 
-2. Create your own agent by extending the BaseAgent class:
-   ```python
-   from pydantic import BaseModel, Field
-   from typing import List, Dict, Any
-   from orqest.agents.base_agent import BaseAgent, NoValidResponse
-   from orqest.errors import ErrorSeverity
-   
-   # Define your state model
-   class MyState(BaseModel):
-       messages: List[Dict[str, Any]] = Field(default_factory=list)
-       results: List[str] = Field(default_factory=list)
-   
-   class MyAgent(BaseAgent[MyState]):
-       def __init__(self):
-           super().__init__(
-               agent_name="my_agent",
-               output_type=MyState,
-               system_prompt="You are a specialized agent.",
-               retries=2
-           )
-       
-       async def run(self, state: MyState, **kwargs) -> MyState:
-           """Run the agent with the provided state.
-           
-           Args:
-               state: The current state of the conversation.
-               **kwargs: Additional keyword arguments to pass to the agent.
-               
-           Returns:
-               Updated state after the agent has processed it.
-           """
-           try:
-               # Analyze current state and determine next steps
-               prompt = f"""
-               Current state: {state.messages[-1] if state.messages else "No messages yet"}
-               
-               Please analyze the current state and determine the next steps.
-               """
-               
-               # Execute the agent
-               response = await self.agent.run(prompt, deps=state, **kwargs)
-               
-               # Process the response
-               return await self._process_agent_response(response, state)
-               
-           except Exception as e:
-               # Handle the error using standardized error handling
-               details = {
-                   "state_messages_count": len(state.messages),
-                   "error_type": type(e).__name__
-               }
-               
-               # Return a NoValidResponse with error information
-               return self._handle_agent_error(
-                   error=e,
-                   operation="run",
-                   severity=ErrorSeverity.ERROR,
-                   details=details
-               )
-           
-       async def _process_agent_response(self, response, state, **kwargs):
-           # Process the agent's response
-           pass
-   ```
+```bash
+pip install orqest
+```
 
-3. Use agents as tools for other agents with RunContext:
-   ```python
-   from pydantic import BaseModel, Field
-   from typing import List, Dict, Any
-   from pydantic_ai import RunContext
-   from orqest.agents.base_agent import BaseAgent, NoValidResponse
-   from orqest.errors import ErrorSeverity
-   
-   # Define your state models
-   class ChildState(BaseModel):
-       messages: List[Dict[str, Any]] = Field(default_factory=list)
-       
-   class ParentState(BaseModel):
-       messages: List[Dict[str, Any]] = Field(default_factory=list)
-       results: List[str] = Field(default_factory=list)
-   
-   # Define your child agent
-   class ChildAgent(BaseAgent[ChildState]):
-       # Implementation details...
-       pass
-   
-   # Define your parent agent that uses the child agent as a tool
-   class ParentAgent(BaseAgent[ParentState]):
-       def __init__(self):
-           self.child_agent = ChildAgent()
-           super().__init__(
-               agent_name="parent_agent",
-               output_type=ParentState,
-               system_prompt="You are a parent agent.",
-               deps_type=ParentState,  # Specify the type for RunContext
-               tools=[self._call_child_agent]
-           )
-       
-       async def run(self, state: ParentState, **kwargs) -> ParentState:
-           """Run the coordinator agent to manage the workflow.
-           
-           Args:
-               state: The current state of the conversation.
-               **kwargs: Additional keyword arguments to pass to the agent.
-               
-           Returns:
-               Updated state after the agent has processed it.
-           """
-           try:
-               # Analyze current state and determine next steps
-               prompt = f"""
-               Current workflow state: {state.plan if hasattr(state, 'plan') else []}
-               Current messages: {state.messages[-1] if state.messages else "No messages yet"}
-               
-               Please analyze the current workflow state and determine the next steps.
-               Consider what information is missing and what tools are available.
-               """
+### Implementation Guide
 
-               # Execute the agent
-               response = await self.agent.run(prompt, deps=state, message_history=state.messages, **kwargs)
-               
-               # Process the response
-               return await self._process_agent_response(response, state)
-               
-           except Exception as e:
-               # Handle the error using the standardized error handling
-               # Create error details
-               details = {
-                   "user_message": state.messages[-1]["content"] if state.messages else None,
-                   "state_messages_count": len(state.messages) if hasattr(state, 'messages') else 0,
-                   "state_plan_count": len(state.plan) if hasattr(state, 'plan') else 0
-               }
-               
-               # Return a NoValidResponse with error information
-               return self._handle_agent_error(
-                   error=e,
-                   operation="run",
-                   severity=ErrorSeverity.ERROR,
-                   details=details
-               )
-       
-       async def _call_child_agent(self, ctx: RunContext[ParentState], query: str):
-           # Access the parent state directly from the context
-           parent_state = ctx.deps
-           
-           # Add the query to the parent state if needed
-           parent_state.messages.append({"role": "user", "content": query})
-           
-           # Call the child agent with the state
-           result = await self.child_agent.run(parent_state)
-           
-           # Return the result
-           return {"result": result}
-   ```
-   
-   **Note on RunContext**: Orqest now uses RunContext from pydantic-ai to pass down the state when calling subagents. This eliminates the need to create temporary states and allows tools to access and update the global state directly. This approach provides several benefits:
-   
-   - **Shared State**: All agents and tools can access and modify the same state object
-   - **Simplified Code**: No need to manually transfer information between temporary states
-   - **Improved Consistency**: Ensures all components work with the same state data
-   - **Better Context Awareness**: Tools have access to the full context of the parent agent
+Create your first agent with this streamlined implementation:
 
-## Tutorials
+```python
+from orqest.agents.base_agent import BaseAgent
+from pydantic import BaseModel, Field
+from typing import List, Dict, Any
 
-To help you learn how to use Orqest, we've created a series of tutorial notebooks that guide you through the framework's features and capabilities. These tutorials are designed to be followed in sequence, starting with basic concepts and progressing to more advanced topics.
+# Define your state model
+class SimpleState(BaseModel):
+    messages: List[Dict[str, Any]] = Field(default_factory=list)
+    
+    def add_message(self, role: str, content: str):
+        self.messages.append({"role": role, "content": content})
+        
+    def get_latest_message(self):
+        return self.messages[-1]["content"] if self.messages else ""
 
-### Available Tutorials
+# Create your agent
+class SimpleAgent(BaseAgent[SimpleState]):
+    def __init__(self):
+        super().__init__(
+            agent_name="simple_agent",
+            output_type=SimpleState,
+            system_prompt="You are a helpful assistant."
+        )
+    
+    async def run(self, state: SimpleState, **kwargs) -> SimpleState:
+        # Get the user's query
+        query = state.get_latest_message()
+        
+        # Execute the agent
+        response = await self.agent.run(query, deps=state, **kwargs)
+        
+        # Process the response
+        return await self._process_agent_response(response, state)
+        
+    async def _process_agent_response(self, response, state, **kwargs):
+        # Add the response to the state
+        state.add_message("assistant", response.content)
+        return state
+```
 
-1. **Getting Started**: Introduction to the Orqest framework, including installation, basic concepts, and a simple example of creating and running an agent.
+## Documentation & Resources
 
-2. **Creating Custom Agents**: Learn how to extend the BaseAgent class to create your own specialized agents, implement the required methods, and add tools.
+Access our comprehensive documentation to maximize your implementation success:
 
-3. **State Management**: Understand how to define state models with Pydantic, validate and transform state, manage conversation history, and share state between agents.
+1. **Framework Fundamentals**: Core concepts and architectural principles
+2. **Agent Development Guide**: Designing and implementing specialized agents
+3. **State Management Patterns**: Advanced techniques for context management
+4. **Composition Strategies**: Hierarchical agent composition for complex workflows
+5. **Lifecycle Management**: Leveraging hooks for custom processing logic
+6. **Error Handling Protocols**: Implementing robust error management
+7. **Orchestration Patterns**: Building flexible, adaptive agent systems
 
-4. **Agent Composition**: Discover how to create agent tools, use RunContext for state passing, compose agents hierarchically, and build dynamic orchestration patterns.
+## Community & Collaboration
 
-5. **Lifecycle Hooks**: Explore how to inject custom logic at different points in an agent's lifecycle, use middleware for cross-cutting concerns, and create reusable hooks.
+Orqest is under active development by a dedicated team committed to advancing the state of AI agent orchestration. We welcome professional collaboration and contributions.
 
-6. **Error Handling**: Learn how to create robust agents that handle errors gracefully, use the error hierarchy, create and handle errors, and use error context.
+- **Contribute**: Submit pull requests or propose enhancements via our GitHub repository
+- **Engage**: Participate in technical discussions and knowledge sharing
+- **Implement**: Explore our reference implementations and case studies
 
-7. **Flexible Orchestration**: Build dynamic orchestration patterns without hardcoded agent graphs, using the FlexibleOrchestratorAgent and agent tools.
+## License
 
-### Using the Tutorials
-
-The tutorials are available as Jupyter notebooks in the `docs/tutorials/notebooks` directory. To use them:
-
-1. Install Jupyter:
-   ```
-   pip install jupyter
-   ```
-
-2. Open the notebooks in Jupyter:
-   ```
-   jupyter notebook docs/tutorials/notebooks/
-   ```
-
-The tutorials are also available as Python scripts (`.py` files) in the same directory, which can be useful for version control and code review.
-
-For more information about the tutorials, see the [Tutorials README](docs/tutorials/README.md).
-
-## Contributing
-
-Contributions are welcome! This framework is in active development, and we're looking for feedback and improvements.
+Orqest is enterprise-ready open-source software licensed under the [MIT license](LICENSE).
