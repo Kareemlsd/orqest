@@ -83,7 +83,7 @@ class OrchestratorAgent(BaseAgent[GlobalState]):
             Use the tools strategically based on the current workflow state and user needs.
             """
 
-    async def run(self, state: GlobalState, **kwargs) -> GlobalState:
+    async def _run_implementation(self, state: GlobalState, **kwargs) -> GlobalState:
         """Run the coordinator agent to manage the workflow.
         
         Args:
@@ -111,7 +111,7 @@ class OrchestratorAgent(BaseAgent[GlobalState]):
             state.chat_history.extend(response.all_messages())
 
             # Process the response
-            return await self._process_agent_response(response, state)
+            return await self._process_response_implementation(response, state, **kwargs)
             
         except Exception as e:
             # Handle the error using the standardized error handling
@@ -127,7 +127,7 @@ class OrchestratorAgent(BaseAgent[GlobalState]):
             # Return a NoValidResponse with error information
             return self._handle_agent_error(
                 error=e,
-                operation="run",
+                operation="_run_implementation",
                 severity=ErrorSeverity.ERROR,
                 details=details
             )
@@ -218,7 +218,7 @@ class OrchestratorAgent(BaseAgent[GlobalState]):
                 exception=e
             )
         
-    async def _process_agent_response(self, response, state: GlobalState, **kwargs) -> GlobalState:
+    async def _process_response_implementation(self, response, state: GlobalState, **kwargs) -> GlobalState:
         """Process the agent response and update the state.
         
         Args:
@@ -262,7 +262,7 @@ class OrchestratorAgent(BaseAgent[GlobalState]):
                 error = ValueError(error_msg)
                 invalid_response = self._handle_agent_error(
                     error=error,
-                    operation="_process_agent_response",
+                    operation="_process_response_implementation",
                     severity=ErrorSeverity.WARNING,
                     details=details
                 )
@@ -290,7 +290,7 @@ class OrchestratorAgent(BaseAgent[GlobalState]):
             # Return a NoValidResponse with error information
             return self._handle_agent_error(
                 error=e,
-                operation="_process_agent_response",
+                operation="_process_response_implementation",
                 severity=ErrorSeverity.ERROR,
                 details=details
             )

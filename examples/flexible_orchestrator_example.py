@@ -46,12 +46,12 @@ class LoggingMiddleware(Middleware):
         return result
     
     async def pre_process_response(self, response: Any, state: BaseModel, **kwargs) -> tuple[Any, BaseModel]:
-        """Execute before the agent's _process_agent_response method is called."""
+        """Execute before the agent's _process_response_implementation method is called."""
         self.logger.info(f"Processing response: {response}")
         return response, state
     
     async def post_process_response(self, response: Any, state: BaseModel, result: Any, **kwargs) -> Any:
-        """Execute after the agent's _process_agent_response method is called."""
+        """Execute after the agent's _process_response_implementation method is called."""
         self.logger.info(f"Finished processing response with result: {result}")
         return result
     

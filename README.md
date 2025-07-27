@@ -127,7 +127,7 @@ class SimpleAgent(BaseAgent[SimpleState]):
             system_prompt="You are a helpful assistant."
         )
     
-    async def run(self, state: SimpleState, **kwargs) -> SimpleState:
+    async def _run_implementation(self, state: SimpleState, **kwargs) -> SimpleState:
         # Get the user's query
         query = state.get_latest_message()
         
@@ -135,9 +135,9 @@ class SimpleAgent(BaseAgent[SimpleState]):
         response = await self.agent.run(query, deps=state, **kwargs)
         
         # Process the response
-        return await self._process_agent_response(response, state)
+        return await self._process_response_implementation(response, state, **kwargs)
         
-    async def _process_agent_response(self, response, state, **kwargs):
+    async def _process_response_implementation(self, response, state: SimpleState, **kwargs) -> SimpleState:
         # Add the response to the state
         state.add_message("assistant", response.content)
         return state

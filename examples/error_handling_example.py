@@ -152,7 +152,7 @@ class ErrorDemoAgent(BaseAgent[GlobalState]):
             state.add_message("assistant", "No error was simulated")
             return state
     
-    async def _process_agent_response(self, response, state: GlobalState, **kwargs) -> GlobalState:
+    async def _process_response_implementation(self, response, state: GlobalState, **kwargs) -> GlobalState:
         """Process the agent response.
         
         This is a required method for BaseAgent subclasses, but we don't use it
