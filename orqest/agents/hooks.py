@@ -115,48 +115,41 @@ class HookRegistry:
             hook_point = HookPoint(hook_point)
             
         return self._hooks[hook_point]
-    
+
     async def execute_hooks(
-        self, 
-        hook_point: Union[HookPoint, str], 
-        *args: Any, 
-        **kwargs: Any
+            self,
+            hook_point: Union[HookPoint, str],
+            *args: Any,
+            **kwargs: Any
     ) -> Any:
-        """Execute all hooks for a hook point.
-        
-        Args:
-            hook_point: The hook point to execute hooks for.
-            *args: Positional arguments to pass to the hooks.
-            **kwargs: Keyword arguments to pass to the hooks.
-            
-        Returns:
-            The result of the last hook executed, or the first argument if no hooks are registered.
-        """
+        """Execute all hooks for a hook point."""
         if isinstance(hook_point, str):
             hook_point = HookPoint(hook_point)
-            
+
         hooks = self._hooks[hook_point]
-        
-        # If no hooks are registered, return the first argument
+
+        # If no hooks are registered
         if not hooks and args:
+            # Special case for response-processing hooks: always return a tuple
+            if hook_point in {HookPoint.PRE_PROCESS_RESPONSE, HookPoint.POST_PROCESS_RESPONSE}:
+                if len(args) >= 2:
+                    return args[0], args[1]  # (response, state)
+                else:
+                    raise ValueError(f"{hook_point} requires at least (response, state) arguments.")
             return args[0]
-        
+
         # Execute hooks in priority order
         result = args[0] if args else None
-        
+
         for hook in hooks:
             hook_func = hook["func"]
-            
-            # Check if the hook function is a coroutine function
+
             if inspect.iscoroutinefunction(hook_func):
-                # If it's a coroutine function, await it
                 result = await hook_func(*args, **kwargs)
             else:
-                # If it's a regular function, call it
                 result = hook_func(*args, **kwargs)
-        
-        return result
 
+        return result
 
 class Middleware:
     """Base class for middleware.

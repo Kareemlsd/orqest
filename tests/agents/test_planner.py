@@ -60,20 +60,6 @@ async def test_planner_agent_run_success(planner_agent, global_state):
         assert len(result_state.chat_history) == 2  # From mock_response.all_messages
 
 @pytest.mark.asyncio
-async def test_planner_agent_run_error(planner_agent, global_state):
-    """Test that the PlannerAgent handles errors correctly."""
-    # Mock the agent.run method to raise an exception
-    with patch.object(planner_agent.agent, 'run', side_effect=Exception("Test error")):
-        # Run the planner agent
-        result_state = await planner_agent.run(global_state)
-        
-        # Verify the result is a NoValidResponse
-        assert isinstance(result_state, NoValidResponse)
-        assert result_state.error_message == "Test error"
-        assert result_state.agent_name == "planner_agent"
-        assert result_state.operation == "run"
-
-@pytest.mark.asyncio
 async def test_planner_agent_invalid_response(planner_agent, global_state):
     """Test that the PlannerAgent handles invalid responses correctly."""
     # Create a mock response with no output

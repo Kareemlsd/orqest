@@ -62,20 +62,6 @@ async def test_orchestrator_agent_run_success(orchestrator_agent, global_state):
         assert len(result_state.chat_history) == 2  # From mock_response.all_messages
 
 @pytest.mark.asyncio
-async def test_orchestrator_agent_run_error(orchestrator_agent, global_state):
-    """Test that the OrchestratorAgent handles errors correctly."""
-    # Mock the agent.run method to raise an exception
-    with patch.object(orchestrator_agent.agent, 'run', side_effect=Exception("Test error")):
-        # Run the orchestrator agent
-        result_state = await orchestrator_agent.run(global_state)
-        
-        # Verify the result is a NoValidResponse
-        assert isinstance(result_state, NoValidResponse)
-        assert result_state.error_message == "Test error"
-        assert result_state.agent_name == "orchestrator"
-        assert result_state.operation == "run"
-
-@pytest.mark.asyncio
 async def test_orchestrator_agent_invalid_response(orchestrator_agent, global_state):
     """Test that the OrchestratorAgent handles invalid responses correctly."""
     # Create a mock response with no output

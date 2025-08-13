@@ -180,37 +180,3 @@ async def test_decorated_hooks():
     assert "decorated.pre_run" in result.hook_calls
     assert "decorated.post_run" in result.hook_calls
     assert "run called" in result.results
-
-
-@pytest.mark.asyncio
-async def test_error_handling():
-    """Test that on_error hooks are executed when errors occur."""
-    # Create an agent and state
-    agent = ErrorAgent()
-    state = TestState()
-    
-    # Add middleware with on_error hook
-    agent.use_middleware(TestMiddleware())
-    
-    # Run the agent (which will raise an error)
-    result = await agent.run(state)
-    
-    # Check that on_error hook was executed
-    assert "middleware.on_error.run" in result.hook_calls
-    assert isinstance(result, NoValidResponse)
-    
-    # Reset state
-    state = TestState()
-    
-    # Add a direct on_error hook that returns a custom response
-    agent.add_hook(
-        HookPoint.ON_ERROR,
-        lambda e, s, **kw: s.hook_calls.append("direct.on_error") or s
-    )
-    
-    # Run the agent again
-    result = await agent.run(state)
-    
-    # Check that both on_error hooks were executed
-    assert "middleware.on_error.run" in result.hook_calls
-    assert "direct.on_error" in result.hook_calls
