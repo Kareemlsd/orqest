@@ -144,10 +144,13 @@ class HookRegistry:
         for hook in hooks:
             hook_func = hook["func"]
 
+            # Prepare arguments for chaining: result as first arg, then rest of original args
+            hook_args = (result,) + args[1:] if args else (result,)
+
             if inspect.iscoroutinefunction(hook_func):
-                result = await hook_func(*args, **kwargs)
+                result = await hook_func(*hook_args, **kwargs)
             else:
-                result = hook_func(*args, **kwargs)
+                result = hook_func(*hook_args, **kwargs)
 
         return result
 
