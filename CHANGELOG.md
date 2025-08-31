@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Agent Lifecycle Hooks
+  - Added hook points for agent lifecycle events (pre_run, post_run, pre_process_response, post_process_response, on_error)
+  - Implemented hook registry for registering and executing hooks
+  - Added middleware support for cross-cutting concerns
+  - Created decorator-based hook registration
+  - Updated BaseAgent to use template method pattern for hook execution
+  - Added comprehensive tests for the hook system
+  - Added documentation for the Agent Lifecycle Hooks feature
 - Standardized error handling system
   - Created a new `errors` module with a comprehensive error class hierarchy
   - Added error severity levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)

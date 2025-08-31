@@ -118,7 +118,7 @@ class FlexibleOrchestratorAgent(BaseAgent[GlobalState]):
             "message": "No tools are available. Please add some tools to the orchestrator agent."
         }
 
-    async def run(self, state: GlobalState, **kwargs) -> GlobalState:
+    async def _run_implementation(self, state: GlobalState, **kwargs) -> GlobalState:
         """Run the orchestrator agent to manage the workflow.
         
         Args:
@@ -146,7 +146,7 @@ class FlexibleOrchestratorAgent(BaseAgent[GlobalState]):
             state.chat_history.extend(response.all_messages())
 
             # Process the response
-            return await self._process_agent_response(response, state)
+            return await self._process_response_implementation(response, state, **kwargs)
             
         except Exception as e:
             # Handle the error using the standardized error handling
@@ -162,12 +162,12 @@ class FlexibleOrchestratorAgent(BaseAgent[GlobalState]):
             # Return a NoValidResponse with error information
             return self._handle_agent_error(
                 error=e,
-                operation="run",
+                operation="_run_implementation",
                 severity=ErrorSeverity.ERROR,
                 details=details
             )
         
-    async def _process_agent_response(self, response, state: GlobalState, **kwargs) -> GlobalState:
+    async def _process_response_implementation(self, response, state: GlobalState, **kwargs) -> GlobalState:
         """Process the agent response and update the state.
         
         Args:
@@ -211,7 +211,7 @@ class FlexibleOrchestratorAgent(BaseAgent[GlobalState]):
                 error = ValueError(error_msg)
                 invalid_response = self._handle_agent_error(
                     error=error,
-                    operation="_process_agent_response",
+                    operation="_process_response_implementation",
                     severity=ErrorSeverity.WARNING,
                     details=details
                 )
@@ -239,7 +239,7 @@ class FlexibleOrchestratorAgent(BaseAgent[GlobalState]):
             # Return a NoValidResponse with error information
             return self._handle_agent_error(
                 error=e,
-                operation="_process_agent_response",
+                operation="_process_response_implementation",
                 severity=ErrorSeverity.ERROR,
                 details=details
             )
