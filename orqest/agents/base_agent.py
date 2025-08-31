@@ -239,7 +239,7 @@ class BaseAgent(Generic[OutputT]):
                 ))
                 
                 # If a hook returned a value, use it as the response
-                if hook_result is not error:
+                if hook_result is not None:
                     return hook_result
             except Exception as hook_error:
                 # Log the error from the hook
