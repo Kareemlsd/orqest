@@ -73,6 +73,8 @@ class BaseAgent(Generic[OutputT]):
         output_type : The type of the output state.
         retries : Number of retries for failed agent executions.
         tools : List of tools that the agent can use for execution.
+        history_processor : Optional function to process the message history.
+        deps_type : Optional Pydantic model defining dependencies required by the agent.
         model : The LLM to use for agent execution (initialized lazily)
         hooks : Registry for lifecycle hooks
     """
@@ -85,6 +87,8 @@ class BaseAgent(Generic[OutputT]):
             retries: int = 3,
             deps_type: Optional[Type[BaseModel]] = None,
             tools: Optional[List[Tool]] = None,
+            history_processors: Optional[Callable[[List[Document]], List[Document]]] = None,
+            agent: Optional[Agent] = None,
     ):
         """Initialize the BaseAgent instance."""
         self.agent_name = agent_name
@@ -93,8 +97,9 @@ class BaseAgent(Generic[OutputT]):
         self.retries = retries
         self.tools = [Tool(tool) for tool in tools] if tools else []
         self.deps_type = deps_type
+        self.history_processors = history_processors
         self._model = None
-        self._agent = None
+        self._agent = agent
         self._hooks = HookRegistry()
         self._middleware: List[Middleware] = []
         
@@ -256,7 +261,7 @@ class BaseAgent(Generic[OutputT]):
 
     @property
     def agent(self):
-        """Initialize and return the agent."""
+        """Initialize and return the agent. If no agent is provided, create a default one."""
         if self._agent is None:
             self._agent = Agent(
                 name=self.agent_name,
@@ -264,6 +269,7 @@ class BaseAgent(Generic[OutputT]):
                 output_type=self.output_type,
                 tools=self.tools,
                 model=self.model,
+                history_processors=self.history_processors
             )
         return self._agent
 
