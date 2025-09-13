@@ -7,7 +7,6 @@ from pydantic_ai.providers.openai import OpenAIProvider
 
 logger = logging.getLogger(__name__)
 
-
 def model(**kwargs) -> OpenAIModel:
     """Initialize and return the OpenAI model."""
     model = OpenAIModel(

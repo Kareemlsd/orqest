@@ -89,6 +89,7 @@ class BaseAgent(Generic[OutputT]):
             tools: Optional[List[Tool]] = None,
             history_processors: Optional[Callable[[List[Document]], List[Document]]] = None,
             agent: Optional[Agent] = None,
+            model: Optional[Callable] = None,
     ):
         """Initialize the BaseAgent instance."""
         self.agent_name = agent_name
@@ -98,7 +99,7 @@ class BaseAgent(Generic[OutputT]):
         self.tools = [Tool(tool) for tool in tools] if tools else []
         self.deps_type = deps_type
         self.history_processors = history_processors
-        self._model = None
+        self._model = model
         self._agent = agent
         self._hooks = HookRegistry()
         self._middleware: List[Middleware] = []
