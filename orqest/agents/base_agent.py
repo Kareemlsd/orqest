@@ -104,15 +104,16 @@ class BaseAgent(Generic[OutputT]):
         self.retries = retries
         self.tools = [Tool(tool) for tool in tools] if tools else []
         self.deps_type = deps_type
+        self._history_processors = history_processors
         self._model = model
         self._agent = agent
         self._hooks = HookRegistry()
         self._middleware: List[Middleware] = []
 
-        if self.history_processors is None:
-            self.history_processors = [self.keep_recent_messages]
+        if self._history_processors is None:
+            self._history_processors = [self.keep_recent_messages]
         else:
-            self.history_processors = [*history_processors] if isinstance(history_processors, list) else [history_processors]
+            self._history_processors = [*history_processors] if isinstance(history_processors, list) else [history_processors]
         
         # Register hooks from methods decorated with @hook
         self._register_decorated_hooks()
@@ -134,7 +135,7 @@ class BaseAgent(Generic[OutputT]):
                 output_type=self.output_type,
                 tools=self.tools,
                 model=self.model,
-                history_processors=self.history_processors
+                history_processors=self._history_processors
             )
         return self._agent
 
@@ -417,19 +418,55 @@ class BaseAgent(Generic[OutputT]):
 
         return response
 
-    async def keep_recent_messages(
-            self,
-            messages: List[ModelMessage],
-            max_messages: int = 10
-    ) -> List[ModelMessage]:
-        """Keep only the most recent messages in the history.
+    def _is_tool_return(self, msg: ModelMessage) -> bool:
+        parts = getattr(msg, "parts", []) or []
+        return bool(parts) and isinstance(parts[0], ToolReturnPart)
 
-        Args:
-            messages: The list of messages to process.
-            max_messages: The maximum number of recent messages to keep.
+    def _is_assistant_with_tool_calls(self, msg: ModelMessage) -> bool:
+        return getattr(msg, "role", None) == "assistant" and bool(getattr(msg, "tool_calls", None))
 
-        Returns:
-            A list of the most recent messages.
+    async def keep_recent_messages(self, messages: List[ModelMessage]) -> List[ModelMessage]:
         """
-        return messages[-max_messages:] if len(messages) > max_messages else messages
+        Keep only the most recent messages, repairing tool-call groupings so that
+        a tool message is never first and is always preceded by an assistant message
+        with matching tool_calls.
+        """
+        n = getattr(self, "truncated_history", 100)
+
+        # 1) Keep the most recent n (tail), not head
+        truncated = messages[-n:] if len(messages) > n else list(messages)
+
+        if not truncated:
+            return truncated
+
+        # 2) If the slice starts with a tool return, try to prepend the matching assistant(tool_calls)
+        if self._is_tool_return(truncated[0]):
+            start_idx = len(messages) - len(truncated)  # index of truncated[0] in full list
+
+            # Walk backward to find assistant with tool_calls
+            found_assistant_idx: Optional[int] = None
+            i = start_idx - 1
+            while i >= 0:
+                m = messages[i]
+                if self._is_assistant_with_tool_calls(m):
+                    found_assistant_idx = i
+                    break
+                # If we see earlier tool returns, keep walking back; anything else breaks
+                if not self._is_tool_return(m):
+                    break
+                i -= 1
+
+            if found_assistant_idx is not None:
+                # Prepend the assistant (and any tool returns we walked over are already before it)
+                truncated = messages[found_assistant_idx: start_idx] + truncated
+            else:
+                # Couldn’t find a valid assistant; strip leading orphan tool returns
+                while truncated and self._is_tool_return(truncated[0]):
+                    truncated.pop(0)
+
+        # 3) Final guard: never start with a tool message
+        while truncated and self._is_tool_return(truncated[0]):
+            truncated.pop(0)
+
+        return truncated
 
