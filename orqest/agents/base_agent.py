@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Type, TypeVar, Union, Generic, Cal
 from langchain_core.documents import Document
 from pydantic import BaseModel, Field
 from pydantic_ai import Tool, Agent, RunContext, ModelRetry
-from pydantic_ai.messages import ModelMessage
+from pydantic_ai.messages import ModelMessage, ToolReturnPart, ToolCallPart
 
 from orqest.utils.llm_model import model as get_model
 from orqest.errors import (
