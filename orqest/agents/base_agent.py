@@ -88,8 +88,10 @@ class BaseAgent(Generic[OutputT]):
             retries: int = 3,
             deps_type: Optional[Type[BaseModel]] = None,
             tools: Optional[List[Tool]] = None,
+            toolsets: Optional[List[Any]] = None,
             agent: Optional[Agent] = None,
             model: Optional[Callable] = None,
+            truncated_history: int = 100,
             history_processors: Optional[
                 Union[
                     Callable[[List[ModelMessage]], List[ModelMessage]],
@@ -103,7 +105,9 @@ class BaseAgent(Generic[OutputT]):
         self.output_type = output_type
         self.retries = retries
         self.tools = [Tool(tool) for tool in tools] if tools else []
+        self.toolsets = [toolset for toolset in toolsets] if toolsets else []
         self.deps_type = deps_type
+        self.truncated_history = truncated_history
         self._history_processors = history_processors
         self._model = model
         self._agent = agent
@@ -134,6 +138,7 @@ class BaseAgent(Generic[OutputT]):
                 system_prompt=self.system_prompt,
                 output_type=self.output_type,
                 tools=self.tools,
+                toolsets=self.toolsets,
                 model=self.model,
                 history_processors=self._history_processors
             )

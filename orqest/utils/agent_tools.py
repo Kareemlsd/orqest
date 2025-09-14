@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Union, Aw
 from pydantic import BaseModel
 from pydantic_ai import RunContext
 
-from orqest.agents.base_agent import BaseAgent, NoValidResponse
+from orqest.agents import BaseAgent, NoValidResponse
 
 logger = logging.getLogger(__name__)
 
