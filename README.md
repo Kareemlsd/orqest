@@ -42,9 +42,6 @@ Here's how easy it is to create a multi-agent workflow with Orqest:
 import asyncio
 from examples.agents import GlobalState, OrchestratorAgent, PlannerAgent
 
-# Create a planner agent
-planner = PlannerAgent()
-
 # Create an orchestrator that can use the planner
 orchestrator = OrchestratorAgent()
 
@@ -60,15 +57,20 @@ async def process_query(query: str):
     return result
 
 # Run the example
-query = "I need to plan a birthday party for a chocolate lover. Can you help?"
-result = asyncio.run(process_query(query))
+async def main():
+    query = "I need to plan a birthday party for a chocolate lover. Can you help?"
+    result = await process_query(query)
+    
+    # Display the results
+    print("Assistant response:", result.get_latest_assistant_message())
+    if result.plan:
+        print("\nGenerated plan:")
+        for i, step in enumerate(result.plan, 1):
+            print(f"{i}. {step}")
 
-# Display the results
-print("Assistant response:", result.get_latest_assistant_message())
-if result.plan:
-    print("\nGenerated plan:")
-    for i, step in enumerate(result.plan, 1):
-        print(f"{i}. {step}")
+# Run the example
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ## Core Capabilities
@@ -93,67 +95,167 @@ Scale efficiently with native asyncio support, enabling concurrent operations an
 
 ## Getting Started
 
+## Getting Started
+
 ### Installation
+
+Before installing Orqest, ensure you have Python 3.12 or higher. Then install using pip:
 
 ```bash
 pip install orqest
 ```
 
-### Implementation Guide
+Or clone and install from source for development:
+
+```bash
+git clone https://github.com/Kareemlsd/orqest.git
+cd orqest
+pip install -e .
+```
+
+### Configuration
+
+Before using Orqest, configure your environment variables. Create a `.env` file in your project root:
+
+```bash
+# Required for LLM operations
+LLM_API_KEY=your_openai_api_key_here
+LLM_MODEL=gpt-3.5-turbo
+
+# Optional: for embeddings
+EMBEDDING_API_KEY=your_embedding_api_key_here
+EMBEDDING_MODEL=text-embedding-ada-002
+```
+
+Alternatively, set environment variables directly:
+
+```bash
+export LLM_API_KEY=your_openai_api_key_here
+export LLM_MODEL=gpt-3.5-turbo
+```
+
+### Quick Start with Examples
+
+To get started quickly, run one of the included examples:
+
+```bash
+# Set up your environment
+export LLM_API_KEY=your_openai_api_key
+export LLM_MODEL=gpt-3.5-turbo
+
+# Run the lifecycle hooks example
+python examples/lifecycle_hooks_example.py
+```
+
+### Creating Custom Agents
 
 Create your first agent with this streamlined implementation:
 
 ```python
-from orqest.agents.base_agent import BaseAgent
-from pydantic import BaseModel, Field
-from typing import List, Dict, Any
-
-# Define your state model
-class SimpleState(BaseModel):
-    messages: List[Dict[str, Any]] = Field(default_factory=list)
-    
-    def add_message(self, role: str, content: str):
-        self.messages.append({"role": role, "content": content})
-        
-    def get_latest_message(self):
-        return self.messages[-1]["content"] if self.messages else ""
+import asyncio
+from orqest.agents import BaseAgent, GlobalState, NoValidResponse
+from typing import Union
 
 # Create your agent
-class SimpleAgent(BaseAgent[SimpleState]):
+class SimpleAgent(BaseAgent[GlobalState]):
     def __init__(self):
         super().__init__(
             agent_name="simple_agent",
-            output_type=SimpleState,
-            system_prompt="You are a helpful assistant."
+            system_prompt="You are a helpful assistant.",
+            output_type=Union[GlobalState, NoValidResponse],
+            retries=2
         )
     
-    async def _run_implementation(self, state: SimpleState, **kwargs) -> SimpleState:
+    async def _run_implementation(self, state: GlobalState, **kwargs) -> GlobalState:
         # Get the user's query
-        query = state.get_latest_message()
+        user_message = state.get_latest_user_message()
+        if not user_message:
+            return state
         
-        # Execute the agent
-        response = await self.agent.run(query, deps=state, **kwargs)
+        # Execute the agent with pydantic-ai
+        response = await self.agent.run(user_message, deps=state, **kwargs)
         
         # Process the response
         return await self._process_response_implementation(response, state, **kwargs)
         
-    async def _process_response_implementation(self, response, state: SimpleState, **kwargs) -> SimpleState:
+    async def _process_response_implementation(self, response, state: GlobalState, **kwargs) -> GlobalState:
         # Add the response to the state
-        state.add_message("assistant", response.content)
+        if hasattr(response, 'data') and response.data:
+            state.add_message("assistant", str(response.data))
         return state
+
+# Usage example
+async def main():
+    # Create the agent
+    agent = SimpleAgent()
+    
+    # Create state and add a user message
+    state = GlobalState()
+    state.add_message("user", "Hello! Can you help me with a task?")
+    
+    # Run the agent
+    result = await agent.run(state)
+    
+    # Print the conversation
+    for message in result.messages:
+        print(f"{message['role']}: {message['content']}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### Using Agent Composition
+
+For complex workflows, use the agent composition pattern:
+
+```python
+import asyncio
+from examples.agents import GlobalState, OrchestratorAgent
+
+async def main():
+    # Create an orchestrator that manages other agents
+    orchestrator = OrchestratorAgent()
+    
+    # Initialize state with user query
+    state = GlobalState()
+    state.add_message("user", "Help me plan a project timeline")
+    
+    # Run the orchestrator
+    result = await orchestrator.run(state)
+    
+    # The orchestrator automatically uses specialized agents as needed
+    print("Response:", result.get_latest_assistant_message())
+    if result.plan:
+        print("\nGenerated plan:")
+        for i, step in enumerate(result.plan, 1):
+            print(f"{i}. {step}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ## Documentation & Resources
 
-Access our comprehensive documentation to maximize your implementation success:
+Explore our comprehensive resources to master Orqest:
 
-1. **Framework Fundamentals**: Core concepts and architectural principles
-2. **Agent Development Guide**: Designing and implementing specialized agents
-3. **State Management Patterns**: Advanced techniques for context management
-4. **Composition Strategies**: Hierarchical agent composition for complex workflows
-5. **Lifecycle Management**: Leveraging hooks for custom processing logic
-6. **Error Handling Protocols**: Implementing robust error management
-7. **Orchestration Patterns**: Building flexible, adaptive agent systems
+### Core Documentation
+- **[Examples Directory](examples/)**: Working examples demonstrating key concepts
+- **[Tutorials](docs/tutorials/)**: Step-by-step Jupyter notebooks covering framework fundamentals
+- **[Error Handling Guide](orqest/errors/README.md)**: Comprehensive error management patterns
+
+### Key Concepts
+1. **Agent Development**: Extend the `BaseAgent` class to create specialized agents
+2. **State Management**: Use structured Pydantic models for type-safe state handling
+3. **Agent Composition**: Leverage the "Agent as Tools" pattern for hierarchical workflows
+4. **Lifecycle Hooks**: Inject custom logic at any point in an agent's execution
+5. **Error Handling**: Implement robust error management with detailed context
+6. **Asynchronous Processing**: Build high-performance systems with native asyncio support
+
+### Example Usage Patterns
+- **Simple Agents**: Single-purpose agents for specific tasks
+- **Orchestrator Agents**: Multi-agent coordination and workflow management
+- **Flexible Composition**: Dynamic agent graphs that adapt to requirements
+- **Error Recovery**: Graceful handling of failures and edge cases
 
 ## Community & Collaboration
 
