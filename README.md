@@ -40,30 +40,30 @@ Here's how easy it is to create a multi-agent workflow with Orqest:
 
 ```python
 import asyncio
-from examples.agents import GlobalState, OrchestratorAgent, PlannerAgent
+from examples.agents import GlobalState, OrchestratorAgent
 
-# Create an orchestrator that can use the planner
+# Create an orchestrator that can use other agents as tools
 orchestrator = OrchestratorAgent()
 
-# Process a user query through the orchestrator
 async def process_query(query: str):
+    """Process a user query through the orchestrator."""
     # Initialize state with user query
     state = GlobalState()
     state.add_message("user", query)
     
-    # The orchestrator will automatically use the planner when needed
+    # The orchestrator will automatically use specialized agents when needed
     result = await orchestrator.run(state)
     
     return result
 
-# Run the example
 async def main():
+    """Main function demonstrating the framework."""
     query = "I need to plan a birthday party for a chocolate lover. Can you help?"
     result = await process_query(query)
     
     # Display the results
     print("Assistant response:", result.get_latest_assistant_message())
-    if result.plan:
+    if hasattr(result, 'plan') and result.plan:
         print("\nGenerated plan:")
         for i, step in enumerate(result.plan, 1):
             print(f"{i}. {step}")
@@ -71,6 +71,37 @@ async def main():
 # Run the example
 if __name__ == "__main__":
     asyncio.run(main())
+```
+
+**Note**: Orqest is built on asynchronous programming. All agent operations use `async/await` for optimal performance and concurrency.
+
+## Key Features in Action
+
+### 🔧 Agent Composition
+```python
+# Agents can use other agents as tools
+orchestrator = OrchestratorAgent()  # Automatically includes PlannerAgent
+```
+
+### 🚀 Lifecycle Hooks & Middleware
+```python
+# Add custom logic at any point in execution
+agent.add_hook(HookPoint.PRE_RUN, validate_input)
+agent.use_middleware(LoggingMiddleware())
+```
+
+### ⚡ Robust Error Handling
+```python
+# Structured error management with context
+from orqest.errors import AgentError, ErrorSeverity
+```
+
+### 📊 Structured State Management
+```python
+# Type-safe state with Pydantic models
+state = GlobalState()
+state.add_message("user", "Your message")
+latest = state.get_latest_user_message()
 ```
 
 ## Core Capabilities
@@ -156,20 +187,22 @@ import asyncio
 from orqest.agents import BaseAgent, GlobalState, NoValidResponse
 from typing import Union
 
-# Create your agent
 class SimpleAgent(BaseAgent[GlobalState]):
+    """A simple agent that responds to user messages."""
+    
     def __init__(self):
         super().__init__(
             agent_name="simple_agent",
-            system_prompt="You are a helpful assistant.",
+            system_prompt="You are a helpful assistant that provides concise, accurate responses.",
             output_type=Union[GlobalState, NoValidResponse],
             retries=2
         )
     
     async def _run_implementation(self, state: GlobalState, **kwargs) -> GlobalState:
-        # Get the user's query
+        """Run the agent's main logic."""
         user_message = state.get_latest_user_message()
         if not user_message:
+            state.add_message("assistant", "I didn't receive any message to respond to.")
             return state
         
         # Execute the agent with pydantic-ai
@@ -179,26 +212,37 @@ class SimpleAgent(BaseAgent[GlobalState]):
         return await self._process_response_implementation(response, state, **kwargs)
         
     async def _process_response_implementation(self, response, state: GlobalState, **kwargs) -> GlobalState:
-        # Add the response to the state
+        """Process the agent's response and update state."""
         if hasattr(response, 'data') and response.data:
-            state.add_message("assistant", str(response.data))
+            # Convert response to string and add to state
+            response_text = str(response.data)
+            state.add_message("assistant", response_text)
+        else:
+            state.add_message("assistant", "I apologize, but I couldn't generate a proper response.")
+        
         return state
 
 # Usage example
 async def main():
+    """Example usage of the SimpleAgent."""
     # Create the agent
     agent = SimpleAgent()
     
     # Create state and add a user message
     state = GlobalState()
-    state.add_message("user", "Hello! Can you help me with a task?")
+    state.add_message("user", "Hello! Can you help me understand what Orqest is?")
     
     # Run the agent
     result = await agent.run(state)
     
     # Print the conversation
+    print("Conversation:")
+    print("-" * 40)
     for message in result.messages:
-        print(f"{message['role']}: {message['content']}")
+        role = message['role'].title()
+        content = message['content']
+        print(f"{role}: {content}")
+        print()
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -256,6 +300,47 @@ Explore our comprehensive resources to master Orqest:
 - **Orchestrator Agents**: Multi-agent coordination and workflow management
 - **Flexible Composition**: Dynamic agent graphs that adapt to requirements
 - **Error Recovery**: Graceful handling of failures and edge cases
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+**ImportError: No module named 'orqest'**
+```bash
+pip install -e .  # If working from source
+# or
+pip install orqest  # For stable release
+```
+
+**Missing Environment Variables**
+```bash
+# Ensure your .env file contains:
+LLM_API_KEY=your_openai_api_key
+LLM_MODEL=gpt-3.5-turbo
+```
+
+**Agent Not Responding**
+- Verify your API key is valid and has sufficient credits
+- Check that the LLM_MODEL is supported by your API provider
+- Ensure your network connection allows API calls
+
+**State Management Issues**
+- Always use the GlobalState class for state management
+- Remember to call `state.add_message()` to add messages to conversation history
+- Use `state.get_latest_user_message()` to retrieve the most recent user input
+
+**Example Not Working**
+```bash
+# Make sure you're in the correct directory
+cd orqest
+
+# Set environment variables
+export LLM_API_KEY=your_key_here
+export LLM_MODEL=gpt-3.5-turbo
+
+# Run the example
+python examples/lifecycle_hooks_example.py
+```
 
 ## Community & Collaboration
 
