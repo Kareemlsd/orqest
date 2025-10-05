@@ -144,7 +144,7 @@ class BaseAgent(Generic[OutputT]):
             )
         return self._agent
 
-    async def run(self, state: BaseModel, **kwargs: Any) -> OutputT:
+    async def run(self, state: BaseModel, **kwargs: Any) -> Union[OutputT|NoValidResponse]:
         """Run the agent with the provided state.
 
         This method executes hooks before and after the agent's _run_implementation method.
@@ -164,14 +164,13 @@ class BaseAgent(Generic[OutputT]):
                 state,
                 **kwargs
             )
-            
-            # Run the agent implementation
+
+            # Run the agent's customized run implementation
             result = await self._run_implementation(modified_state, **kwargs)
             
             # Execute post_run hooks
             modified_result = await self._hooks.execute_hooks(
                 HookPoint.POST_RUN,
-                modified_state,
                 result,
                 **kwargs
             )
