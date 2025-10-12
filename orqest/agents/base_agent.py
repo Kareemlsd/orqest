@@ -5,7 +5,7 @@ from typing import Any, List, Optional, Type, TypeVar, Union, Generic, Callable
 
 from pydantic import BaseModel
 from pydantic_ai import Tool, Agent
-from pydantic_ai.messages import ModelMessage, ToolReturnPart
+from pydantic_ai.messages import ModelMessage, ToolReturnPart, ToolCallPart
 
 from orqest.utils.llm_model import model as get_model
 
@@ -91,7 +91,7 @@ class BaseAgent(Generic[OutputT]):
             )
         return self._agent
 
-    async def run(self, state: BaseModel, **kwargs: Any) -> Union[OutputT]:
+    async def run(self, state: BaseModel, **kwargs: Any) -> Union[OutputT, None]:
         """Run the agent with the provided state.
 
         This method executes hooks before and after the agent's _run_implementation method.
@@ -128,63 +128,28 @@ class BaseAgent(Generic[OutputT]):
             Updated state after the agent has processed it.
         """
 
-    @staticmethod
-    def _is_tool_return(msg: ModelMessage) -> bool:
-        parts = getattr(msg, "parts", []) or []
-        return bool(parts) and isinstance(parts[0], ToolReturnPart)
-
-    @staticmethod
-    def _is_assistant_with_tool_calls(msg: ModelMessage) -> bool:
-        return getattr(msg, "role", None) == "assistant" and bool(getattr(msg, "tool_calls", None))
-
-    async def keep_recent_messages(self, messages: List[ModelMessage]) -> List[ModelMessage]:
-        """
-        Keep only the most recent messages, repairing tool-call groupings so that
-        a tool message is never first and is always preceded by an assistant message
-        with matching tool_calls.
-        """
-        # Ensure system prompt is always included
+    async def keep_recent_messages(
+            self,
+            messages: List[ModelMessage]
+    ) -> List[ModelMessage]:
+        """Keep only the most recent messages, ensuring tool-call groupings are intact."""
+        # Always include the system prompt
         messages[0].parts[0].content = self.system_prompt
 
-        # Number of messages to keep
-        n = getattr(self, "truncated_history", 100)
+        # Truncate messages to the most recent `n`
+        n = self.truncated_history
+        truncated = messages[-n:] if len(messages) > n else messages
 
-        # 1) Keep the most recent n (tail), not head
-        truncated = messages[-n:] if len(messages) > n else list(messages)
-
-        if not truncated:
-            return truncated
-
-        # 2) If the slice starts with a tool return, try to prepend the matching assistant(tool_calls)
-        if self._is_tool_return(truncated[0]):
-            start_idx = len(messages) - len(truncated)  # index of truncated[0] in full list
-
-            # Walk backward to find assistant with tool_calls
-            found_assistant_idx: Optional[int] = None
-            i = start_idx - 1
-            while i >= 0:
-                m = messages[i]
-                if self._is_assistant_with_tool_calls(m):
-                    found_assistant_idx = i
+        # Repair tool-call groupings if needed
+        if truncated and isinstance(truncated[0].parts[0], ToolReturnPart):
+            for i in range(len(messages) - len(truncated) - 1, -1, -1):
+                if isinstance(messages[i].parts[0], ToolCallPart):
+                    truncated = messages[i:]
                     break
-                # If we see earlier tool returns, keep walking back; anything else breaks
-                if not self._is_tool_return(m):
-                    break
-                i -= 1
 
-            if found_assistant_idx is not None:
-                # Prepend the assistant (and any tool returns we walked over are already before it)
-                truncated = messages[found_assistant_idx: start_idx] + truncated
-            else:
-                # Couldn’t find a valid assistant; strip leading orphan tool returns
-                while truncated and self._is_tool_return(truncated[0]):
-                    truncated.pop(0)
+        # Ensure the first message is preserved
+        return [messages[0]] + truncated[1:] if len(truncated) > 1 else [messages[0]]
 
-        # 3) Final guard: never start with a tool message
-        while truncated and self._is_tool_return(truncated[0]):
-            truncated.pop(0)
 
-        # Finally, add the system prompt back to the head
-        truncated = [messages[0]] + truncated[1:] if len(truncated) > 1 else [messages[0]]
-        return truncated
-
+if __name__ == "__main__":
+    pass
