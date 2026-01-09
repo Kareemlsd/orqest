@@ -61,9 +61,9 @@ def model(**kwargs) -> OpenAIModel:
             **kwargs,
         )
     elif 'openrouter' in config.LLM_MODEL:
-        model_name = config.LLM_MODEL.split(':')
+        model_name = config.LLM_MODEL.split(':')[1]
         model = OpenRouterModel(
-            model_name=model_name[1],
+            model_name=model_name,
             provider=OpenRouterProvider(
                 api_key=config.LLM_API_KEY,
             ),
