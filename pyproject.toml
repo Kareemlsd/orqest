@@ -19,6 +19,14 @@ dependencies = [
   "python-dotenv>=1.1.1",
 ]
 
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["orqest*"]
+
 [dependency-groups]
 dev = [
     "pre-commit>=4.0.1",
