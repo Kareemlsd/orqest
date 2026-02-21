@@ -47,6 +47,10 @@ build/
 *.whl
 
 # -------------------------------
+# MkDocs build output
+site/
+
+# -------------------------------
 # Miscellaneous
 .mypy_cache/
 .pytest_cache/
