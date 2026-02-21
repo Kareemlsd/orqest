@@ -25,15 +25,17 @@ class TestLoadConfig:
 
     def test_raises_without_api_key(self, monkeypatch):
         monkeypatch.delenv("LLM_API_KEY", raising=False)
+        # Pass nonexistent dotenv_path to prevent loading the real .env
         with pytest.raises(ValueError, match="LLM_API_KEY"):
-            load_config()
+            load_config(dotenv_path="/nonexistent/.env")
 
     def test_defaults(self, monkeypatch):
         monkeypatch.setenv("LLM_API_KEY", "k")
         monkeypatch.delenv("LLM_MODEL", raising=False)
         monkeypatch.delenv("EMBEDDING_MODEL", raising=False)
         monkeypatch.delenv("EMBEDDING_API_KEY", raising=False)
-        config = load_config()
+        # Pass nonexistent dotenv_path to prevent loading the real .env
+        config = load_config(dotenv_path="/nonexistent/.env")
         assert config.llm_model == "openai:gpt-3.5-turbo"
         assert config.embedding_model == "all-MiniLM-L6-v2"
 

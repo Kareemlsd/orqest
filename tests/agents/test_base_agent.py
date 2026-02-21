@@ -43,7 +43,8 @@ class ConcreteAgent(BaseAgent["GlobalState", SimpleOutput]):
     """Minimal concrete agent for testing."""
 
     async def _run_implementation(self, state, **kwargs):
-        result = await self.agent.run("test")
+        prompt = state.get_latest_message("user") or "test"
+        result = await self.call_model(prompt, state)
         return result.output
 
 
@@ -207,5 +208,103 @@ class TestBaseAgentRun:
         )
         from orqest.agents.state import GlobalState
         state = GlobalState()
+        state.add_message("user", "hello")
         result = await agent.run(state)
         assert isinstance(result, SimpleOutput)
+
+
+# --- Multi-turn conversation tests ---
+
+class TestCallModel:
+    @pytest.mark.asyncio
+    async def test_populates_message_history(self, test_model):
+        """After one call_model(), state.message_history should be non-empty."""
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        from orqest.agents.state import GlobalState
+        state = GlobalState()
+        state.add_message("user", "hello")
+        await agent.run(state)
+        assert len(state.message_history) > 0
+
+    @pytest.mark.asyncio
+    async def test_accumulates_history(self, test_model):
+        """Two consecutive calls should accumulate message history."""
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        from orqest.agents.state import GlobalState
+        state = GlobalState()
+
+        # First turn
+        state.add_message("user", "first message")
+        await agent.run(state)
+        history_after_first = len(state.message_history)
+
+        # Second turn
+        state.add_message("user", "second message")
+        await agent.run(state)
+        history_after_second = len(state.message_history)
+
+        assert history_after_second > history_after_first
+
+    @pytest.mark.asyncio
+    async def test_returns_agent_run_result(self, test_model):
+        """call_model() should return a pydantic-ai AgentRunResult."""
+        from pydantic_ai.run import AgentRunResult
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        state.add_message("user", "hello")
+        result = await agent.call_model("hello", state)
+        assert isinstance(result, AgentRunResult)
+
+    @pytest.mark.asyncio
+    async def test_history_contains_request_and_response(self, test_model):
+        """After a call, history should contain both ModelRequest and ModelResponse."""
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        state.add_message("user", "hello")
+        await agent.run(state)
+
+        has_request = any(isinstance(m, ModelRequest) for m in state.message_history)
+        has_response = any(isinstance(m, ModelResponse) for m in state.message_history)
+        assert has_request
+        assert has_response
+
+    @pytest.mark.asyncio
+    async def test_empty_history_on_first_call(self, test_model):
+        """First call should work with empty message_history."""
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        assert state.message_history == []
+        state.add_message("user", "hello")
+        output = await agent.run(state)
+        assert isinstance(output, SimpleOutput)

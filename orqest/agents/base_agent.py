@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from pydantic_ai import Agent, Tool
 from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse
 from pydantic_ai.models import Model
+from pydantic_ai.run import AgentRunResult
 
 from orqest.utils.llm_model import resolve_model
 
@@ -156,6 +157,22 @@ class BaseAgent(Generic[StateT, OutputT]):
                 history_processors=self._history_processors,
             )
         return self._agent
+
+    async def call_model(self, prompt: str, state: StateT) -> AgentRunResult:
+        """Run the pydantic-ai agent with conversation history from state.
+
+        Passes state.message_history into Agent.run() and stores the updated
+        history back on state after the run. This is the recommended way to
+        call the LLM from _run_implementation() when you want multi-turn
+        conversation support.
+
+        For stateless one-shot calls, use self.agent.run() directly instead.
+        """
+        history = getattr(state, "message_history", None) or None
+        result = await self.agent.run(prompt, message_history=history)
+        if hasattr(state, "message_history"):
+            state.message_history = result.all_messages()
+        return result
 
     async def run(self, state: StateT, **kwargs: Any) -> OutputT:
         """Execute the agent. Exceptions propagate to the caller."""

@@ -1,3 +1,5 @@
+from pydantic_ai.messages import ModelRequest, ModelResponse, UserPromptPart, TextPart
+
 from orqest.agents.state import GlobalState
 
 
@@ -49,3 +51,18 @@ class TestGetLatestMessage:
         state = GlobalState()
         state.add_message("system", "you are helpful")
         assert state.get_latest_message("system") == "you are helpful"
+
+
+class TestMessageHistory:
+    def test_stores_model_messages(self):
+        state = GlobalState()
+        req = ModelRequest(parts=[UserPromptPart("hello")])
+        resp = ModelResponse(parts=[TextPart("hi there")])
+        state.message_history = [req, resp]
+        assert len(state.message_history) == 2
+        assert isinstance(state.message_history[0], ModelRequest)
+        assert isinstance(state.message_history[1], ModelResponse)
+
+    def test_empty_by_default(self):
+        state = GlobalState()
+        assert state.message_history == []

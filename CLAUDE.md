@@ -13,9 +13,10 @@ orqest/
 ├── __init__.py              # Re-exports OrqestConfig, load_config, get_default_config
 ├── config.py                # OrqestConfig dataclass + load_config() factory
 ├── agents/
-│   ├── __init__.py          # Re-exports BaseAgent, GlobalState, keep_recent_messages
+│   ├── __init__.py          # Re-exports BaseAgent, GlobalState, as_tool, keep_recent_messages
 │   ├── base_agent.py        # BaseAgent[StateT, OutputT] + keep_recent_messages()
-│   └── state.py             # GlobalState — shared conversation state
+│   ├── state.py             # GlobalState — shared conversation state
+│   └── tool_wrapper.py      # as_tool() — wrap a BaseAgent as a pydantic-ai Tool
 ├── utils/
 │   └── llm_model.py         # resolve_model() — mapping-based multi-provider routing
 └── io_utils/
@@ -26,15 +27,18 @@ tests/                       # Mirrors source layout
 ├── test_config.py
 ├── agents/
 │   ├── test_base_agent.py
-│   └── test_state.py
+│   ├── test_state.py
+│   └── test_tool_wrapper.py
 ├── utils/
 │   └── test_llm_model.py
 └── io_utils/
     └── test_load_sys_prompt.py
 
 examples/                    # Numbered subfolders, progressively advanced
-└── 01_basic_agent/          # Single agent with structured output
-    └── basic_agent.ipynb
+├── 01_basic_agent/          # Single agent with structured output
+│   └── basic_agent.ipynb
+└── 02_agent_as_tool/        # Agent-as-tool composition pattern
+    └── agent_as_tool.ipynb
 ```
 
 ## Key Conventions
@@ -73,14 +77,14 @@ python -m build
 - `keep_recent_messages()` — pure function for history truncation with turn integrity repair
 - `GlobalState` for conversation tracking with `get_latest_message(role)`
 - `resolve_model()` — mapping-based multi-provider routing (OpenAI, Anthropic, Google, OpenRouter)
+- `as_tool()` — wrap any BaseAgent as a pydantic-ai Tool for stateless orchestrator invocation
 - `load_sys_prompt()` — system prompt file loader utility
-- Test suite with 47 tests covering all modules
+- Test suite with 61 tests covering all modules
 
 ## What Does NOT Exist Yet
 
-- Multi-agent orchestration / composition
-- Workflow or pipeline primitives
-- Agent-as-tool patterns
+- Sequential pipeline primitives
+- Context scoping
 - Observability / tracing
 - CI/CD
 

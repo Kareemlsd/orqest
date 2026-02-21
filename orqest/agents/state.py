@@ -9,13 +9,14 @@ from __future__ import annotations
 from typing import Any
 
 from pydantic import BaseModel, Field
+from pydantic_ai.messages import ModelMessage
 
 
 class GlobalState(BaseModel):
     """Shared conversation state for orqest agents."""
 
     messages: list[dict[str, Any]] = Field(default_factory=list)
-    message_history: list[Any] = Field(default_factory=list)
+    message_history: list[ModelMessage] = Field(default_factory=list)
 
     def add_message(self, role: str, content: str) -> None:
         """Append a role/content pair to the conversation log."""
