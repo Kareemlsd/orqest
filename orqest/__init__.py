@@ -1,8 +1,7 @@
-from .config import *
+from .config import OrqestConfig, load_config, get_default_config
 
 __all__ = [
-    "LLM_API_KEY",
-    "LLM_MODEL",
-    "EMBEDDING_MODEL",
-    "EMBEDDING_API_KEY",
+    "OrqestConfig",
+    "load_config",
+    "get_default_config",
 ]

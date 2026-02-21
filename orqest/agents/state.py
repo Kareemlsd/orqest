@@ -1,59 +1,29 @@
-"""State models for Orqest agents."""
-import logging
-from typing import Any, List, Optional, Dict
+"""Conversation state shared across agent runs.
+
+GlobalState tracks two distinct things:
+- `messages`: application-level conversation log (role/content dicts) for the user's use.
+- `message_history`: raw pydantic-ai ModelMessage objects for passing back into Agent.run().
+"""
+from __future__ import annotations
+
+from typing import Any
 
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
-
 
 class GlobalState(BaseModel):
-    """Global state for agents.
+    """Shared conversation state for orqest agents."""
 
-    This class represents the shared state that can be used by different agents
-    in the Orqest framework. It includes methods for managing messages and
-    retrieving the latest messages from different roles.
-
-    Attributes:
-        messages: List of messages in the conversation.
-        assistant_message: The latest message from the assistant.
-        message_history: History of the chat for context.
-    """
-    messages: List[Dict[str, Any]] = Field(default_factory=list)
-    assistant_message: str = Field(default_factory=str)
-    message_history: List[Any] = Field(default_factory=list)
+    messages: list[dict[str, Any]] = Field(default_factory=list)
+    message_history: list[Any] = Field(default_factory=list)
 
     def add_message(self, role: str, content: str) -> None:
-        """Add a message to the message history.
-
-        Args:
-            role (str): The role of the message sender (e.g., "user", "assistant").
-            content (str): The content of the message.
-        """
+        """Append a role/content pair to the conversation log."""
         self.messages.append({"role": role, "content": content})
 
-    def get_latest_user_message(self) -> Optional[str]:
-        """Get the latest user message from the message history.
-
-        Returns:
-            Optional[str]: The latest user message if available, otherwise None.
-        """
+    def get_latest_message(self, role: str) -> str | None:
+        """Return the content of the most recent message with the given role."""
         for message in reversed(self.messages):
-            if message.get("role") == "user":
+            if message.get("role") == role:
                 return message.get("content")
         return None
-
-    def get_latest_assistant_message(self) -> Optional[str]:
-        """Get the latest assistant message from the message history.
-
-        Returns:
-            Optional[str]: The latest assistant message if available, otherwise None.
-        """
-        for message in reversed(self.messages):
-            if message.get("role") == "assistant":
-                return message.get("content")
-        return None
-
-
-if __name__ == "__main__":
-    pass
