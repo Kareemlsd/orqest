@@ -308,3 +308,207 @@ class TestCallModel:
         state.add_message("user", "hello")
         output = await agent.run(state)
         assert isinstance(output, SimpleOutput)
+
+
+# --- Streaming tests ---
+
+class TestStreaming:
+    @pytest.mark.asyncio
+    async def test_call_model_stream_yields_result(self, test_model):
+        """call_model_stream() should yield a StreamedRunResult."""
+        from pydantic_ai.result import StreamedRunResult
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        async with agent.call_model_stream("hello", state) as streamed:
+            assert isinstance(streamed, StreamedRunResult)
+            # Consume the stream so context manager exits cleanly
+            await streamed.get_output()
+
+    @pytest.mark.asyncio
+    async def test_call_model_stream_updates_history(self, test_model):
+        """state.message_history should be populated after stream is consumed."""
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        assert state.message_history == []
+        async with agent.call_model_stream("hello", state) as streamed:
+            await streamed.get_output()
+        assert len(state.message_history) > 0
+
+    @pytest.mark.asyncio
+    async def test_call_model_stream_history_has_request_and_response(self, test_model):
+        """After streaming, history should contain both request and response."""
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        async with agent.call_model_stream("hello", state) as streamed:
+            await streamed.get_output()
+        has_request = any(isinstance(m, ModelRequest) for m in state.message_history)
+        has_response = any(isinstance(m, ModelResponse) for m in state.message_history)
+        assert has_request
+        assert has_response
+
+    @pytest.mark.asyncio
+    async def test_stream_output_yields_partial_models(self, test_model):
+        """stream_output() should yield SimpleOutput instances."""
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        partials = []
+        async for partial in agent.stream_output("hello", state):
+            partials.append(partial)
+        assert len(partials) > 0
+        # Each yielded value should be a SimpleOutput (or partial of it)
+        for p in partials:
+            assert isinstance(p, SimpleOutput)
+
+    @pytest.mark.asyncio
+    async def test_stream_output_updates_history(self, test_model):
+        """History should be updated after stream_output() generator is exhausted."""
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        assert state.message_history == []
+        async for _ in agent.stream_output("hello", state):
+            pass
+        assert len(state.message_history) > 0
+
+    @pytest.mark.asyncio
+    async def test_stream_accumulates_history(self, test_model):
+        """Second streaming call should see history from the first."""
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+
+        # First streaming call
+        async with agent.call_model_stream("first", state) as streamed:
+            await streamed.get_output()
+        history_after_first = len(state.message_history)
+
+        # Second streaming call
+        async with agent.call_model_stream("second", state) as streamed:
+            await streamed.get_output()
+        history_after_second = len(state.message_history)
+
+        assert history_after_second > history_after_first
+
+    @pytest.mark.asyncio
+    async def test_stream_output_final_value_matches_get_output(self, test_model):
+        """The last value from stream_output() should match get_output()."""
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        last_partial = None
+        async for partial in agent.stream_output("hello", state):
+            last_partial = partial
+        assert last_partial is not None
+        assert isinstance(last_partial, SimpleOutput)
+        assert last_partial.text != ""
+
+    @pytest.mark.asyncio
+    async def test_stream_events_yields_events(self, test_model):
+        """stream_events() should yield AgentStreamEvent instances."""
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        events = []
+        async for event in agent.stream_events("hello", state):
+            events.append(event)
+        assert len(events) > 0
+        # Should contain at least PartStartEvent and PartEndEvent
+        event_kinds = {e.event_kind for e in events}
+        assert "part_start" in event_kinds
+        assert "part_end" in event_kinds
+
+    @pytest.mark.asyncio
+    async def test_stream_events_updates_history(self, test_model):
+        """stream_events() should update state.message_history after exhaustion."""
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        assert state.message_history == []
+        async for _ in agent.stream_events("hello", state):
+            pass
+        assert len(state.message_history) > 0
+
+    @pytest.mark.asyncio
+    async def test_stream_events_with_tools(self, test_model):
+        """stream_events() should yield tool call and tool result events."""
+        from pydantic_ai import Tool
+        from orqest.agents.state import GlobalState
+
+        def get_weather(city: str) -> str:
+            """Get weather for a city."""
+            return f"Sunny in {city}"
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+            tools=[Tool(get_weather)],
+        )
+        state = GlobalState()
+        events = []
+        async for event in agent.stream_events("hello", state):
+            events.append(event)
+
+        event_kinds = {e.event_kind for e in events}
+        # Should include tool call and result events
+        assert "function_tool_call" in event_kinds
+        assert "function_tool_result" in event_kinds

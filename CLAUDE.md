@@ -14,7 +14,7 @@ orqest/
 ├── config.py                # OrqestConfig dataclass + load_config() factory
 ├── agents/
 │   ├── __init__.py          # Re-exports BaseAgent, GlobalState, as_tool, keep_recent_messages
-│   ├── base_agent.py        # BaseAgent[StateT, OutputT] + call_model() + keep_recent_messages()
+│   ├── base_agent.py        # BaseAgent[StateT, OutputT] + call_model() + streaming + keep_recent_messages()
 │   ├── state.py             # GlobalState — shared conversation state
 │   └── tool_wrapper.py      # as_tool() — wrap a BaseAgent as a pydantic-ai Tool
 ├── utils/
@@ -37,8 +37,10 @@ tests/                       # Mirrors source layout
 examples/                    # Numbered subfolders, progressively advanced
 ├── 01_basic_agent/          # Single agent with structured output + multi-turn
 │   └── basic_agent.ipynb
-└── 02_agent_as_tool/        # Agent-as-tool composition pattern
-    └── agent_as_tool.ipynb
+├── 02_agent_as_tool/        # Agent-as-tool composition pattern
+│   └── agent_as_tool.ipynb
+└── 03_streaming/            # Streaming patterns + transport integration
+    └── streaming.ipynb
 
 docs/                        # MkDocs documentation site (mkdocs.yml at project root)
 ├── index.md                 # Landing page with quick start
@@ -46,7 +48,8 @@ docs/                        # MkDocs documentation site (mkdocs.yml at project 
 ├── concepts/
 │   ├── agents.md            # BaseAgent deep dive
 │   ├── state-and-history.md # GlobalState, message_history, keep_recent_messages
-│   └── agent-as-tool.md     # as_tool(), stateless vs stateful
+│   ├── agent-as-tool.md     # as_tool(), stateless vs stateful
+│   └── streaming.md         # Streaming methods, transport integration
 ├── api/                     # Auto-generated from docstrings via mkdocstrings
 │   ├── config.md
 │   ├── agents.md
@@ -97,13 +100,16 @@ python -m build
 - `OrqestConfig` frozen dataclass + `load_config()` / `get_default_config()` factories
 - `BaseAgent[StateT, OutputT]` with explicit model param, tool/toolset registration, history processing
 - `call_model()` — multi-turn conversation support with automatic history wiring
+- `call_model_stream()` — async context manager for streaming with history wiring
+- `stream_output()` — async generator yielding partial structured output as the LLM generates tokens
+- `stream_events()` — async generator yielding all agent events including tool call/result visibility
 - `keep_recent_messages()` — pure function for history truncation with turn integrity repair
 - `GlobalState` for conversation tracking with `messages` (app-level) and `message_history` (pydantic-ai)
 - `resolve_model()` — mapping-based multi-provider routing (OpenAI, Anthropic, Google, OpenRouter)
 - `as_tool()` — wrap any BaseAgent as a pydantic-ai Tool for stateless orchestrator invocation
 - `load_sys_prompt()` — system prompt file loader utility
 - Documentation site with MkDocs Material (concepts, getting started, auto-generated API reference)
-- Test suite with 61 tests covering all modules
+- Test suite with 71 tests covering all modules
 
 ## What Does NOT Exist Yet
 

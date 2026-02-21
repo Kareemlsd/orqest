@@ -8,13 +8,16 @@ is handled here.
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from functools import partial
 from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 from pydantic_ai import Agent, Tool
-from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse
+from pydantic_ai.messages import AgentStreamEvent, ModelMessage, ModelRequest, ModelResponse
 from pydantic_ai.models import Model
+from pydantic_ai.result import StreamedRunResult
 from pydantic_ai.run import AgentRunResult
 
 from orqest.utils.llm_model import resolve_model
@@ -173,6 +176,78 @@ class BaseAgent(Generic[StateT, OutputT]):
         if hasattr(state, "message_history"):
             state.message_history = result.all_messages()
         return result
+
+    @asynccontextmanager
+    async def call_model_stream(
+        self, prompt: str, state: StateT
+    ) -> AsyncIterator[StreamedRunResult]:
+        """Stream the pydantic-ai agent with conversation history from state.
+
+        Async context manager that wraps Agent.run_stream(). Yields a
+        StreamedRunResult for full control over the stream. Updates
+        state.message_history after the context exits (once the stream
+        is consumed).
+
+        This is the low-level streaming primitive — stream_text() and
+        stream_output() are built on top of it.
+        """
+        history = getattr(state, "message_history", None) or None
+        async with self.agent.run_stream(prompt, message_history=history) as streamed:
+            yield streamed
+        if hasattr(state, "message_history"):
+            state.message_history = streamed.all_messages()
+
+    async def stream_output(
+        self, prompt: str, state: StateT, *, debounce_by: float | None = None
+    ) -> AsyncIterator[OutputT]:
+        """Stream partial structured output from the LLM.
+
+        Async generator yielding partial OutputT Pydantic model instances
+        as the model produces them. Each yield is the latest validated
+        partial of the structured output.
+
+        Args:
+            prompt: The user prompt to send.
+            state: Conversation state — history is read and updated.
+            debounce_by: Optional minimum interval (seconds) between yields.
+        """
+        kwargs: dict[str, Any] = {}
+        if debounce_by is not None:
+            kwargs["debounce_by"] = debounce_by
+        async with self.call_model_stream(prompt, state) as streamed:
+            async for partial in streamed.stream_output(**kwargs):
+                yield partial
+
+    async def stream_events(
+        self, prompt: str, state: StateT
+    ) -> AsyncIterator[AgentStreamEvent]:
+        """Stream all agent events including model responses and tool calls.
+
+        Async generator yielding AgentStreamEvent instances as the agent runs.
+        This includes model response tokens (PartStartEvent, PartDeltaEvent,
+        PartEndEvent, FinalResultEvent) and tool execution events
+        (FunctionToolCallEvent, FunctionToolResultEvent).
+
+        Uses Agent.iter() under the hood for full node-by-node control,
+        making tool calls visible during streaming.
+
+        Args:
+            prompt: The user prompt to send.
+            state: Conversation state — history is read and updated.
+        """
+        history = getattr(state, "message_history", None) or None
+        async with self.agent.iter(prompt, message_history=history) as agent_run:
+            async for node in agent_run:
+                if Agent.is_model_request_node(node):
+                    async with node.stream(agent_run.ctx) as stream:
+                        async for event in stream:
+                            yield event
+                elif Agent.is_call_tools_node(node):
+                    async with node.stream(agent_run.ctx) as stream:
+                        async for event in stream:
+                            yield event
+        if hasattr(state, "message_history"):
+            state.message_history = agent_run.result.all_messages()
 
     async def run(self, state: StateT, **kwargs: Any) -> OutputT:
         """Execute the agent. Exceptions propagate to the caller."""

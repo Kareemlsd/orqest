@@ -63,6 +63,7 @@ nav:
       - Agents: concepts/agents.md
       - State & History: concepts/state-and-history.md
       - Agent as Tool: concepts/agent-as-tool.md
+      - Streaming: concepts/streaming.md
   - API Reference:
       - Configuration: api/config.md
       - Agents: api/agents.md

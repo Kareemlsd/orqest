@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `call_model_stream()` on `BaseAgent` — async context manager for streaming with history wiring
+- `stream_output()` on `BaseAgent` — async generator yielding partial structured output as the LLM generates tokens
+- `stream_events()` on `BaseAgent` — async generator yielding all agent events including tool call/result visibility
+- Example notebook `03_streaming` demonstrating streaming, tool event visibility, and transport integration
+- Streaming concept page in documentation
 - `as_tool()` — wrap any `BaseAgent` as a pydantic-ai `Tool` for stateless orchestrator invocation
 - `call_model()` on `BaseAgent` — multi-turn conversation support with automatic history wiring
 - Multi-turn conversation example in `01_basic_agent` notebook

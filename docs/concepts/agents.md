@@ -82,6 +82,16 @@ async def _run_implementation(self, state, **kwargs):
 
 Use this for one-shot tasks where conversation history isn't needed. The [agent-as-tool](agent-as-tool.md) pattern uses this approach implicitly.
 
+## Streaming
+
+`BaseAgent` also provides streaming variants of `call_model()` for real-time output. See the [Streaming](streaming.md) page for full details.
+
+- **`stream_output(prompt, state)`** — async generator yielding partial `OutputT` instances as the LLM generates tokens
+- **`stream_events(prompt, state)`** — async generator yielding `AgentStreamEvent` instances, including tool call and result events
+- **`call_model_stream(prompt, state)`** — async context manager yielding the raw `StreamedRunResult` for full control
+
+All streaming methods manage `state.message_history` identically to `call_model()`.
+
 ## Lazy Agent Construction
 
 The underlying pydantic-ai `Agent` is created on first access to `self.agent`. This means:
