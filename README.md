@@ -1,142 +1,28 @@
-# Orqest: Enterprise-Grade AI Agent Orchestration Framework
+# Orqest
 
-<p align="center">
-  <em>Transform how you build, deploy, and scale AI agent systems</em>
-</p>
+A lightweight Python framework for building AI agents on top of [pydantic-ai](https://github.com/pydantic/pydantic-ai). Orqest provides a structured base class, multi-provider model routing, and conversation state management so you can focus on your agent's logic instead of boilerplate.
 
-## The Next Evolution in AI Orchestration
+> **Status:** Early development (v0.0.1). The API may change as the project matures.
 
-Orqest is an advanced framework for developing sophisticated AI agent systems with unparalleled flexibility and control. Whether implementing complex multi-agent workflows or streamlined single-agent applications, Orqest provides the robust architecture and comprehensive tooling required for production-grade AI systems.
+## Features
 
-**Elevate your AI development capabilities with a framework designed for the challenges of modern AI orchestration.**
+- **Generic base agent** — `BaseAgent[StateT, OutputT]` gives you a typed, async-first foundation for any agent. Define your input state and output model, implement `_run_implementation()`, and you're done.
+- **Multi-provider model routing** — A single `model()` factory auto-selects the right pydantic-ai provider (OpenAI, Anthropic, Google, OpenRouter) based on an environment variable.
+- **Conversation state** — `GlobalState` is a ready-made Pydantic model for tracking messages, with helpers for retrieving the latest user or assistant message.
+- **History processing** — Built-in sliding-window history truncation that preserves tool-call integrity, with support for custom history processors.
+- **Tool & toolset support** — Register individual tools or entire toolsets on any agent.
+- **System prompt loader** — A utility to load system prompts from `.txt` files by searching upward for a `system_prompts/` directory.
+- **Environment-based config** — Reads `LLM_API_KEY`, `LLM_MODEL`, `EMBEDDING_MODEL`, and `EMBEDDING_API_KEY` from `.env` or environment variables.
 
-## What Sets Orqest Apart
+## Installation
 
-In the rapidly evolving landscape of AI agent frameworks, Orqest stands as a transformative solution that addresses the fundamental challenges of building complex, production-ready agent systems:
-
-- **Hierarchical Agent Composition** - Unlike traditional frameworks that limit agent interactions to predefined patterns, Orqest enables true hierarchical composition where any agent can leverage other agents as tools, creating powerful emergent capabilities
-- **Dynamic Execution Paths** - Orqest eliminates rigid, hardcoded agent graphs in favor of flexible, context-aware orchestration that adapts to changing requirements at runtime
-- **Enterprise-Ready Architecture** - Built from the ground up with production use cases in mind, featuring comprehensive error handling, state management, and performance optimization
-- **Unified Development Experience** - Provides a consistent interface across different agent types, significantly reducing the learning curve and development time
-
-## Why Choose Orqest
-
-- **Modular Agent Architecture** - Develop specialized agents that can be composed to address complex problems with unprecedented flexibility
-- **Adaptive Workflow Orchestration** - Implement sophisticated workflows that dynamically adjust based on context and requirements
-- **Comprehensive State Management** - Maintain coherent context across agent interactions with structured, type-safe state handling
-- **Production-Optimized Design** - Deploy with confidence using robust error handling, lifecycle hooks, and asynchronous processing
-- **Developer Productivity** - Accelerate development with clean, consistent interfaces and minimal boilerplate code
-
-## Ideal For
-
-- **AI Research Teams** - Accelerate experimentation with complex agent architectures while maintaining research-grade code quality
-- **Enterprise AI Departments** - Implement production-ready agent systems that meet stringent reliability and scalability requirements
-- **Product Development Organizations** - Reduce time-to-market for AI-powered features with a framework designed for collaboration and maintainability
-- **System Integrators** - Deliver customized AI solutions that can adapt to evolving business requirements with minimal refactoring
-
-## Implementation Example
-
-Here's how easy it is to create a multi-agent workflow with Orqest:
-
-```python
-import asyncio
-from examples.agents import GlobalState, OrchestratorAgent
-
-# Create an orchestrator that can use other agents as tools
-orchestrator = OrchestratorAgent()
-
-async def process_query(query: str):
-    """Process a user query through the orchestrator."""
-    # Initialize state with user query
-    state = GlobalState()
-    state.add_message("user", query)
-    
-    # The orchestrator will automatically use specialized agents when needed
-    result = await orchestrator.run(state)
-    
-    return result
-
-async def main():
-    """Main function demonstrating the framework."""
-    query = "I need to plan a birthday party for a chocolate lover. Can you help?"
-    result = await process_query(query)
-    
-    # Display the results
-    print("Assistant response:", result.get_latest_assistant_message())
-    if hasattr(result, 'plan') and result.plan:
-        print("\nGenerated plan:")
-        for i, step in enumerate(result.plan, 1):
-            print(f"{i}. {step}")
-
-# Run the example
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-**Note**: Orqest is built on asynchronous programming. All agent operations use `async/await` for optimal performance and concurrency.
-
-## Key Features in Action
-
-### 🔧 Agent Composition
-```python
-# Agents can use other agents as tools
-orchestrator = OrchestratorAgent()  # Automatically includes PlannerAgent
-```
-
-### 🚀 Lifecycle Hooks & Middleware
-```python
-# Add custom logic at any point in execution
-agent.add_hook(HookPoint.PRE_RUN, validate_input)
-agent.use_middleware(LoggingMiddleware())
-```
-
-### ⚡ Robust Error Handling
-```python
-# Structured error management with context
-from orqest.errors import AgentError, ErrorSeverity
-```
-
-### 📊 Structured State Management
-```python
-# Type-safe state with Pydantic models
-state = GlobalState()
-state.add_message("user", "Your message")
-latest = state.get_latest_user_message()
-```
-
-## Core Capabilities
-
-### Agent Composition Framework
-Leverage a sophisticated composition model where agents can be assigned as tools to other agents, enabling dynamic orchestration without predefined interaction patterns. This architecture facilitates complex collaboration patterns that emerge naturally from your system design.
-
-### Flexible Execution Architecture
-Implement virtually any agent architecture required by your use case. From linear processing chains to complex directed graphs with feedback loops and conditional branching, Orqest provides the foundation for your specific implementation needs.
-
-### Comprehensive Lifecycle Management
-Integrate custom logic at any point in an agent's execution lifecycle through a powerful hooks system. Implement logging, performance monitoring, error handling, or domain-specific behaviors with precision and control.
-
-### Enterprise-Grade Error Handling
-Deploy with confidence using standardized error handling that includes severity classification, detailed context information, and configurable recovery strategies, significantly reducing debugging time and improving system reliability.
-
-### Structured State Management
-Maintain system coherence with a type-safe, structured approach to state management between agent interactions. This ensures consistent context propagation and eliminates an entire class of state-related errors common in complex agent systems.
-
-### High-Performance Asynchronous Processing
-Scale efficiently with native asyncio support, enabling concurrent operations and optimal resource utilization even under high load conditions.
-
-## Getting Started
-
-## Getting Started
-
-### Installation
-
-Before installing Orqest, ensure you have Python 3.12 or higher. Then install using pip:
+Requires **Python 3.12+**.
 
 ```bash
 pip install orqest
 ```
 
-Or clone and install from source for development:
+Or install from source for development:
 
 ```bash
 git clone https://github.com/Kareemlsd/orqest.git
@@ -144,212 +30,142 @@ cd orqest
 pip install -e .
 ```
 
-### Configuration
+## Configuration
 
-Before using Orqest, configure your environment variables. Create a `.env` file in your project root:
-
-```bash
-# Required for LLM operations
-LLM_API_KEY=your_openai_api_key_here
-LLM_MODEL=gpt-3.5-turbo
-
-# Optional: for embeddings
-EMBEDDING_API_KEY=your_embedding_api_key_here
-EMBEDDING_MODEL=text-embedding-ada-002
-```
-
-Alternatively, set environment variables directly:
+Create a `.env` file in your project root (or set the variables directly in your environment):
 
 ```bash
-export LLM_API_KEY=your_openai_api_key_here
-export LLM_MODEL=gpt-3.5-turbo
+# Required
+LLM_API_KEY=your_api_key_here
+LLM_MODEL=gpt-3.5-turbo          # see "Supported Providers" below
+
+# Optional (defaults to LLM_API_KEY if not set)
+EMBEDDING_API_KEY=your_embedding_key
+EMBEDDING_MODEL=all-MiniLM-L6-v2
 ```
 
-### Quick Start with Examples
+### Supported Providers
 
-To get started quickly, run one of the included examples:
+The model is selected automatically based on the `LLM_MODEL` value:
 
-```bash
-# Set up your environment
-export LLM_API_KEY=your_openai_api_key
-export LLM_MODEL=gpt-3.5-turbo
+| `LLM_MODEL` value | Provider | Example |
+|---|---|---|
+| Contains `claude` | Anthropic | `claude-sonnet-4-20250514` |
+| Contains `gemini` | Google | `gemini-2.0-flash` |
+| Prefixed with `openrouter:` | OpenRouter | `openrouter:anthropic/claude-3.5-sonnet` |
+| Anything else | OpenAI | `gpt-4o`, `gpt-3.5-turbo` |
 
-# Run the lifecycle hooks example
-python examples/lifecycle_hooks_example.py
-```
-
-### Creating Custom Agents
-
-Create your first agent with this streamlined implementation:
+## Quick Start
 
 ```python
 import asyncio
-from orqest.agents import BaseAgent, GlobalState, NoValidResponse
-from typing import Union
+from pydantic import BaseModel, Field
+from orqest.agents import BaseAgent, GlobalState
 
-class SimpleAgent(BaseAgent[GlobalState]):
-    """A simple agent that responds to user messages."""
-    
+
+class SummaryOutput(BaseModel):
+    """Structured output for the summary agent."""
+    summary: str = Field(description="A concise summary")
+
+
+class SummaryAgent(BaseAgent[GlobalState, SummaryOutput]):
     def __init__(self):
         super().__init__(
-            agent_name="simple_agent",
-            system_prompt="You are a helpful assistant that provides concise, accurate responses.",
-            output_type=Union[GlobalState, NoValidResponse],
-            retries=2
+            agent_name="summary_agent",
+            system_prompt="You are a helpful assistant. Summarize the user's message concisely.",
+            output_type=SummaryOutput,
         )
-    
-    async def _run_implementation(self, state: GlobalState, **kwargs) -> GlobalState:
-        """Run the agent's main logic."""
-        user_message = state.get_latest_user_message()
-        if not user_message:
-            state.add_message("assistant", "I didn't receive any message to respond to.")
-            return state
-        
-        # Execute the agent with pydantic-ai
-        response = await self.agent.run(user_message, deps=state, **kwargs)
-        
-        # Process the response
-        return await self._process_response_implementation(response, state, **kwargs)
-        
-    async def _process_response_implementation(self, response, state: GlobalState, **kwargs) -> GlobalState:
-        """Process the agent's response and update state."""
-        if hasattr(response, 'data') and response.data:
-            # Convert response to string and add to state
-            response_text = str(response.data)
-            state.add_message("assistant", response_text)
-        else:
-            state.add_message("assistant", "I apologize, but I couldn't generate a proper response.")
-        
-        return state
 
-# Usage example
+    async def _run_implementation(self, state: GlobalState, **kwargs) -> SummaryOutput:
+        user_message = state.get_latest_user_message()
+        result = await self.agent.run(user_message)
+        return result.output
+
+
 async def main():
-    """Example usage of the SimpleAgent."""
-    # Create the agent
-    agent = SimpleAgent()
-    
-    # Create state and add a user message
+    agent = SummaryAgent()
+
     state = GlobalState()
-    state.add_message("user", "Hello! Can you help me understand what Orqest is?")
-    
-    # Run the agent
-    result = await agent.run(state)
-    
-    # Print the conversation
-    print("Conversation:")
-    print("-" * 40)
-    for message in result.messages:
-        role = message['role'].title()
-        content = message['content']
-        print(f"{role}: {content}")
-        print()
+    state.add_message("user", "Explain quantum computing in detail.")
+
+    output = await agent.run(state)
+    if output:
+        print(output.summary)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-### Using Agent Composition
+## Package Structure
 
-For complex workflows, use the agent composition pattern:
+```
+orqest/
+├── __init__.py              # Re-exports config values
+├── config.py                # Loads .env, exports LLM_API_KEY, LLM_MODEL, etc.
+├── agents/
+│   ├── __init__.py          # Re-exports BaseAgent, GlobalState
+│   ├── base_agent.py        # BaseAgent[StateT, OutputT] — the core abstract class
+│   └── state.py             # GlobalState — shared conversation state model
+├── utils/
+│   └── llm_model.py         # model() factory — multi-provider routing
+└── io_utils/
+    └── load_sys_prompt.py   # load_sys_prompt() — loads prompts from system_prompts/
+```
+
+## Core API
+
+### `BaseAgent[StateT, OutputT]`
+
+The abstract base class for all agents. Generic over an input state type and an output type (both Pydantic models).
+
+**Constructor parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `agent_name` | `str` | — | Name used for logging and identification |
+| `system_prompt` | `str` | — | System prompt guiding agent behavior |
+| `output_type` | `Type[OutputT]` | — | Pydantic model for structured output |
+| `retries` | `int` | `3` | Retry attempts for failed LLM calls |
+| `deps_type` | `Any` | `None` | Dependency type injected into the agent |
+| `tools` | `List[Tool]` | `None` | Individual tools to register |
+| `toolsets` | `List[Any]` | `None` | Toolset objects providing collections of tools |
+| `agent` | `Agent` | `None` | Pre-configured pydantic-ai Agent (skips auto-creation) |
+| `model` | `Callable` | `None` | Custom model factory (defaults to `orqest.utils.llm_model.model`) |
+| `truncated_history` | `int` | `100` | Max recent messages to keep in history |
+| `history_processors` | `HistoryProcessor \| List` | `None` | Custom history processor(s); defaults to `keep_recent_messages` |
+
+**Key methods:**
+
+- `async run(state, **kwargs) -> OutputT | None` — Public entry point. Calls `_run_implementation()` with error handling.
+- `async _run_implementation(state, **kwargs) -> OutputT` — **Abstract.** Implement your agent logic here.
+- `keep_recent_messages(messages) -> messages` — Default history processor. Truncates to the most recent N messages while preserving tool-call groupings.
+
+### `GlobalState`
+
+A Pydantic model for shared conversation state.
+
+**Fields:** `messages`, `assistant_message`, `message_history`
+
+**Methods:**
+- `add_message(role, content)` — Append a message
+- `get_latest_user_message() -> str | None` — Get the most recent user message
+- `get_latest_assistant_message() -> str | None` — Get the most recent assistant message
+
+### `load_sys_prompt(filename, start=None) -> str`
+
+Searches upward from the caller's location (or `start`) for a `system_prompts/` directory and returns the contents of the specified file.
 
 ```python
-import asyncio
-from examples.agents import GlobalState, OrchestratorAgent
+from orqest.io_utils import load_sys_prompt
 
-async def main():
-    # Create an orchestrator that manages other agents
-    orchestrator = OrchestratorAgent()
-    
-    # Initialize state with user query
-    state = GlobalState()
-    state.add_message("user", "Help me plan a project timeline")
-    
-    # Run the orchestrator
-    result = await orchestrator.run(state)
-    
-    # The orchestrator automatically uses specialized agents as needed
-    print("Response:", result.get_latest_assistant_message())
-    if result.plan:
-        print("\nGenerated plan:")
-        for i, step in enumerate(result.plan, 1):
-            print(f"{i}. {step}")
-
-if __name__ == "__main__":
-    asyncio.run(main())
+prompt = load_sys_prompt("my_agent.txt")
 ```
 
-## Documentation & Resources
+## Contributing
 
-Explore our comprehensive resources to master Orqest:
-
-### Core Documentation
-- **[Examples Directory](examples/)**: Working examples demonstrating key concepts
-- **[Tutorials](docs/tutorials/)**: Step-by-step Jupyter notebooks covering framework fundamentals
-- **[Error Handling Guide](orqest/errors/README.md)**: Comprehensive error management patterns
-
-### Key Concepts
-1. **Agent Development**: Extend the `BaseAgent` class to create specialized agents
-2. **State Management**: Use structured Pydantic models for type-safe state handling
-3. **Agent Composition**: Leverage the "Agent as Tools" pattern for hierarchical workflows
-4. **Lifecycle Hooks**: Inject custom logic at any point in an agent's execution
-5. **Error Handling**: Implement robust error management with detailed context
-6. **Asynchronous Processing**: Build high-performance systems with native asyncio support
-
-### Example Usage Patterns
-- **Simple Agents**: Single-purpose agents for specific tasks
-- **Orchestrator Agents**: Multi-agent coordination and workflow management
-- **Flexible Composition**: Dynamic agent graphs that adapt to requirements
-- **Error Recovery**: Graceful handling of failures and edge cases
-
-## Troubleshooting
-
-### Common Issues and Solutions
-
-**ImportError: No module named 'orqest'**
-```bash
-pip install -e .  # If working from source
-# or
-pip install orqest  # For stable release
-```
-
-**Missing Environment Variables**
-```bash
-# Ensure your .env file contains:
-LLM_API_KEY=your_openai_api_key
-LLM_MODEL=gpt-3.5-turbo
-```
-
-**Agent Not Responding**
-- Verify your API key is valid and has sufficient credits
-- Check that the LLM_MODEL is supported by your API provider
-- Ensure your network connection allows API calls
-
-**State Management Issues**
-- Always use the GlobalState class for state management
-- Remember to call `state.add_message()` to add messages to conversation history
-- Use `state.get_latest_user_message()` to retrieve the most recent user input
-
-**Example Not Working**
-```bash
-# Make sure you're in the correct directory
-cd orqest
-
-# Set environment variables
-export LLM_API_KEY=your_key_here
-export LLM_MODEL=gpt-3.5-turbo
-
-# Run the example
-python examples/lifecycle_hooks_example.py
-```
-
-## Community & Collaboration
-
-Orqest is under active development by a dedicated team committed to advancing the state of AI agent orchestration. We welcome professional collaboration and contributions.
-
-- **Contribute**: Submit pull requests or propose enhancements via our GitHub repository
-- **Engage**: Participate in technical discussions and knowledge sharing
-- **Implement**: Explore our reference implementations and case studies
+Contributions are welcome. This project is in its early stages — if you'd like to help shape its direction, open an issue or submit a pull request.
 
 ## License
 
-Orqest is enterprise-ready open-source software licensed under the [MIT license](LICENSE).
+[MIT](LICENSE)

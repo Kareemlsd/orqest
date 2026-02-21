@@ -1468,7 +1468,7 @@ wheels = [
 [[package]]
 name = "orqest"
 version = "0.0.1"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "dotenv" },
     { name = "loguru" },
