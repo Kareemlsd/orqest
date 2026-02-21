@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Orqest is a Python framework for building AI agents on top of pydantic-ai. It provides a generic base agent class, multi-provider model routing, and conversation state management. The goal is to grow it into a full multi-agent orchestration framework and publish it as open source.
+Orqest is a Python framework for building AI agents on top of pydantic-ai. It provides a generic base agent class, multi-provider model routing, conversation state management, and agent composition primitives. The goal is to grow it into a full multi-agent orchestration framework and publish it as open source.
 
 **Current version:** 0.0.1 (early development)
 
@@ -14,7 +14,7 @@ orqest/
 ├── config.py                # OrqestConfig dataclass + load_config() factory
 ├── agents/
 │   ├── __init__.py          # Re-exports BaseAgent, GlobalState, as_tool, keep_recent_messages
-│   ├── base_agent.py        # BaseAgent[StateT, OutputT] + keep_recent_messages()
+│   ├── base_agent.py        # BaseAgent[StateT, OutputT] + call_model() + keep_recent_messages()
 │   ├── state.py             # GlobalState — shared conversation state
 │   └── tool_wrapper.py      # as_tool() — wrap a BaseAgent as a pydantic-ai Tool
 ├── utils/
@@ -35,10 +35,24 @@ tests/                       # Mirrors source layout
     └── test_load_sys_prompt.py
 
 examples/                    # Numbered subfolders, progressively advanced
-├── 01_basic_agent/          # Single agent with structured output
+├── 01_basic_agent/          # Single agent with structured output + multi-turn
 │   └── basic_agent.ipynb
 └── 02_agent_as_tool/        # Agent-as-tool composition pattern
     └── agent_as_tool.ipynb
+
+docs/                        # MkDocs documentation site (mkdocs.yml at project root)
+├── index.md                 # Landing page with quick start
+├── getting-started.md       # Full walkthrough: install → multi-turn
+├── concepts/
+│   ├── agents.md            # BaseAgent deep dive
+│   ├── state-and-history.md # GlobalState, message_history, keep_recent_messages
+│   └── agent-as-tool.md     # as_tool(), stateless vs stateful
+├── api/                     # Auto-generated from docstrings via mkdocstrings
+│   ├── config.md
+│   ├── agents.md
+│   ├── utils.md
+│   └── io-utils.md
+└── changelog.md
 ```
 
 ## Key Conventions
@@ -53,6 +67,8 @@ examples/                    # Numbered subfolders, progressively advanced
 - **Build system**: setuptools via pyproject.toml. Dependencies managed there.
 - **Linting**: ruff (configured in pyproject.toml).
 - **Testing**: pytest + pytest-asyncio. Run with `.venv/bin/python -m pytest tests/ -v`.
+- **Documentation**: MkDocs + Material + mkdocstrings. Update docs when adding/changing features.
+- **Changelog**: Keep a Changelog format in CHANGELOG.md. Update the [Unreleased] section with each feature.
 
 ## Dev Commands
 
@@ -66,7 +82,13 @@ pip install -e .
 # Lint
 ruff check orqest/
 
-# Build
+# Docs — serve locally with hot reload
+uv run mkdocs serve
+
+# Docs — build static site
+uv run mkdocs build
+
+# Build package
 python -m build
 ```
 
@@ -74,11 +96,13 @@ python -m build
 
 - `OrqestConfig` frozen dataclass + `load_config()` / `get_default_config()` factories
 - `BaseAgent[StateT, OutputT]` with explicit model param, tool/toolset registration, history processing
+- `call_model()` — multi-turn conversation support with automatic history wiring
 - `keep_recent_messages()` — pure function for history truncation with turn integrity repair
-- `GlobalState` for conversation tracking with `get_latest_message(role)`
+- `GlobalState` for conversation tracking with `messages` (app-level) and `message_history` (pydantic-ai)
 - `resolve_model()` — mapping-based multi-provider routing (OpenAI, Anthropic, Google, OpenRouter)
 - `as_tool()` — wrap any BaseAgent as a pydantic-ai Tool for stateless orchestrator invocation
 - `load_sys_prompt()` — system prompt file loader utility
+- Documentation site with MkDocs Material (concepts, getting started, auto-generated API reference)
 - Test suite with 61 tests covering all modules
 
 ## What Does NOT Exist Yet
@@ -93,3 +117,5 @@ python -m build
 - `.claude/PRINCIPLES.md` — development principles and coding standards (Pragmatic Programmer-based)
 - `.claude/ARCHITECTURE.md` — detailed design decisions and module dependencies
 - `.claude/ROADMAP.md` — planned features and priorities
+- `docs/` — user-facing documentation (MkDocs source)
+- `CHANGELOG.md` — version history (Keep a Changelog format)
