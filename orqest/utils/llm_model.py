@@ -14,22 +14,49 @@ def _build_registry() -> dict[str, tuple[type, type]]:
 
     Imports are deferred so the module has no import-time side effects beyond
     defining names, and so users only pay for the providers they actually use.
+    Providers that fail to import (e.g. due to missing or incompatible SDK
+    versions) are silently skipped — they'll raise at resolve_model() time
+    if actually requested.
     """
-    from pydantic_ai.models.anthropic import AnthropicModel
-    from pydantic_ai.models.google import GoogleModel
-    from pydantic_ai.models.openai import OpenAIChatModel
-    from pydantic_ai.models.openrouter import OpenRouterModel
-    from pydantic_ai.providers.anthropic import AnthropicProvider
-    from pydantic_ai.providers.google import GoogleProvider
-    from pydantic_ai.providers.openai import OpenAIProvider
-    from pydantic_ai.providers.openrouter import OpenRouterProvider
+    import logging
 
-    return {
-        "openai": (OpenAIChatModel, OpenAIProvider),
-        "anthropic": (AnthropicModel, AnthropicProvider),
-        "google": (GoogleModel, GoogleProvider),
-        "openrouter": (OpenRouterModel, OpenRouterProvider),
-    }
+    logger = logging.getLogger(__name__)
+
+    registry: dict[str, tuple[type, type]] = {}
+
+    try:
+        from pydantic_ai.models.openai import OpenAIChatModel
+        from pydantic_ai.providers.openai import OpenAIProvider
+
+        registry["openai"] = (OpenAIChatModel, OpenAIProvider)
+    except ImportError:
+        logger.debug("OpenAI provider unavailable, skipping")
+
+    try:
+        from pydantic_ai.models.anthropic import AnthropicModel
+        from pydantic_ai.providers.anthropic import AnthropicProvider
+
+        registry["anthropic"] = (AnthropicModel, AnthropicProvider)
+    except ImportError:
+        logger.debug("Anthropic provider unavailable, skipping")
+
+    try:
+        from pydantic_ai.models.google import GoogleModel
+        from pydantic_ai.providers.google import GoogleProvider
+
+        registry["google"] = (GoogleModel, GoogleProvider)
+    except ImportError:
+        logger.debug("Google provider unavailable, skipping")
+
+    try:
+        from pydantic_ai.models.openrouter import OpenRouterModel
+        from pydantic_ai.providers.openrouter import OpenRouterProvider
+
+        registry["openrouter"] = (OpenRouterModel, OpenRouterProvider)
+    except ImportError:
+        logger.debug("OpenRouter provider unavailable, skipping")
+
+    return registry
 
 
 def resolve_model(model_name: str, *, api_key: str) -> Model:
