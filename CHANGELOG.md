@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Multi-modal prompt support on `BaseAgent` — `call_model()`, `call_model_stream()`, `stream_output()`, and `stream_events()` now accept `str | Sequence[UserContent]`, enabling images, PDFs, audio, and video via pydantic-ai's `ImageUrl`, `DocumentUrl`, `AudioUrl`, `VideoUrl`, and `BinaryContent` types
+- `Prompt` type alias (`str | Sequence[UserContent]`) exported from `orqest.agents`
 - `call_model_stream()` on `BaseAgent` — async context manager for streaming with history wiring
 - `stream_output()` on `BaseAgent` — async generator yielding partial structured output as the LLM generates tokens
 - `stream_events()` on `BaseAgent` — async generator yielding all agent events including tool call/result visibility

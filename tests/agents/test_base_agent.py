@@ -1,5 +1,6 @@
 import pytest
 from pydantic import BaseModel
+from pydantic_ai import ImageUrl, DocumentUrl, BinaryContent
 from pydantic_ai.models.test import TestModel
 from pydantic_ai.messages import (
     ModelRequest,
@@ -512,3 +513,148 @@ class TestStreaming:
         # Should include tool call and result events
         assert "function_tool_call" in event_kinds
         assert "function_tool_result" in event_kinds
+
+
+# --- Multi-modal prompt tests ---
+
+class TestMultiModalPrompt:
+    """Verify that multi-modal prompt types pass through to the underlying agent."""
+
+    @pytest.mark.asyncio
+    async def test_call_model_with_image_url(self, test_model):
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        result = await agent.call_model(
+            ["Describe this image:", ImageUrl(url="https://example.com/img.png")],
+            state,
+        )
+        assert isinstance(result.output, SimpleOutput)
+        assert len(state.message_history) > 0
+
+    @pytest.mark.asyncio
+    async def test_call_model_with_document_url(self, test_model):
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        result = await agent.call_model(
+            ["Summarize:", DocumentUrl(url="https://example.com/doc.pdf")],
+            state,
+        )
+        assert isinstance(result.output, SimpleOutput)
+
+    @pytest.mark.asyncio
+    async def test_call_model_with_binary_content(self, test_model):
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        content = BinaryContent(data=b"\x89PNG fake image bytes", media_type="image/png")
+        result = await agent.call_model(["What is this?", content], state)
+        assert isinstance(result.output, SimpleOutput)
+
+    @pytest.mark.asyncio
+    async def test_call_model_with_mixed_content(self, test_model):
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        result = await agent.call_model(
+            [
+                "Compare these:",
+                ImageUrl(url="https://example.com/a.png"),
+                DocumentUrl(url="https://example.com/report.pdf"),
+            ],
+            state,
+        )
+        assert isinstance(result.output, SimpleOutput)
+
+    @pytest.mark.asyncio
+    async def test_call_model_stream_with_multimodal(self, test_model):
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        async with agent.call_model_stream(
+            ["Describe:", ImageUrl(url="https://example.com/img.png")], state
+        ) as streamed:
+            await streamed.get_output()
+        assert len(state.message_history) > 0
+
+    @pytest.mark.asyncio
+    async def test_stream_output_with_multimodal(self, test_model):
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        partials = []
+        async for partial in agent.stream_output(
+            ["Describe:", ImageUrl(url="https://example.com/img.png")], state
+        ):
+            partials.append(partial)
+        assert len(partials) > 0
+
+    @pytest.mark.asyncio
+    async def test_stream_events_with_multimodal(self, test_model):
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        events = []
+        async for event in agent.stream_events(
+            ["Describe:", ImageUrl(url="https://example.com/img.png")], state
+        ):
+            events.append(event)
+        assert len(events) > 0
+
+    @pytest.mark.asyncio
+    async def test_plain_string_still_works(self, test_model):
+        """Ensure backwards compatibility — plain strings still work."""
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+        result = await agent.call_model("plain text prompt", state)
+        assert isinstance(result.output, SimpleOutput)

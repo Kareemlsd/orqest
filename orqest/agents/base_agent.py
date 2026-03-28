@@ -8,19 +8,27 @@ is handled here.
 from __future__ import annotations
 
 from abc import abstractmethod
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from functools import partial
 from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 from pydantic_ai import Agent, Tool
-from pydantic_ai.messages import AgentStreamEvent, ModelMessage, ModelRequest, ModelResponse
+from pydantic_ai.messages import (
+    AgentStreamEvent,
+    ModelMessage,
+    ModelRequest,
+    ModelResponse,
+    UserContent,
+)
 from pydantic_ai.models import Model
 from pydantic_ai.result import StreamedRunResult
 from pydantic_ai.run import AgentRunResult
 
 from orqest.utils.llm_model import resolve_model
+
+Prompt = str | Sequence[UserContent]
 
 StateT = TypeVar("StateT", bound=BaseModel)
 OutputT = TypeVar("OutputT", bound=BaseModel)
@@ -161,7 +169,7 @@ class BaseAgent(Generic[StateT, OutputT]):
             )
         return self._agent
 
-    async def call_model(self, prompt: str, state: StateT) -> AgentRunResult:
+    async def call_model(self, prompt: Prompt, state: StateT) -> AgentRunResult:
         """Run the pydantic-ai agent with conversation history from state.
 
         Passes state.message_history into Agent.run() and stores the updated
@@ -179,7 +187,7 @@ class BaseAgent(Generic[StateT, OutputT]):
 
     @asynccontextmanager
     async def call_model_stream(
-        self, prompt: str, state: StateT
+        self, prompt: Prompt, state: StateT
     ) -> AsyncIterator[StreamedRunResult]:
         """Stream the pydantic-ai agent with conversation history from state.
 
@@ -198,7 +206,7 @@ class BaseAgent(Generic[StateT, OutputT]):
             state.message_history = streamed.all_messages()
 
     async def stream_output(
-        self, prompt: str, state: StateT, *, debounce_by: float | None = None
+        self, prompt: Prompt, state: StateT, *, debounce_by: float | None = None
     ) -> AsyncIterator[OutputT]:
         """Stream partial structured output from the LLM.
 
@@ -219,7 +227,7 @@ class BaseAgent(Generic[StateT, OutputT]):
                 yield partial
 
     async def stream_events(
-        self, prompt: str, state: StateT
+        self, prompt: Prompt, state: StateT
     ) -> AsyncIterator[AgentStreamEvent]:
         """Stream all agent events including model responses and tool calls.
 

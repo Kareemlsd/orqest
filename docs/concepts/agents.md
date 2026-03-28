@@ -70,6 +70,53 @@ async def _run_implementation(self, state, **kwargs):
 
 Use this when you want multi-turn conversations where the agent remembers prior context.
 
+#### Multi-modal prompts
+
+All `BaseAgent` methods that accept a `prompt` support multi-modal input. Pass a list mixing text and content objects instead of a plain string:
+
+```python
+from pydantic_ai import ImageUrl, DocumentUrl, BinaryContent
+
+# URL-based image
+result = await self.call_model(
+    ["Describe this image:", ImageUrl(url="https://example.com/photo.jpg")],
+    state,
+)
+
+# URL-based PDF document
+result = await self.call_model(
+    ["Summarize:", DocumentUrl(url="https://example.com/report.pdf")],
+    state,
+)
+
+# Local file via BinaryContent
+content = BinaryContent.from_path("chart.png")
+result = await self.call_model(["Analyze this chart:", content], state)
+
+# Mixed content
+result = await self.call_model(
+    [
+        "Compare the image with the document:",
+        ImageUrl(url="https://example.com/diagram.png"),
+        DocumentUrl(url="https://example.com/spec.pdf"),
+    ],
+    state,
+)
+```
+
+The available content types (from `pydantic_ai`) are:
+
+| Type | Use case |
+|------|----------|
+| `ImageUrl` | URL-referenced images (JPEG, PNG, GIF, WebP) |
+| `AudioUrl` | URL-referenced audio (MP3, WAV, FLAC, etc.) |
+| `VideoUrl` | URL-referenced video (MP4, MKV, WebM, etc.) |
+| `DocumentUrl` | URL-referenced documents (PDF, TXT, CSV, DOCX, etc.) |
+| `BinaryContent` | Raw bytes with media type — works with any modality |
+
+!!! note "Provider support varies"
+    Not all providers support all modalities. For example, Anthropic supports images and PDFs but not audio or video. Check your provider's documentation for details.
+
 ### `self.agent.run(prompt)` — Stateless
 
 Calls the pydantic-ai agent directly with no history management:
