@@ -6,10 +6,11 @@ GlobalState tracks two distinct things:
 """
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from pydantic import BaseModel, Field
-from pydantic_ai.messages import ModelMessage
+from pydantic_ai.messages import ModelMessage, UserContent
 
 
 class GlobalState(BaseModel):
@@ -18,11 +19,11 @@ class GlobalState(BaseModel):
     messages: list[dict[str, Any]] = Field(default_factory=list)
     message_history: list[ModelMessage] = Field(default_factory=list)
 
-    def add_message(self, role: str, content: str) -> None:
+    def add_message(self, role: str, content: str | Sequence[UserContent]) -> None:
         """Append a role/content pair to the conversation log."""
         self.messages.append({"role": role, "content": content})
 
-    def get_latest_message(self, role: str) -> str | None:
+    def get_latest_message(self, role: str) -> str | Sequence[UserContent] | None:
         """Return the content of the most recent message with the given role."""
         for message in reversed(self.messages):
             if message.get("role") == role:

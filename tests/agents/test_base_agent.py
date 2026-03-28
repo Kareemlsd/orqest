@@ -645,6 +645,31 @@ class TestMultiModalPrompt:
         assert len(events) > 0
 
     @pytest.mark.asyncio
+    async def test_multimodal_history_persists_across_turns(self, test_model):
+        """Multi-modal prompts should accumulate in message_history across turns."""
+        from orqest.agents.state import GlobalState
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        state = GlobalState()
+
+        # First turn with image
+        await agent.call_model(
+            ["Describe:", ImageUrl(url="https://example.com/img.png")], state
+        )
+        history_after_first = len(state.message_history)
+
+        # Second turn with document
+        await agent.call_model(
+            ["Summarize:", DocumentUrl(url="https://example.com/doc.pdf")], state
+        )
+        assert len(state.message_history) > history_after_first
+
+    @pytest.mark.asyncio
     async def test_plain_string_still_works(self, test_model):
         """Ensure backwards compatibility — plain strings still work."""
         from orqest.agents.state import GlobalState
