@@ -109,7 +109,7 @@ python -m build
 - `as_tool()` — wrap any BaseAgent as a pydantic-ai Tool for stateless orchestrator invocation
 - `load_sys_prompt()` — system prompt file loader utility
 - Documentation site with MkDocs Material (concepts, getting started, auto-generated API reference)
-- Test suite with 71 tests covering all modules
+- Test suite with 66 tests covering all modules
 
 ## What Does NOT Exist Yet
 

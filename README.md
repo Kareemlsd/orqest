@@ -64,6 +64,7 @@ asyncio.run(main())
 - **Generic base agent** — `BaseAgent[StateT, OutputT]` with async-first execution and structured output via Pydantic models
 - **Multi-turn conversations** — `call_model()` automatically wires conversation history, with sliding-window truncation that preserves turn integrity
 - **Multi-provider routing** — `provider:model_id` format routes to OpenAI, Anthropic, Google, or OpenRouter
+- **Streaming** — `call_model_stream()`, `stream_output()`, and `stream_events()` for real-time partial output and tool call visibility
 - **Agent-as-tool composition** — `as_tool()` wraps any agent as a pydantic-ai `Tool` for orchestrator patterns
 - **Environment-based config** — `load_config()` reads `.env` files explicitly, no import-time side effects
 - **System prompt loader** — `load_sys_prompt()` finds and loads `.txt` prompts from a `system_prompts/` directory
