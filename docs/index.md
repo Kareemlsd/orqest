@@ -1,17 +1,21 @@
 # Orqest
 
-A lightweight Python framework for building AI agents on top of [pydantic-ai](https://ai.pydantic.dev). Orqest provides a typed base agent class, multi-provider model routing, conversation state management, and agent composition primitives — so you can focus on your agent's logic instead of infrastructure.
+A Python framework for building autonomous agentic AI systems on top of [pydantic-ai](https://ai.pydantic.dev). Orqest provides typed agent primitives, orchestration patterns, lifecycle hooks, memory, observability, and agent composition -- so you can focus on your agent's logic instead of infrastructure.
 
-> **Status:** Early development (v0.0.1). The API may change as the project matures.
+> **Status:** Active development (v0.0.1). Core agent primitives, orchestration, hooks, memory, and observability are implemented. API may evolve.
 
 ## Features
 
-- **Generic base agent** — `BaseAgent[StateT, OutputT]` gives you a typed, async-first foundation. Define your state and output models, implement `_run_implementation()`, done.
-- **Multi-turn conversations** — `call_model()` automatically wires conversation history through pydantic-ai, with built-in sliding-window truncation that preserves turn integrity.
-- **Multi-provider routing** — A single `provider:model_id` string routes to OpenAI, Anthropic, Google, or OpenRouter. No provider-specific code needed.
-- **Agent-as-tool composition** — Wrap any agent as a pydantic-ai `Tool` with `as_tool()` for orchestrator patterns where specialized agents are called on demand.
-- **Environment-based config** — `load_config()` reads `.env` files explicitly, with no import-time side effects.
-- **System prompt loader** — Load `.txt` prompts from a `system_prompts/` directory with automatic upward search.
+- **Generic base agent** -- `BaseAgent[StateT, OutputT]` gives you a typed, async-first foundation. Define your state and output models, implement `_run_implementation()`, done.
+- **Orchestration** -- `Pipeline`, `Parallel`, `Router`, and `RefinementLoop` compose agents into complex workflows with error strategies, merge strategies, conditional routing, and iterative refinement.
+- **Lifecycle hooks** -- `HookRunner` and `ToolHook` provide fire-and-forget before/after/error callbacks. Broken hooks never crash your agent.
+- **Session persistence** -- `BaseSessionState` adds session tracking and JSON-safe serialization with ModelMessage round-tripping for cross-session persistence.
+- **Compound tools** -- `CompoundTool` implements the agent-decides, system-acts pattern with hook integration and state updates.
+- **Memory** -- `MemoryStore` protocol with `LocalMemoryStore` (SQLite + FTS5 full-text search), self-healing reliability decay, and pluggable backends.
+- **Observability** -- Structured tracing with `Span` and `JSONTracer`, plus an `EventBus` pub/sub for agent events linked to traces.
+- **Multi-turn conversations** -- `call_model()` automatically wires conversation history through pydantic-ai with sliding-window truncation.
+- **Multi-provider routing** -- A single `provider:model_id` string routes to OpenAI, Anthropic, Google, or OpenRouter.
+- **Agent-as-tool composition** -- Wrap any agent as a pydantic-ai `Tool` with `as_tool()` for orchestrator patterns.
 
 ## Quick Start
 
@@ -53,9 +57,25 @@ async def main():
 asyncio.run(main())
 ```
 
+For multi-agent workflows, compose agents with orchestration primitives:
+
+```python
+from orqest.orchestration import Pipeline
+
+pipeline = Pipeline([research_agent, draft_agent, review_agent], name="content")
+result = await pipeline.run("Write about quantum computing")
+```
+
 ## What's Next
 
-- [Getting Started](getting-started.md) — full walkthrough from installation to multi-turn conversations
-- [Concepts](concepts/agents.md) — deep dives into agents, state management, and composition
-- [API Reference](api/config.md) — auto-generated documentation from source
-- [Changelog](changelog.md) — version history
+- [Getting Started](getting-started.md) -- installation, configuration, and your first agent
+- **Concepts:**
+    - [Agents](concepts/agents.md) -- base agent, tools, streaming
+    - [Orchestration](concepts/orchestration.md) -- pipeline, parallel, router, refinement loop
+    - [Hooks & Lifecycle](concepts/hooks-and-lifecycle.md) -- fire-and-forget hook system
+    - [Session Persistence](concepts/session-persistence.md) -- cross-session state serialization
+    - [Compound Tools](concepts/compound-tools.md) -- agent-decides, system-acts pattern
+    - [Memory](concepts/memory.md) -- pluggable memory with SQLite backend
+    - [Observability](concepts/observability.md) -- tracing and event bus
+- [API Reference](api/config.md) -- auto-generated documentation from source
+- [Changelog](changelog.md) -- version history

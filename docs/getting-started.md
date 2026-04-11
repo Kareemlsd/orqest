@@ -139,3 +139,7 @@ The LLM sees the full conversation on the second call, so it can factor in both 
 - [Agents](concepts/agents.md) — constructor parameters, `call_model()` vs `self.agent.run()`, tools and toolsets
 - [State & History](concepts/state-and-history.md) — how `GlobalState` works, custom state types, history processing
 - [Agent as Tool](concepts/agent-as-tool.md) — composing agents with the `as_tool()` wrapper
+- [Orchestration](concepts/orchestration.md) — pipeline, parallel, router, and refinement loop patterns
+- [Hooks & Lifecycle](concepts/hooks-and-lifecycle.md) — fire-and-forget hook system for tool execution
+- [Memory](concepts/memory.md) — pluggable memory with SQLite backend and full-text search
+- [Observability](concepts/observability.md) — structured tracing and event bus

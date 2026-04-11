@@ -1,6 +1,6 @@
 site_name: Orqest
 site_url: https://kareemlsd.github.io/orqest/
-site_description: A Python framework for building AI agents on top of pydantic-ai
+site_description: A Python framework for building autonomous agentic AI systems on top of pydantic-ai
 repo_url: https://github.com/Kareemlsd/orqest
 repo_name: Kareemlsd/orqest
 
@@ -64,9 +64,19 @@ nav:
       - State & History: concepts/state-and-history.md
       - Agent as Tool: concepts/agent-as-tool.md
       - Streaming: concepts/streaming.md
+      - Orchestration: concepts/orchestration.md
+      - Hooks & Lifecycle: concepts/hooks-and-lifecycle.md
+      - Session Persistence: concepts/session-persistence.md
+      - Compound Tools: concepts/compound-tools.md
+      - Memory: concepts/memory.md
+      - Observability: concepts/observability.md
   - API Reference:
       - Configuration: api/config.md
       - Agents: api/agents.md
+      - Orchestration: api/orchestration.md
+      - Hooks: api/hooks.md
+      - Memory: api/memory.md
+      - Observability: api/observability.md
       - Model Resolution: api/utils.md
       - System Prompts: api/io-utils.md
   - Changelog: changelog.md
