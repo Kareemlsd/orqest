@@ -8,141 +8,149 @@ patterns, error handling, debugging — none of which is the developer's actual 
 
 Orqest's goal: **make the jump from 1 agent to N agents incremental, not architectural.**
 
-## Design Principle
+## Design Principles
 
-An agent is defined once. How it participates — as a conversational agent, a pipeline
-step, or a tool — is determined by how it's composed, not by rewriting the agent.
-The same `BaseAgent[StateT, OutputT]` works in all contexts.
-
----
-
-## Phase 1 — Composition Primitives
-
-**Goal:** A developer can wire multiple agents together without writing glue code.
-
-### 1.1 Agent-as-Tool
-
-Wrap any `BaseAgent` as a pydantic-ai `Tool` so an orchestrating agent can call it.
-The wrapped agent runs statelessly — it receives parameters, returns structured output,
-and doesn't see conversation history. This is the right pattern for specialized agents
-that do a focused job (e.g., a calculation, a classification, a transformation).
-
-- Utility to wrap `BaseAgent` → pydantic-ai `Tool`
-- The orchestrator decides when to call it (LLM-driven)
-- No history passed — input/output only
-- Example: `02_agent_as_tool/`
-
-### 1.2 Sequential Pipeline
-
-Chain agents where the output of one feeds the input of the next. Deterministic
-execution order, developer-defined. The right pattern when the workflow is known
-upfront (e.g., extract → validate → transform → summarize).
-
-- `Pipeline([AgentA, AgentB, AgentC])` or similar composition API
-- Each agent receives only the previous agent's output (no full history)
-- Typed: the pipeline validates that output of step N is compatible with input of step N+1
-- Short-circuit on failure — no silent propagation of bad state
-- Example: `03_pipeline/`
-
-### 1.3 Context Scoping
-
-The core question of multi-agent systems: who gets what context?
-
-- **Full history** — conversational agents that need the full thread
-- **Previous output only** — pipeline steps that need just the prior result
-- **Specific parameters** — tool-like agents that need explicit inputs, no context
-- **Scoped view** — agents that see a subset of the shared state relevant to them
-
-Provide clear primitives so the developer declares context scope per agent rather
-than manually slicing and passing state.
+1. An agent is defined once. How it participates — as a conversational agent, a pipeline step, or a tool — is determined by how it's composed, not by rewriting the agent.
+2. Core Orqest manages the *shape* and *flow* of intelligence; Extensions manage the *matter* and *action* of the domain.
+3. Ship pure Python first. Optimize with Rust only after profiling confirms bottlenecks.
 
 ---
 
-## Phase 2 — Flexible Orchestration
+## Phase 1 — Composition Primitives ✅ COMPLETE
 
-**Goal:** Support non-linear workflows and dynamic routing.
+### 1a. Orchestration ✅
 
-### 2.1 Parallel Execution
+- `Pipeline` — sequential step execution with STOP/SKIP/RETRY error strategies
+- `Parallel` — concurrent execution with merge strategies and timeout
+- `Router` — rule-based and LLM-driven conditional routing with fallback
+- `RefinementLoop` — iterative refinement with evaluator feedback and convergence
+- `Step` protocol — unified interface for agents and pure async functions
 
-Run independent agents concurrently (e.g., quality check + visualization can happen
-at the same time). Collect and merge results.
+### 1b. Core Uplift ✅
 
-- `parallel([AgentA, AgentB])` — runs both, returns both outputs
-- Requires defining how outputs are merged or collected
-
-### 2.2 Conditional Routing
-
-Branch execution based on an agent's output or an explicit condition.
-
-- Developer-defined conditions (if/else on output fields)
-- LLM-driven routing (an orchestrator agent decides the next step)
-- Fallback paths when an agent fails
-
-### 2.3 Mixins / Capability Extensions
-
-Extend agent capabilities through composition rather than deeper inheritance.
-
-- Evaluate mixins vs. protocols vs. decorators based on real usage from Phase 1
-- Candidates: retry logic, caching, input validation, output post-processing
-- Decision deferred until Phase 1 patterns reveal what's actually needed
+- `HookRunner` + `ToolHook` — fire-and-forget lifecycle hooks
+- `BaseSessionState` — serializable session state with ModelMessages persistence
+- `CompoundTool` — agent→execute→update pattern with hook integration
 
 ---
 
-## Phase 3 — Production Readiness
+## Phase 2 — Memory Architecture 🔄 IN PROGRESS
 
-**Goal:** Orqest is reliable enough to run in production and mature enough for
-open-source contributors.
+**Goal:** Agents that learn, remember, and forget intelligently across sessions.
 
-### 3.1 Observability
+### Memory Protocol
+- `MemoryStore` protocol: `store()`, `recall()`, `forget()`
+- `MemoryEntry` model: content, type (semantic/episodic), confidence, reliability_score
+- Separate `MemoryConfig` (orthogonal to `OrqestConfig`)
 
-When agent 4 in a pipeline produces bad output, the developer needs to trace back
-to which upstream agent caused the issue.
+### Backends
+- Local SQLite + sqlite-vec (zero-config development)
+- Supabase pgvector + Postgres (production, with RLS)
+- Both as optional extras: `pip install orqest[local-memory]` / `orqest[supabase]`
 
-- Structured logging per agent (agent name, input summary, output summary, duration)
-- Evaluate building on pydantic-ai's OpenTelemetry `instrument` support
-- Pipeline-level trace that shows the full execution path
+### Self-Healing
+- Reliability decay: `score = base * (0.7 ^ failure_count)`
+- Pruning: memories below 0.1 reliability removed during maintenance
+- Memory operations are best-effort (never block agent execution)
 
-### 3.2 Error Recovery
+### Integration
+- Memory is a service on state, not a BaseAgent constructor parameter
+- ContextManager stays orthogonal (within-session vs cross-session are different concerns)
 
-- Configurable retry per agent within a pipeline
-- Fallback agents (if A fails, try B)
-- Checkpointing: save state after each step so a pipeline can resume mid-way
+---
 
-### 3.3 Testing Utilities
+## Phase 3 — Autonomy (Dynamic Agent Spawning)
 
-- Helpers for testing multi-agent composition without real API calls
-- Pipeline-level test fixtures using `TestModel`
-- Assertion helpers for validating agent interaction sequences
+**Goal:** Orchestrator can design and spawn new agents at runtime.
 
-### 3.4 CI/CD & Open-Source Launch
+### Core Components
+- `AgentSpec` — serializable agent definition (prompt, output schema, tools, constraints)
+- `AgentFactory` — hydrates spec into live agent via `pydantic.create_model()`
+- `ToolRegistry` — central tool discovery (pre-registered + MCP + dynamic)
+- `MetaOrchestrator` — self-spawning loop: decompose → find/create → execute → learn
+- `ToolSandbox` — protocol for safe execution of generated tool code
 
-- GitHub Actions for tests + lint on PR
-- Published to PyPI
-- Contributing guide
-- Versioning strategy (SemVer from 0.1.0)
+### Safety
+- Policy inheritance (global constraints flow to children)
+- Resource quotas (token budgets per spawned agent)
+- Depth limits (max nesting of spawned agents)
+- Human-in-the-loop gate for dangerous permissions
+
+### Learning
+- Successful AgentSpecs saved to episodic memory for reuse
+- Failed specs penalized via reliability_score decay
+
+---
+
+## Phase 4 — Observability
+
+**Goal:** When agent 4 in a pipeline produces bad output, trace the root cause.
+
+- Lightweight `Span` and `Tracer` protocol (zero deps by default)
+- Optional `orqest[otel]` for OpenTelemetry export
+- In-process `EventBus` (subsumes HookRunner)
+- Pipeline events flow through bus automatically
+
+---
+
+## Phase 5 — MCP Server (Claude Code Integration)
+
+**Goal:** Claude Code builds agentic software using orqest as a tool.
+
+- FastMCP server: `create_agent`, `run_agent`, `spawn_agent`, `list_agents`
+- Run as: `python -m orqest.mcp.server`
+- Dynamic Pydantic model construction from JSON Schema for `create_agent`
+
+---
+
+## Phase 6 — Resilience
+
+**Goal:** Autonomous systems that detect and repair their own degradation.
+
+- Watchdog: loop detection as history processor
+- Diagnostic retry: error→diagnosis→enriched retry pattern
+- Resource quotas enforcement
+- Policy inheritance for spawned agents
+
+---
+
+## Future — Rust Engine
+
+After profiling confirms bottlenecks:
+- Token counting (CPU-bound, replace heuristic with real tokenization)
+- History processing (10K+ message list transforms)
+- Parallel execution engine (concurrency safety via ownership model)
+- Event bus (high-throughput emission)
+- Interop: PyO3 + maturin. `pip install orqest` works without Rust compiler.
 
 ---
 
 ## What's NOT in Scope
 
-- Domain-specific agents (the user builds those, orqest provides the building blocks)
-- A visual UI or drag-and-drop builder
+- Domain-specific agents (user builds those, orqest provides building blocks)
+- Visual UI / drag-and-drop builder (separate package if ever needed)
 - Custom LLM inference (we use pydantic-ai for all model interaction)
-- Competing with pydantic-ai — we build on top of it, not around it
+- Competing with pydantic-ai — we build on top, not around
 
 ## Current Status
 
 - [x] BaseAgent[StateT, OutputT] with typed generics
 - [x] Multi-provider model routing
 - [x] Config without import-time side effects
-- [x] History processing (pure function, turn integrity)
-- [x] GlobalState for conversation tracking
+- [x] History processing (pure functions, turn integrity)
+- [x] GlobalState + BaseSessionState (with serialization)
 - [x] Streaming (call_model_stream, stream_output, stream_events)
-- [x] Multi-modal input support (images, PDFs, audio, video)
-- [x] Token-aware context management (ContextManager with 3-layer compaction)
+- [x] Multi-modal input support
+- [x] Token-aware context management (ContextManager)
 - [x] Tool result budgeting (budget_tool_results)
-- [x] Phase 1.1 — Agent-as-Tool (as_tool())
-- [x] Test suite (66 tests)
-- [x] Examples: 01_basic_agent, 02_agent_as_tool, 03_streaming
+- [x] Agent-as-Tool (as_tool)
+- [x] CompoundTool (agent→execute→update)
+- [x] HookRunner + ToolHook (lifecycle hooks)
+- [x] Pipeline (sequential with error strategies)
+- [x] Parallel (concurrent with merge + timeout)
+- [x] Router (rule-based + LLM classifier)
+- [x] RefinementLoop (iterative with convergence detection)
+- [x] Test suite (193 tests)
+- [x] Examples: 01-07 (tested with real LLMs)
 - [x] MkDocs documentation site
-- [ ] **Next: Phase 1.2 — Sequential Pipeline**
+- [ ] **Next: Phase 2 — Memory Architecture**
