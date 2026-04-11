@@ -177,6 +177,51 @@ class MCPServerManager:
         if conn:
             await conn.disconnect()
 
+    # -- online discovery --------------------------------------------------
+
+    async def discover_and_connect(
+        self,
+        query: str,
+        *,
+        max_servers: int = 3,
+    ) -> list[MCPConnection]:
+        """Search online for MCP servers matching a capability and connect.
+
+        Uses ``MCPDiscovery`` to find servers by keyword, then connects
+        to each. This is the key method that enables agents to
+        dynamically expand their toolset at runtime.
+
+        Args:
+            query: Capability description (e.g., "SQL database", "GitHub").
+            max_servers: Maximum number of servers to connect to.
+
+        Returns:
+            List of newly established connections.
+
+        """
+        from orqest.mcp.discovery import MCPDiscovery
+
+        discovery = MCPDiscovery()
+        discovered = await discovery.search(query, max_results=max_servers)
+
+        new_connections: list[MCPConnection] = []
+        for server in discovered:
+            if server.name in self._connections:
+                continue  # Already connected
+            try:
+                config = server.to_config()
+                conn = await self.connect(config)
+                new_connections.append(conn)
+                logger.info(
+                    "Discovered and connected to '{name}' for '{q}'",
+                    name=server.name,
+                    q=query,
+                )
+            except Exception:
+                pass  # Logged inside connect()
+
+        return new_connections
+
     # -- tool access -------------------------------------------------------
 
     def get_all_tools(self) -> list[Tool]:
