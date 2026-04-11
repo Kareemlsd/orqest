@@ -33,6 +33,12 @@ orqest/
 │   ├── parallel.py          # Parallel — concurrent execution with merge
 │   ├── router.py            # Router — conditional routing (rule-based + LLM)
 │   └── loop.py              # RefinementLoop — iterative refinement with evaluation
+├── mcp/
+│   ├── __init__.py          # Re-exports: MCPServerManager, MCPToolAdapter, MCPConfig
+│   ├── config.py            # MCPServerConfig, MCPConfig
+│   ├── adapter.py           # MCPToolAdapter — bridge MCP tools → pydantic-ai Tools
+│   ├── client.py            # MCPConnection, MCPServerManager (multi-server lifecycle)
+│   └── server.py            # create_orqest_server() — expose Orqest via FastMCP
 ├── utils/
 │   ├── llm_model.py         # resolve_model() — multi-provider routing
 │   └── token_counter.py     # estimate_tokens() — heuristic token counting
@@ -92,7 +98,7 @@ examples/                    # Progressive, docs-ready, tested with real LLMs
 # Install in dev mode
 uv pip install -e .
 
-# Run tests (193 tests)
+# Run tests (283 tests)
 .venv/bin/python -m pytest tests/ -v
 
 # Lint
@@ -127,10 +133,18 @@ python -m build
 - `Step` protocol — unified interface for agents and pure async functions
 - `AgentStep` / `FunctionStep` — concrete step implementations with auto-coercion
 
+### MCP Integration
+- `MCPServerManager` — manage connections to multiple MCP servers with auto-discovery
+- `MCPConnection` — single server lifecycle (connect, list tools, call tools, disconnect)
+- `MCPToolAdapter` — bridge MCP tool definitions → pydantic-ai Tool instances
+- `create_orqest_server()` — expose Orqest as a FastMCP server (create_agent, run_agent, solve_goal, list_agents)
+- Auto-discovery from `~/.claude.json`, `~/.claude/claude.json`, `~/.config/Claude/claude_desktop_config.json`
+- Async context manager support (`async with MCPServerManager() as mgr`)
+
 ### Infrastructure
 - `HookRunner` + `ToolHook` — fire-and-forget lifecycle hooks (before/after/error)
-- 193 tests (all passing), zero external dependencies beyond pydantic-ai
-- 6 example notebooks tested with real LLMs (gpt-4.1)
+- 283 tests (all passing)
+- 8 example notebooks tested with real LLMs (gpt-4.1)
 
 ## What's Next (Roadmap)
 
@@ -141,7 +155,7 @@ python -m build
 | 2. Memory | MemoryStore protocol, SQLite + Supabase backends | **IN PROGRESS** |
 | 3. Autonomy | AgentFactory, AgentSpec, MetaOrchestrator, ToolRegistry | Planned |
 | 4. Observability | Tracing, event bus | Planned |
-| 5. MCP Server | Claude Code integration via FastMCP | Planned |
+| 5. MCP Server | MCPServerManager + MCPToolAdapter + FastMCP server | **DONE** |
 | 6. Resilience | Watchdog, diagnostic retry, resource quotas | Planned |
 
 See `.claude/ROADMAP.md` for full details on each phase.
