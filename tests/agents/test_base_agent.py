@@ -170,6 +170,20 @@ class TestBaseAgentConstruction:
             model=test_model,
             history_processors=[custom],
         )
+        # budget_tool_results prepended + custom = 2
+        assert len(agent._history_processors) == 2
+        assert agent._history_processors[1] is custom
+
+    def test_custom_history_processors_no_budget(self, test_model):
+        custom = lambda msgs: msgs[-1:]
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+            history_processors=[custom],
+            result_budget=None,
+        )
         assert agent._history_processors == [custom]
 
     def test_default_history_processor(self, test_model):
@@ -180,7 +194,8 @@ class TestBaseAgentConstruction:
             model=test_model,
             truncated_history=50,
         )
-        assert len(agent._history_processors) == 1
+        # budget_tool_results + keep_recent_messages = 2
+        assert len(agent._history_processors) == 2
 
 
 # --- BaseAgent.run() tests ---

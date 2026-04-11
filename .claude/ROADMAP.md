@@ -137,6 +137,12 @@ to which upstream agent caused the issue.
 - [x] Config without import-time side effects
 - [x] History processing (pure function, turn integrity)
 - [x] GlobalState for conversation tracking
-- [x] Test suite (47 tests)
-- [x] Example: 01_basic_agent
-- [ ] **Next: Phase 1.1 — Agent-as-Tool**
+- [x] Streaming (call_model_stream, stream_output, stream_events)
+- [x] Multi-modal input support (images, PDFs, audio, video)
+- [x] Token-aware context management (ContextManager with 3-layer compaction)
+- [x] Tool result budgeting (budget_tool_results)
+- [x] Phase 1.1 — Agent-as-Tool (as_tool())
+- [x] Test suite (66 tests)
+- [x] Examples: 01_basic_agent, 02_agent_as_tool, 03_streaming
+- [x] MkDocs documentation site
+- [ ] **Next: Phase 1.2 — Sequential Pipeline**

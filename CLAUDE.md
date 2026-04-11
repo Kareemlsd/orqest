@@ -118,10 +118,35 @@ python -m build
 - Observability / tracing
 - CI/CD
 
+## Global Agents
+
+This project has a dedicated global agent and several supporting agents
+installed in `~/.claude/skills/`. Use them:
+
+| Agent | When to Use |
+|-------|-------------|
+| `/g-orchestrator` | **Primary agent for orqest work.** Design mode, build mode, or research mode. Knows the architecture, roadmap, and principles. |
+| `/g-specwright` | Before implementing any new feature. Writes contract-based specs, generates failing tests, then implements. |
+| `/g-critic` | Before merging PRs. Adversarial read-only review. |
+| `/g-auditor` | Audit plans and designs for hidden assumptions before execution. |
+| `/g-pragmatist` | Code quality audits against Pragmatic Programmer principles. |
+| `/g-sre` | Setting up CI/CD (GitHub Actions, PyPI publishing). |
+| `/g-chronicler` | Updating docs, README, CHANGELOG, ADRs after features ship. |
+| `/g-scout` | Researching competing frameworks (LangGraph, CrewAI, etc.) for roadmap decisions. |
+| `/g-strategist` | Trade-off analysis and system design brainstorming with Gemini. |
+
+### Recommended Workflow for New Features
+
+1. `/g-orchestrator` (design mode) — design the feature using orqest patterns
+2. `/g-auditor` — audit the design for hidden assumptions before building
+3. `/g-specwright` — write contract spec → failing tests → implementation
+4. `/g-critic` — review the implementation against spec
+5. `/g-chronicler` — update docs and CHANGELOG
+
 ## References
 
 - `.claude/PRINCIPLES.md` — development principles and coding standards (Pragmatic Programmer-based)
-- `.claude/ARCHITECTURE.md` — detailed design decisions and module dependencies
-- `.claude/ROADMAP.md` — planned features and priorities
+- `.claude/ARCHITECTURE.md` — module dependency map, design decisions, extension points
+- `.claude/ROADMAP.md` — planned features and priorities (3 phases)
 - `docs/` — user-facing documentation (MkDocs source)
 - `CHANGELOG.md` — version history (Keep a Changelog format)

@@ -10,6 +10,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
+from dataclasses import replace as dc_replace
 from functools import partial
 from typing import Any, Generic, TypeVar
 
@@ -20,12 +21,14 @@ from pydantic_ai.messages import (
     ModelMessage,
     ModelRequest,
     ModelResponse,
+    ToolReturnPart,
     UserContent,
 )
 from pydantic_ai.models import Model
 from pydantic_ai.result import StreamedRunResult
 from pydantic_ai.run import AgentRunResult
 
+from orqest.agents.context_manager import ContextManager
 from orqest.utils.llm_model import resolve_model
 
 Prompt = str | Sequence[UserContent]
@@ -74,6 +77,47 @@ def keep_recent_messages(
     return truncated
 
 
+def budget_tool_results(
+    messages: list[ModelMessage],
+    *,
+    max_result_chars: int = 20_000,
+    preview_chars: int = 2_000,
+) -> list[ModelMessage]:
+    """Truncate oversized ToolReturnPart content in message history.
+
+    Walks all messages, finds ToolReturnPart instances with content
+    exceeding max_result_chars, and replaces with a preview prefix
+    plus truncation notice. Returns a new list — never mutates input.
+    """
+    result: list[ModelMessage] = []
+    for msg in messages:
+        if isinstance(msg, ModelRequest):
+            new_parts = []
+            modified = False
+            for part in msg.parts:
+                if isinstance(part, ToolReturnPart):
+                    content_str = str(part.content)
+                    if len(content_str) > max_result_chars:
+                        truncated = (
+                            content_str[:preview_chars]
+                            + f"\n\n[TRUNCATED — {len(content_str)} chars total. "
+                            f"Full result was too large for context window.]"
+                        )
+                        new_parts.append(dc_replace(part, content=truncated))
+                        modified = True
+                    else:
+                        new_parts.append(part)
+                else:
+                    new_parts.append(part)
+            if modified:
+                result.append(dc_replace(msg, parts=new_parts))
+            else:
+                result.append(msg)
+        else:
+            result.append(msg)
+    return result
+
+
 class BaseAgent(Generic[StateT, OutputT]):
     """Abstract base class for orqest agents.
 
@@ -98,6 +142,8 @@ class BaseAgent(Generic[StateT, OutputT]):
         toolsets: list[Any] | None = None,
         truncated_history: int = 100,
         history_processors: list | None = None,
+        result_budget: int | None = 20_000,
+        context_manager: ContextManager | None = None,
     ):
         """Initialize the agent.
 
@@ -112,6 +158,11 @@ class BaseAgent(Generic[StateT, OutputT]):
             toolsets: Toolset objects providing collections of tools.
             truncated_history: Max recent messages kept by the default history processor.
             history_processors: Custom processors; defaults to keep_recent_messages.
+            result_budget: Max chars for tool result content before truncation.
+                None disables budgeting. Default 20,000.
+            context_manager: Optional ContextManager for token-aware compaction.
+                When present, its compact method is prepended as the first
+                history processor.
         """
         if isinstance(model, str):
             if api_key is None:
@@ -145,6 +196,14 @@ class BaseAgent(Generic[StateT, OutputT]):
             self._history_processors = [
                 partial(keep_recent_messages, max_messages=truncated_history)
             ]
+
+        if result_budget is not None:
+            self._history_processors.insert(
+                0, partial(budget_tool_results, max_result_chars=result_budget)
+            )
+
+        if context_manager is not None:
+            self._history_processors.insert(0, context_manager.compact)
 
         self._agent: Agent | None = None
 
