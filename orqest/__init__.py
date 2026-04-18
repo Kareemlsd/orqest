@@ -6,15 +6,22 @@ from .orchestration import (
     RefinementLoop,
     Router,
 )
+from .plan import ExecutionPlan, PlanStatus, PlanSubtask, PlanTask
+from .workbench import Workbench
 
 __all__ = [
+    "ExecutionPlan",
     "HookRunner",
     "OrqestConfig",
     "Parallel",
     "Pipeline",
+    "PlanStatus",
+    "PlanSubtask",
+    "PlanTask",
     "RefinementLoop",
     "Router",
     "ToolHook",
+    "Workbench",
     "get_default_config",
     "load_config",
 ]

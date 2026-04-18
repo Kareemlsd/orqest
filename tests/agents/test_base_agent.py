@@ -698,3 +698,33 @@ class TestMultiModalPrompt:
         state = GlobalState()
         result = await agent.call_model("plain text prompt", state)
         assert isinstance(result.output, SimpleOutput)
+
+
+class TestModelSettings:
+    """model_settings kwarg threads into pydantic-ai Agent construction."""
+
+    def test_default_is_none(self, test_model):
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        assert agent.model_settings is None
+        # Force lazy Agent construction; verify it didn't error.
+        assert agent.agent is not None
+
+    def test_custom_settings_stored_and_passed(self, test_model):
+        from pydantic_ai.settings import ModelSettings
+
+        settings = ModelSettings(temperature=0.0, seed=42)
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+            model_settings=settings,
+        )
+        assert agent.model_settings is settings
+        # pydantic-ai's Agent stores settings on the instance; check it round-tripped
+        assert agent.agent.model_settings == settings

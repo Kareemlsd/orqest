@@ -55,9 +55,9 @@ async def main():
     runner = HookRunner(hooks=[metrics])
 
     # Fire hooks manually (CompoundTool does this automatically)
-    await runner.fire_before("my_tool", {"query": "test"}, state=None)
-    await runner.fire_after("my_tool", {"query": "test"}, result="ok", state=None, duration_ms=42.0)
-    await runner.fire_error("my_tool", {"query": "test"}, error=ValueError("bad"), state=None)
+    await runner.run_before("my_tool", {"query": "test"}, state=None)
+    await runner.run_after("my_tool", {"query": "test"}, result="ok", state=None, duration_ms=42.0)
+    await runner.run_error("my_tool", {"query": "test"}, error=ValueError("bad"), state=None)
 
     print(f"Calls: {metrics.call_count}, Total: {metrics.total_ms}ms")
 
@@ -77,7 +77,7 @@ class BrokenHook:
 runner = HookRunner(hooks=[BrokenHook(), MetricsHook()])
 
 # BrokenHook fails silently, MetricsHook still runs
-await runner.fire_before("tool", {}, state=None)
+await runner.run_before("tool", {}, state=None)
 ```
 
 This is the fire-and-forget pattern: hooks are side effects (logging, metrics, notifications) that must never interfere with the primary execution path.

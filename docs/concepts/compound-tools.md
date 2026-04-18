@@ -105,10 +105,10 @@ tool = CompoundTool(
 ## What's Happening Under the Hood
 
 1. `tool.run(state, prompt)` calls `agent.run(state)` to get structured output
-2. `hooks.fire_before(tool_name, args, state)` dispatches to all hooks
+2. `hooks.run_before(tool_name, args, state)` dispatches to all hooks
 3. `executor(agent_output, state)` runs the action, timed for `duration_ms`
-4. On success: `hooks.fire_after(...)` fires, then `state_updater(state, result)` if configured
-5. On error: `hooks.fire_error(...)` fires, then the exception re-raises
+4. On success: `hooks.run_after(...)` fires, then `state_updater(state, result)` if configured
+5. On error: `hooks.run_error(...)` fires, then the exception re-raises
 
 The return value is a tuple: `(agent_output, execution_result)`.
 

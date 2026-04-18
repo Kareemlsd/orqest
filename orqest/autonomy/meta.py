@@ -171,7 +171,7 @@ class MetaOrchestrator:
             state = GlobalState()
             state.add_message("user", prompt)
 
-            await self._hooks.fire_before(
+            await self._hooks.run_before(
                 f"meta:{subtask.name}",
                 {"subtask": subtask.name},
                 state,
@@ -180,7 +180,7 @@ class MetaOrchestrator:
             output = await agent.run(state)
             duration = (time.monotonic() - start) * 1000
 
-            await self._hooks.fire_after(
+            await self._hooks.run_after(
                 f"meta:{subtask.name}",
                 {"subtask": subtask.name},
                 output,
@@ -204,7 +204,7 @@ class MetaOrchestrator:
                 name=subtask.name,
                 err=str(exc),
             )
-            await self._hooks.fire_error(
+            await self._hooks.run_error(
                 f"meta:{subtask.name}",
                 {"subtask": subtask.name},
                 exc,

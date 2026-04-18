@@ -27,6 +27,7 @@ from pydantic_ai.messages import (
 from pydantic_ai.models import Model
 from pydantic_ai.result import StreamedRunResult
 from pydantic_ai.run import AgentRunResult
+from pydantic_ai.settings import ModelSettings
 
 from orqest.agents.context_manager import ContextManager
 from orqest.utils.llm_model import resolve_model
@@ -144,6 +145,7 @@ class BaseAgent(Generic[StateT, OutputT]):
         history_processors: list | None = None,
         result_budget: int | None = 20_000,
         context_manager: ContextManager | None = None,
+        model_settings: ModelSettings | None = None,
     ):
         """Initialize the agent.
 
@@ -163,6 +165,9 @@ class BaseAgent(Generic[StateT, OutputT]):
             context_manager: Optional ContextManager for token-aware compaction.
                 When present, its compact method is prepended as the first
                 history processor.
+            model_settings: Optional pydantic-ai ``ModelSettings`` applied to
+                every model call (e.g. ``ModelSettings(temperature=0.0,
+                seed=42)``). Default ``None`` preserves provider defaults.
         """
         if isinstance(model, str):
             if api_key is None:
@@ -184,6 +189,7 @@ class BaseAgent(Generic[StateT, OutputT]):
         self.output_type = output_type
         self.retries = retries
         self.truncated_history = truncated_history
+        self.model_settings = model_settings
 
         self.tools: list[Tool] = [
             t if isinstance(t, Tool) else Tool(t) for t in (tools or [])
@@ -225,6 +231,7 @@ class BaseAgent(Generic[StateT, OutputT]):
                 retries=self.retries,
                 model=self._model,
                 history_processors=self._history_processors,
+                model_settings=self.model_settings,
             )
         return self._agent
 

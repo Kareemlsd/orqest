@@ -88,3 +88,28 @@ class TestSubclass:
         restored = MyState.deserialize(data)
         assert restored.project_name == "demo"
         assert len(restored.messages) == 1
+
+
+class TestPydanticNative:
+    """model_dump/model_validate work without calling serialize/deserialize."""
+
+    def test_model_dump_roundtrip(self):
+        state = BaseSessionState(session_id="p-1")
+        state.message_history = [_req("hi"), _resp("hello")]
+        data = state.model_dump(mode="json")
+        restored = BaseSessionState.model_validate(data)
+        assert restored.session_id == "p-1"
+        assert len(restored.message_history) == 2
+
+    def test_model_dump_json_produces_string(self):
+        state = BaseSessionState(session_id="p-2")
+        state.message_history = [_req("hi")]
+        json_str = state.model_dump_json()
+        assert isinstance(json_str, str)
+        assert "p-2" in json_str
+
+    def test_corrupt_message_history_handled_by_validator(self):
+        state = BaseSessionState.model_validate(
+            {"session_id": "x", "message_history": [{"garbage": True}]}
+        )
+        assert state.message_history == []

@@ -1,6 +1,7 @@
 from .base_agent import BaseAgent, Prompt, keep_recent_messages
 from .compound_tool import CompoundTool
 from .context_manager import ContextManager
+from .retry import run_with_retry
 from .session_state import BaseSessionState
 from .state import GlobalState
 from .tool_wrapper import as_tool
@@ -14,4 +15,5 @@ __all__ = [
     "Prompt",
     "as_tool",
     "keep_recent_messages",
+    "run_with_retry",
 ]

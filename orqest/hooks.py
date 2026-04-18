@@ -60,16 +60,14 @@ class HookRunner:
         """Initialize with an optional list of hooks."""
         self._hooks: list[ToolHook] = list(hooks) if hooks else []
 
-    async def fire_before(
+    async def run_before(
         self, tool_name: str, args: dict[str, Any], state: Any
     ) -> None:
         """Dispatch before_tool to all registered hooks."""
         for hook in self._hooks:
-            await self._safe_call(
-                hook, "before_tool", tool_name=tool_name, args=args, state=state
-            )
+            await self._safe_call(hook, "before_tool", tool_name, args, state)
 
-    async def fire_after(
+    async def run_after(
         self,
         tool_name: str,
         args: dict[str, Any],
@@ -80,16 +78,10 @@ class HookRunner:
         """Dispatch after_tool to all registered hooks."""
         for hook in self._hooks:
             await self._safe_call(
-                hook,
-                "after_tool",
-                tool_name=tool_name,
-                args=args,
-                result=result,
-                state=state,
-                duration_ms=duration_ms,
+                hook, "after_tool", tool_name, args, result, state, duration_ms
             )
 
-    async def fire_error(
+    async def run_error(
         self,
         tool_name: str,
         args: dict[str, Any],
@@ -98,24 +90,17 @@ class HookRunner:
     ) -> None:
         """Dispatch on_error to all registered hooks."""
         for hook in self._hooks:
-            await self._safe_call(
-                hook,
-                "on_error",
-                tool_name=tool_name,
-                args=args,
-                error=error,
-                state=state,
-            )
+            await self._safe_call(hook, "on_error", tool_name, args, error, state)
 
     async def _safe_call(
-        self, hook: ToolHook, method_name: str, **kwargs: Any
+        self, hook: ToolHook, method_name: str, *args: Any
     ) -> None:
         """Invoke a hook method if it exists, swallowing any exception."""
         method = getattr(hook, method_name, None)
         if method is None:
             return
         try:
-            await method(**kwargs)
+            await method(*args)
         except Exception:
             logger.warning(
                 "Hook {hook}.{method} failed",

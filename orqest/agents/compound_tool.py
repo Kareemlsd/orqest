@@ -62,15 +62,15 @@ class CompoundTool(Generic[StateT, OutputT]):
         agent_output = await self._agent.run(state, **kwargs)
 
         args = {"agent_output": agent_output, "prompt": prompt}
-        await self._hooks.fire_before(self.name, args, state)
+        await self._hooks.run_before(self.name, args, state)
 
         start = time.monotonic()
         try:
             result = await self._executor(agent_output, state)
             duration_ms = (time.monotonic() - start) * 1000
-            await self._hooks.fire_after(self.name, args, result, state, duration_ms)
+            await self._hooks.run_after(self.name, args, result, state, duration_ms)
         except Exception as exc:
-            await self._hooks.fire_error(self.name, args, exc, state)
+            await self._hooks.run_error(self.name, args, exc, state)
             raise
 
         if self._state_updater is not None:

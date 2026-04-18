@@ -72,6 +72,16 @@ class EventBus:
         except ValueError:
             pass
 
+    def unsubscribe_all(self, handler: EventHandler) -> None:
+        """Remove a handler registered via :meth:`subscribe_all`.
+
+        Silently ignores handlers that are not registered.
+        """
+        try:
+            self._global_handlers.remove(handler)
+        except ValueError:
+            pass
+
     async def emit(self, event: AgentEvent) -> None:
         """Dispatch an event to all matching handlers.
 

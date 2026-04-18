@@ -57,19 +57,19 @@ class TestHookRunnerEmpty:
     """HookRunner with no hooks should not error."""
 
     @pytest.mark.asyncio
-    async def test_fire_before_no_hooks(self):
+    async def test_run_before_no_hooks(self):
         runner = HookRunner()
-        await runner.fire_before("tool", {}, None)
+        await runner.run_before("tool", {}, None)
 
     @pytest.mark.asyncio
-    async def test_fire_after_no_hooks(self):
+    async def test_run_after_no_hooks(self):
         runner = HookRunner()
-        await runner.fire_after("tool", {}, "result", None, 100.0)
+        await runner.run_after("tool", {}, "result", None, 100.0)
 
     @pytest.mark.asyncio
-    async def test_fire_error_no_hooks(self):
+    async def test_run_error_no_hooks(self):
         runner = HookRunner()
-        await runner.fire_error("tool", {}, RuntimeError("err"), None)
+        await runner.run_error("tool", {}, RuntimeError("err"), None)
 
 
 class TestHookRunnerDispatches:
@@ -79,7 +79,7 @@ class TestHookRunnerDispatches:
     async def test_before_tool_fires(self):
         hook = FullHook()
         runner = HookRunner([hook])
-        await runner.fire_before("my_tool", {"k": "v"}, "state")
+        await runner.run_before("my_tool", {"k": "v"}, "state")
         assert len(hook.calls) == 1
         assert hook.calls[0][0] == "before_tool"
         assert hook.calls[0][1]["tool_name"] == "my_tool"
@@ -88,7 +88,7 @@ class TestHookRunnerDispatches:
     async def test_after_tool_fires_with_duration(self):
         hook = FullHook()
         runner = HookRunner([hook])
-        await runner.fire_after("my_tool", {}, "result_val", "state", 42.5)
+        await runner.run_after("my_tool", {}, "result_val", "state", 42.5)
         assert len(hook.calls) == 1
         assert hook.calls[0][0] == "after_tool"
         assert hook.calls[0][1]["duration_ms"] == 42.5
@@ -99,7 +99,7 @@ class TestHookRunnerDispatches:
         hook = FullHook()
         runner = HookRunner([hook])
         exc = ValueError("test error")
-        await runner.fire_error("my_tool", {}, exc, "state")
+        await runner.run_error("my_tool", {}, exc, "state")
         assert len(hook.calls) == 1
         assert hook.calls[0][0] == "on_error"
         assert hook.calls[0][1]["error"] is exc
@@ -111,9 +111,9 @@ class TestHookRunnerErrorHandling:
     @pytest.mark.asyncio
     async def test_exploding_hook_does_not_propagate(self):
         runner = HookRunner([ExplodingHook()])
-        await runner.fire_before("tool", {}, None)
-        await runner.fire_after("tool", {}, "r", None, 1.0)
-        await runner.fire_error("tool", {}, RuntimeError("x"), None)
+        await runner.run_before("tool", {}, None)
+        await runner.run_after("tool", {}, "r", None, 1.0)
+        await runner.run_error("tool", {}, RuntimeError("x"), None)
 
 
 class TestHookRunnerPartialHook:
@@ -123,11 +123,11 @@ class TestHookRunnerPartialHook:
     async def test_before_only_hook_skips_after(self):
         hook = BeforeOnlyHook()
         runner = HookRunner([hook])
-        await runner.fire_before("tool", {}, None)
+        await runner.run_before("tool", {}, None)
         assert hook.called is True
         # after_tool and on_error should not error
-        await runner.fire_after("tool", {}, "r", None, 1.0)
-        await runner.fire_error("tool", {}, RuntimeError("x"), None)
+        await runner.run_after("tool", {}, "r", None, 1.0)
+        await runner.run_error("tool", {}, RuntimeError("x"), None)
 
 
 class TestHookRunnerMultiple:
@@ -138,7 +138,7 @@ class TestHookRunnerMultiple:
         hook_a = FullHook()
         hook_b = FullHook()
         runner = HookRunner([hook_a, hook_b])
-        await runner.fire_before("tool", {}, None)
+        await runner.run_before("tool", {}, None)
         assert len(hook_a.calls) == 1
         assert len(hook_b.calls) == 1
 

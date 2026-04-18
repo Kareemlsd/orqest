@@ -1,0 +1,129 @@
+"""Workbench — bundle memory + tracer + event bus + recent-events buffer.
+
+Every production Orqest agent needs the same four infrastructure
+pieces: a :class:`MemoryStore` for durable facts, a
+:class:`Tracer` for span capture, an :class:`EventBus` for
+observability fan-out, and a bounded buffer of recent events so late-
+connecting clients (and reconnecting SSE consumers) can catch up on
+what they missed. ``Workbench`` packages those four into a single
+container so consumers configure them once and pass the workbench
+around instead of plumbing the four objects through every function
+signature.
+
+``Workbench`` does not prescribe a lifetime — callers decide. Typical
+patterns:
+
+* **Process-level** (demos, single-tenant CLI): one workbench, shared
+  memory + tracer + bus for the process lifetime.
+* **Per-request** (multi-tenant backend): a factory builds one
+  workbench per user turn, sharing a singleton memory store but
+  giving each request a fresh tracer + bus.
+* **Per-session** (chat apps with sidecar streams): one workbench
+  per chat session, outliving individual requests.
+"""
+
+from __future__ import annotations
+
+from collections import deque
+from typing import Any
+
+from orqest.observability.events import AgentEvent, EventBus
+from orqest.observability.tracer import JSONTracer, Tracer
+
+
+class Workbench:
+    """Runtime container for memory, tracing, events, and replay.
+
+    Instance attributes are public — reach through the workbench to
+    talk to the underlying primitives directly when the canonical
+    helpers aren't enough.
+
+    Attributes:
+        memory: A :class:`~orqest.memory.store.MemoryStore` (protocol;
+            typically :class:`~orqest.memory.local.LocalMemoryStore`).
+        tracer: A :class:`~orqest.observability.tracer.Tracer`
+            (defaults to a fresh ``JSONTracer``).
+        event_bus: A :class:`~orqest.observability.events.EventBus`
+            (defaults to a fresh ``EventBus``).
+        recent_events: Ring buffer of the last ``buffer_size`` events
+            seen on the bus. Populated automatically by a subscription
+            wired at construction.
+    """
+
+    def __init__(
+        self,
+        *,
+        memory: Any,  # MemoryStore protocol; Any to avoid hard import cycle
+        tracer: Tracer | None = None,
+        event_bus: EventBus | None = None,
+        buffer_size: int = 200,
+    ) -> None:
+        """Wire the four infrastructure pieces together.
+
+        Args:
+            memory: A :class:`MemoryStore`. Must be constructed ahead
+                of time — Workbench doesn't assume a default backend
+                because memory choices (local SQLite, Supabase, mock)
+                depend on the consumer.
+            tracer: Optional tracer; a fresh ``JSONTracer`` is used
+                when not supplied.
+            event_bus: Optional event bus; a fresh one is created when
+                not supplied.
+            buffer_size: Max events retained in the ``recent_events``
+                ring buffer. Zero disables buffering.
+        """
+        self.memory = memory
+        self.tracer: Tracer = tracer if tracer is not None else JSONTracer()
+        self.event_bus: EventBus = event_bus if event_bus is not None else EventBus()
+
+        self.recent_events: deque[AgentEvent] = deque(
+            maxlen=buffer_size if buffer_size > 0 else None
+        )
+        if buffer_size > 0:
+            self.event_bus.subscribe_all(self._record_event)
+
+    def _record_event(self, event: AgentEvent) -> None:
+        """Append an event to the ring buffer (subscription callback)."""
+        self.recent_events.append(event)
+
+    def reset(self) -> None:
+        """Clear tracer state and the recent-events buffer.
+
+        Memory is NOT cleared — the whole point of memory is to
+        outlive resets. Callers that want a full wipe (e.g. integration
+        tests) should call ``memory.reset()`` or equivalent themselves.
+        """
+        clear = getattr(self.tracer, "clear", None)
+        if callable(clear):
+            clear()
+        self.recent_events.clear()
+
+    def snapshot(self) -> dict[str, Any]:
+        """Return a JSON-safe snapshot of trace + events.
+
+        Memory is excluded because :class:`MemoryStore` access is
+        async and consumer-specific. Callers compose the memory view
+        themselves when serving a sidecar endpoint.
+        """
+        export = getattr(self.tracer, "export_json", None)
+        trace_payload: list[dict[str, Any]] = (
+            export() if callable(export) else []
+        )
+        return {
+            "trace": trace_payload,
+            "events": [_event_to_dict(e) for e in self.recent_events],
+        }
+
+
+def _event_to_dict(event: AgentEvent) -> dict[str, Any]:
+    """Serialize an :class:`AgentEvent` to JSON-safe types."""
+    timestamp = event.timestamp
+    ts_iso = timestamp.isoformat() if hasattr(timestamp, "isoformat") else str(timestamp)
+    return {
+        "event_type": event.event_type,
+        "agent_name": event.agent_name,
+        "timestamp": ts_iso,
+        "data": dict(event.data),
+        "span_id": event.span_id,
+        "trace_id": event.trace_id,
+    }
