@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Orqest Demo — Streaming Agent Chat",
-  description: "A demo of Orqest agents streaming via the Vercel AI SDK",
+  title: "Orqest Demo — Agentic AI Showcase",
+  description:
+    "Full-stack demo of Orqest agents streaming via pydantic-ai + Vercel AI SDK",
 };
 
 export default function RootLayout({
@@ -25,9 +26,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-background text-foreground">
+        {children}
+      </body>
     </html>
   );
 }

@@ -1,156 +1,222 @@
-"use client";
+import Link from "next/link";
+import {
+  MessageSquare,
+  PenSquare,
+  ListChecks,
+  ImageIcon,
+  BookOpen,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
 
-import { useChat } from "@ai-sdk/react";
+const DEMOS = [
+  {
+    href: "/demos/chat",
+    icon: MessageSquare,
+    title: "Streaming Chat",
+    subtitle: "Foundation",
+    description:
+      "A research assistant that streams text and visualizes tool calls in real time. The baseline for any Orqest agent UI.",
+    primitive: "BaseAgent + Tools",
+    tags: ["streaming", "tool calls", "useChat"],
+  },
+  {
+    href: "/demos/artifact",
+    icon: PenSquare,
+    title: "Artifact Studio",
+    subtitle: "Claude-style",
+    description:
+      "Ask for an SVG, HTML page, or React component — watch the code generate on the left and render live on the right.",
+    primitive: "Structured Output",
+    tags: ["code", "SVG", "live preview"],
+  },
+  {
+    href: "/demos/tasks",
+    icon: ListChecks,
+    title: "Task Planner",
+    subtitle: "Manus-style",
+    description:
+      "Give the agent a multi-step goal and watch it decompose and execute each step with live progress.",
+    primitive: "Structured Output",
+    tags: ["decomposition", "planning", "streaming"],
+  },
+  {
+    href: "/demos/multimodal",
+    icon: ImageIcon,
+    title: "Multimodal Analyst",
+    subtitle: "Vision",
+    description:
+      "Upload a photo or diagram — the agent describes it, extracts objects, and suggests follow-up actions.",
+    primitive: "Multimodal Input",
+    tags: ["images", "attachments", "vision"],
+  },
+  {
+    href: "/demos/research",
+    icon: BookOpen,
+    title: "Research Assistant",
+    subtitle: "Perplexity-style",
+    description:
+      "Ask a question — the agent searches, cites sources inline, and keeps a running sources panel.",
+    primitive: "Tool Use",
+    tags: ["search", "citations"],
+  },
+];
 
 export default function Home() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } =
-    useChat({
-      api: "http://localhost:8000/api/chat",
-    });
-
   return (
-    <main className="flex flex-col h-screen bg-neutral-950 text-neutral-100">
-      {/* Header */}
-      <header className="border-b border-neutral-800 px-6 py-4">
-        <div className="max-w-3xl mx-auto flex items-center gap-3">
-          <div className="w-8 h-8 rounded bg-teal-700 flex items-center justify-center text-sm font-bold">
-            O
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold tracking-tight">
-              Orqest Demo
-            </h1>
-            <p className="text-xs text-neutral-500">
-              Streaming agent chat via Vercel AI SDK + pydantic-ai
-            </p>
-          </div>
-        </div>
-      </header>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
-          {messages.length === 0 && (
-            <div className="text-center py-20">
-              <p className="text-neutral-500 text-sm">
-                Ask the Orqest research assistant anything.
-              </p>
-              <p className="text-neutral-600 text-xs mt-2">
-                It has tools for time, topic analysis, and calculations.
-              </p>
+    <main className="min-h-screen bg-background text-foreground">
+      {/* Hero */}
+      <div className="border-b border-border/60">
+        <div className="max-w-6xl mx-auto px-6 py-16">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded bg-teal-700 flex items-center justify-center text-lg font-bold text-white">
+              O
             </div>
-          )}
+            <div>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Agentic framework
+              </p>
+              <h1 className="text-xl font-semibold tracking-tight">Orqest Demos</h1>
+            </div>
+          </div>
 
-          {messages.map((m) => (
-            <div key={m.id} className="flex gap-3">
-              {/* Avatar */}
-              <div
-                className={`w-7 h-7 rounded flex-shrink-0 flex items-center justify-center text-xs font-medium ${
-                  m.role === "user"
-                    ? "bg-neutral-800 text-neutral-300"
-                    : "bg-teal-800 text-teal-200"
+          <h2 className="text-4xl font-semibold tracking-tight max-w-3xl leading-tight">
+            The canonical Orqest UI,{" "}
+            <span className="text-muted-foreground">
+              plus five focused demos.
+            </span>
+          </h2>
+          <p className="mt-4 max-w-2xl text-muted-foreground leading-relaxed">
+            Start in the Workbench — the reference application that demonstrates
+            every Orqest primitive in one place. The focused demos below each
+            isolate a single UI pattern for study.
+          </p>
+        </div>
+      </div>
+
+      {/* Workbench hero card */}
+      <div className="max-w-6xl mx-auto px-6 pt-10">
+        <Link
+          href="/workbench"
+          className="group relative flex flex-col sm:flex-row gap-6 p-8 rounded-xl border border-teal-700/40 bg-gradient-to-br from-teal-950/40 via-card to-card hover:border-teal-600/60 transition-colors overflow-hidden"
+        >
+          <div className="absolute top-4 right-4 text-[10px] uppercase tracking-[0.2em] text-teal-400 font-semibold">
+            Reference
+          </div>
+          <div className="flex items-center justify-center w-16 h-16 rounded-lg bg-teal-700 text-white flex-shrink-0">
+            <Sparkles className="w-7 h-7" />
+          </div>
+          <div className="flex-1">
+            <p className="text-[11px] uppercase tracking-wider text-teal-400 font-semibold">
+              The canonical Orqest app
+            </p>
+            <h3 className="text-2xl font-semibold tracking-tight mt-1">
+              Workbench
+            </h3>
+            <p className="mt-2 text-muted-foreground leading-relaxed max-w-2xl">
+              One chat with a rich toolbelt. One right-side panel with tabs for
+              every Orqest primitive: artifacts, task plans, citations, memory,
+              execution traces, and the event bus. Copy this pattern — don't
+              rewrite it.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {[
+                "LocalMemoryStore",
+                "JSONTracer",
+                "EventBus",
+                "Tool orchestration",
+                "Structured output",
+              ].map((t) => (
+                <span
+                  key={t}
+                  className="text-[10px] px-2 py-0.5 rounded bg-teal-950/60 text-teal-300 font-mono border border-teal-900/50"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="self-center text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all">
+            <ArrowRight className="w-5 h-5" />
+          </div>
+        </Link>
+      </div>
+
+      {/* Demo grid */}
+      <div className="max-w-6xl mx-auto px-6 py-12">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-4">
+          Focused demos · One primitive each
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {DEMOS.map((demo) => {
+            const Icon = demo.icon;
+            return (
+              <Link
+                key={demo.href}
+                href={demo.href}
+                className={`group relative flex flex-col p-6 rounded-lg border border-border/60 hover:border-border bg-card transition-colors ${
+                  demo.featured ? "ring-1 ring-teal-700/30" : ""
                 }`}
               >
-                {m.role === "user" ? "U" : "O"}
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-neutral-500 mb-1">
-                  {m.role === "user" ? "You" : "Orqest Agent"}
-                </p>
-
-                {/* Text content */}
-                {m.content && (
-                  <div className="text-sm leading-relaxed whitespace-pre-wrap text-neutral-200">
-                    {m.content}
+                {demo.featured && (
+                  <div className="absolute top-3 right-3 text-[10px] uppercase tracking-wider text-teal-500 font-semibold">
+                    Featured
                   </div>
                 )}
 
-                {/* Tool calls */}
-                {m.toolInvocations?.map((tool) => (
-                  <div
-                    key={tool.toolCallId}
-                    className="mt-2 border border-neutral-800 rounded p-3 bg-neutral-900"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-mono text-teal-500">
-                        tool:{tool.toolName}
-                      </span>
-                      <span
-                        className={`text-xs px-1.5 py-0.5 rounded ${
-                          tool.state === "result"
-                            ? "bg-green-900/30 text-green-400"
-                            : "bg-yellow-900/30 text-yellow-400"
-                        }`}
-                      >
-                        {tool.state === "result" ? "done" : "running..."}
-                      </span>
-                    </div>
-
-                    {/* Tool args */}
-                    {tool.args && Object.keys(tool.args).length > 0 && (
-                      <pre className="text-xs text-neutral-400 font-mono mt-1">
-                        {JSON.stringify(tool.args, null, 2)}
-                      </pre>
-                    )}
-
-                    {/* Tool result */}
-                    {tool.state === "result" && tool.result && (
-                      <pre className="text-xs text-neutral-300 font-mono mt-2 border-t border-neutral-800 pt-2 whitespace-pre-wrap">
-                        {typeof tool.result === "string"
-                          ? tool.result
-                          : JSON.stringify(tool.result, null, 2)}
-                      </pre>
-                    )}
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-9 h-9 rounded bg-muted flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-colors">
+                    <Icon className="w-4 h-4" />
                   </div>
-                ))}
-              </div>
-            </div>
-          ))}
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {demo.subtitle}
+                    </p>
+                    <h3 className="text-base font-semibold tracking-tight">
+                      {demo.title}
+                    </h3>
+                  </div>
+                </div>
 
-          {/* Loading indicator */}
-          {isLoading && (
-            <div className="flex gap-3">
-              <div className="w-7 h-7 rounded bg-teal-800 flex-shrink-0 flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
-              </div>
-              <p className="text-sm text-neutral-500 self-center">
-                Agent is thinking...
-              </p>
-            </div>
-          )}
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4 flex-1">
+                  {demo.description}
+                </p>
 
-          {/* Error */}
-          {error && (
-            <div className="border border-red-800/50 rounded p-3 bg-red-950/30 text-red-300 text-sm">
-              Error: {error.message}
-            </div>
-          )}
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-1.5">
+                    {demo.tags.slice(0, 2).map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-border/40 text-[11px] text-muted-foreground font-mono">
+                  {demo.primitive}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
 
-      {/* Input */}
-      <div className="border-t border-neutral-800 px-6 py-4">
-        <form
-          onSubmit={handleSubmit}
-          className="max-w-3xl mx-auto flex gap-3"
-        >
-          <input
-            value={input}
-            onChange={handleInputChange}
-            placeholder="Ask anything... (try: &apos;What time is it?&apos; or &apos;Analyze quantum computing&apos;)"
-            className="flex-1 bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-2.5 text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none focus:border-teal-700 focus:ring-1 focus:ring-teal-700"
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            className="bg-teal-700 hover:bg-teal-600 disabled:bg-neutral-800 disabled:text-neutral-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
-          >
-            Send
-          </button>
-        </form>
-      </div>
+      {/* Footer */}
+      <footer className="border-t border-border/60 mt-auto">
+        <div className="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between text-xs text-muted-foreground">
+          <p>
+            Built with{" "}
+            <span className="font-mono">pydantic-ai</span> +{" "}
+            <span className="font-mono">@ai-sdk/react</span> +{" "}
+            <span className="font-mono">ai-elements</span>
+          </p>
+          <p>Orqest v0.1.0</p>
+        </div>
+      </footer>
     </main>
   );
 }

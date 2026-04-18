@@ -60,3 +60,11 @@ site/
 # -------------------------------
 # Recovered files (PhotoRec etc.)
 recup_dir.*
+.gstack/
+
+# Demo artifacts
+demo/frontend/.next/
+demo/frontend/node_modules/
+demo/backend/__pycache__/
+demo/backend/workbench/__pycache__/
+demo/backend/demos/__pycache__/
