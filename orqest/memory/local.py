@@ -2,6 +2,12 @@
 
 Uses aiosqlite for async access. Creates the table lazily on first use.
 Full-text search via FTS5 when available, with LIKE fallback.
+
+Recall dispatches to a :class:`RetrievalStrategy` keyed by
+``filters.memory_type`` — semantic / episodic / procedural — so each
+cognitive memory kind has its own retrieval algorithm without giant
+if/else branches in the store.
+
 Memory operations are best-effort: errors are logged, never raised to the caller.
 """
 
@@ -16,11 +22,16 @@ import aiosqlite
 from loguru import logger
 
 from orqest.memory.store import MemoryEntry, MemoryFilter
+from orqest.memory.strategies import (
+    RetrievalStrategy,
+    default_strategy_table,
+)
 
 _CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS memories (
     id TEXT PRIMARY KEY,
     content TEXT NOT NULL,
+    structured_content TEXT,
     memory_type TEXT NOT NULL DEFAULT 'semantic',
     source_agent TEXT NOT NULL DEFAULT 'unknown',
     confidence REAL NOT NULL DEFAULT 1.0,
@@ -63,16 +74,41 @@ END;
 
 
 class LocalMemoryStore:
-    """SQLite-backed memory store with optional FTS5 full-text search."""
+    """SQLite-backed memory store with optional FTS5 full-text search.
 
-    def __init__(self, db_path: str | Path) -> None:
-        """Initialize with the path to the SQLite database file."""
+    Per-kind retrieval strategies are configurable via the ``strategies``
+    constructor argument; the default table provides Semantic / Episodic
+    / Procedural strategies. Override individual entries to inject
+    custom behavior (e.g. a fuzzy judge for procedural recall).
+    """
+
+    def __init__(
+        self,
+        db_path: str | Path,
+        *,
+        strategies: dict[str, RetrievalStrategy] | None = None,
+    ) -> None:
+        """Initialize with the path to the SQLite database file.
+
+        Args:
+            db_path: SQLite file path (created lazily).
+            strategies: Optional override of the per-kind retrieval table.
+                Defaults to ``default_strategy_table()`` (Semantic / Episodic
+                / Procedural). Unknown ``memory_type`` values fall back to
+                the ``"semantic"`` strategy at recall time.
+        """
         self._db_path = Path(db_path).expanduser()
         self._db: aiosqlite.Connection | None = None
         self._fts_available: bool = False
+        self._strategies = strategies or default_strategy_table()
 
     async def _ensure_db(self) -> aiosqlite.Connection:
-        """Lazily open the database and create tables on first access."""
+        """Lazily open the database and create tables on first access.
+
+        Performs a best-effort ``ALTER TABLE`` to add the
+        ``structured_content`` column to pre-existing databases that
+        were created before procedural memory shipped.
+        """
         if self._db is not None:
             return self._db
 
@@ -80,6 +116,14 @@ class LocalMemoryStore:
         self._db = await aiosqlite.connect(str(self._db_path))
         self._db.row_factory = aiosqlite.Row
         await self._db.execute(_CREATE_TABLE)
+        # Best-effort migration for older DBs missing structured_content.
+        try:
+            await self._db.execute(
+                "ALTER TABLE memories ADD COLUMN structured_content TEXT"
+            )
+        except Exception:
+            # Column already exists or table was just created with it.
+            pass
         await self._db.commit()
 
         # Attempt FTS5 setup — gracefully degrade if unavailable
@@ -101,13 +145,16 @@ class LocalMemoryStore:
             db = await self._ensure_db()
             await db.execute(
                 """INSERT OR REPLACE INTO memories
-                   (id, content, memory_type, source_agent, confidence,
-                    embedding, metadata, created_at, last_accessed,
+                   (id, content, structured_content, memory_type, source_agent,
+                    confidence, embedding, metadata, created_at, last_accessed,
                     access_count, reliability_score)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     entry.id,
                     entry.content,
+                    json.dumps(entry.structured_content)
+                    if entry.structured_content is not None
+                    else None,
                     entry.memory_type,
                     entry.source_agent,
                     entry.confidence,
@@ -131,47 +178,26 @@ class LocalMemoryStore:
         k: int = 5,
         filters: MemoryFilter | None = None,
     ) -> list[MemoryEntry]:
-        """Retrieve entries matching the query, applying optional filters."""
+        """Retrieve entries matching the query, applying optional filters.
+
+        Dispatches to the strategy keyed by ``filters.memory_type``.
+        Unknown / missing memory_type → ``"semantic"`` strategy
+        (preserves v0.0.1 behavior).
+        """
         try:
             db = await self._ensure_db()
-            conditions: list[str] = []
-            params: list[Any] = []
+            kind = (filters.memory_type if filters else None) or "semantic"
+            strategy = self._strategies.get(kind, self._strategies.get("semantic"))
+            if strategy is None:
+                return []
 
-            if self._fts_available:
-                conditions.append(
-                    "m.id IN (SELECT id FROM memories_fts WHERE content MATCH ?)"
-                )
-                params.append(f'"{query}"')
-            else:
-                conditions.append("m.content LIKE ?")
-                params.append(f"%{query}%")
-
-            if filters:
-                if filters.memory_type is not None:
-                    conditions.append("m.memory_type = ?")
-                    params.append(filters.memory_type)
-                if filters.source_agent is not None:
-                    conditions.append("m.source_agent = ?")
-                    params.append(filters.source_agent)
-                if filters.min_confidence is not None:
-                    conditions.append("m.confidence >= ?")
-                    params.append(filters.min_confidence)
-                if filters.min_reliability is not None:
-                    conditions.append("m.reliability_score >= ?")
-                    params.append(filters.min_reliability)
-
-            where = " AND ".join(conditions) if conditions else "1=1"
-            # The WHERE clause is built from static column names, not user input
-            sql = f"""
-                SELECT * FROM memories m
-                WHERE {where}
-                ORDER BY m.last_accessed DESC
-                LIMIT ?
-            """  # noqa: S608
-            params.append(k)
-
-            cursor = await db.execute(sql, params)
-            rows = await cursor.fetchall()
+            rows = await strategy.recall(
+                db,
+                query,
+                k=k,
+                filters=filters,
+                fts_available=self._fts_available,
+            )
 
             entries: list[MemoryEntry] = []
             now = datetime.now()
@@ -242,6 +268,40 @@ class LocalMemoryStore:
             logger.warning("Failed to count memories")
             return 0
 
+    async def list_recent(
+        self,
+        *,
+        memory_type: str | None = None,
+        limit: int = 50,
+    ) -> list[MemoryEntry]:
+        """Return the most recently stored entries, newest first.
+
+        Browse-style enumeration that complements :meth:`recall` (which
+        is query-driven). Used by consumer surfaces that want to render
+        a "memory inspector" view without issuing a search. Filters
+        by ``memory_type`` when supplied; ``None`` returns every kind.
+
+        Best-effort like the other read paths — returns ``[]`` on any
+        SQLite failure rather than raising.
+        """
+        try:
+            db = await self._ensure_db()
+            sql = "SELECT * FROM memories"
+            params: tuple[Any, ...] = ()
+            if memory_type:
+                sql += " WHERE memory_type = ?"
+                params = (memory_type,)
+            sql += " ORDER BY created_at DESC LIMIT ?"
+            params = (*params, max(1, min(int(limit), 500)))
+            cursor = await db.execute(sql, params)
+            rows = await cursor.fetchall()
+            return [_row_to_entry(row) for row in rows]
+        except Exception:
+            logger.warning(
+                "list_recent failed (memory_type={mt!r})", mt=memory_type
+            )
+            return []
+
     async def close(self) -> None:
         """Close the underlying aiosqlite connection."""
         if self._db is not None:
@@ -252,9 +312,16 @@ class LocalMemoryStore:
 def _row_to_entry(row: aiosqlite.Row) -> MemoryEntry:
     """Convert a database row to a MemoryEntry."""
     embedding_raw = row["embedding"]
+    structured_raw: Any = None
+    # New column may not be present in some legacy rows / mocks; tolerate.
+    try:
+        structured_raw = row["structured_content"]
+    except (IndexError, KeyError):
+        structured_raw = None
     return MemoryEntry(
         id=row["id"],
         content=row["content"],
+        structured_content=json.loads(structured_raw) if structured_raw else None,
         memory_type=row["memory_type"],
         source_agent=row["source_agent"],
         confidence=row["confidence"],

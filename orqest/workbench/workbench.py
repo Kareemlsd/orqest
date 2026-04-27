@@ -57,8 +57,10 @@ class Workbench:
         tracer: Tracer | None = None,
         event_bus: EventBus | None = None,
         buffer_size: int = 200,
+        ui_registry: Any = None,
+        auto_register_first_party_ui: bool = True,
     ) -> None:
-        """Wire the four infrastructure pieces together.
+        """Wire the infrastructure pieces together.
 
         Args:
             memory: A :class:`MemoryStore`. Must be constructed ahead
@@ -71,10 +73,31 @@ class Workbench:
                 not supplied.
             buffer_size: Max events retained in the ``recent_events``
                 ring buffer. Zero disables buffering.
+            ui_registry: Optional :class:`ComponentRegistry` (lazy
+                imported). When ``None`` and
+                ``auto_register_first_party_ui`` is True, a fresh
+                registry pre-loaded with first-party components
+                (Plan/Chart/Table/Form/TakeoverDialog) is constructed.
+                Pass an explicit registry to skip auto-registration or
+                to add custom components.
+            auto_register_first_party_ui: When True (default) and
+                ``ui_registry`` is None, the first-party
+                :func:`default_registry` is used. Set False for a
+                bare-bones registry the consumer populates manually.
         """
         self.memory = memory
         self.tracer: Tracer = tracer if tracer is not None else JSONTracer()
         self.event_bus: EventBus = event_bus if event_bus is not None else EventBus()
+
+        if ui_registry is None and auto_register_first_party_ui:
+            from orqest.ui.registry import default_registry
+
+            ui_registry = default_registry()
+        elif ui_registry is None:
+            from orqest.ui.registry import ComponentRegistry
+
+            ui_registry = ComponentRegistry()
+        self.ui_registry = ui_registry
 
         self.recent_events: deque[AgentEvent] = deque(
             maxlen=buffer_size if buffer_size > 0 else None
@@ -113,6 +136,31 @@ class Workbench:
             "trace": trace_payload,
             "events": [_event_to_dict(e) for e in self.recent_events],
         }
+
+    def with_healing(
+        self,
+        config: Any,
+        *,
+        api_key: Any | None = None,
+    ) -> Any:
+        """Construct a :class:`HealingRunner` wired to this workbench's bus.
+
+        Convenience factory. Lazy-imports :mod:`orqest.healing` so this
+        module stays import-light for consumers that don't use healing.
+
+        Args:
+            config: A :class:`HealingConfig` instance.
+            api_key: Single key or per-provider map for the fallback
+                model chain. Required only if ``config.fallback_models``
+                is non-empty.
+
+        Returns:
+            A :class:`HealingRunner` ready to enter as an async context
+            manager (``async with workbench.with_healing(config) as runner: ...``).
+        """
+        from orqest.healing import HealingRunner
+
+        return HealingRunner(config, bus=self.event_bus, api_key=api_key)
 
 
 def _event_to_dict(event: AgentEvent) -> dict[str, Any]:

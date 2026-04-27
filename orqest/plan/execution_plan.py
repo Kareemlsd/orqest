@@ -26,11 +26,14 @@ silently breaks the frontend.
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 from orqest.observability.events import AgentEvent, EventBus
+
+if TYPE_CHECKING:
+    from orqest.ui.components.plan import PlanComponent
 
 PlanStatus = Literal[
     "pending", "in-progress", "completed", "failed", "skipped",
@@ -77,9 +80,43 @@ class ExecutionPlan(BaseModel):
     # Not serialized — the bus is a runtime detail, not part of the schema.
     model_config = {"arbitrary_types_allowed": True}
 
+    # Opt-in flag for the generative-UI dual-emission path. Default off
+    # so existing tests that count emissions continue to pass byte-for-
+    # byte. Toggle via :meth:`enable_ui_events`.
+    _emit_ui_events: bool = PrivateAttr(default=False)
+    _ui_component_id: str = PrivateAttr(default="plan")
+
+    def enable_ui_events(self, *, component_id: str = "plan") -> "ExecutionPlan":
+        """Opt into dual-emission of typed ``ui.plan.{init,delta}`` events.
+
+        When enabled, :meth:`set_task_status` and :meth:`emit_init`
+        emit a parallel typed event alongside the legacy ``plan.init``
+        / ``plan.task.updated`` events. The legacy events stay
+        identical so existing consumers continue to work; new
+        consumers subscribe to the typed channel via
+        :class:`UIEmitter` conventions.
+
+        Returns ``self`` for chaining.
+        """
+        self._emit_ui_events = True
+        self._ui_component_id = component_id
+        return self
+
     def to_sse_init(self) -> dict[str, Any]:
         """Return the ``plan.init`` payload the frontend expects."""
         return {"tasks": [t.model_dump() for t in self.tasks]}
+
+    def as_component(
+        self, *, component_id: str | None = None
+    ) -> "PlanComponent":
+        """Wrap this plan as a :class:`PlanComponent` for the
+        generative-UI pipeline."""
+        from orqest.ui.components.plan import PlanComponent, PlanComponentData
+
+        return PlanComponent(
+            component_id=component_id or self._ui_component_id,
+            data=PlanComponentData(tasks=list(self.tasks)),
+        )
 
     async def set_task_status(
         self,
@@ -107,13 +144,17 @@ class ExecutionPlan(BaseModel):
             ``subtask_id`` if applicable). This is the exact shape the
             consumer forwards to the frontend, so it must remain stable.
         """
-        for task in self.tasks:
+        task_idx: int | None = None
+        sub_idx: int | None = None
+        for idx, task in enumerate(self.tasks):
             if task.id != task_id:
                 continue
+            task_idx = idx
             if subtask_id is not None:
-                for subtask in task.subtasks:
+                for sidx, subtask in enumerate(task.subtasks):
                     if subtask.id == subtask_id:
                         subtask.status = status
+                        sub_idx = sidx
                         break
             else:
                 task.status = status
@@ -131,6 +172,30 @@ class ExecutionPlan(BaseModel):
                     data=payload,
                 )
             )
+            # Opt-in: also emit the typed UI delta event so generative-
+            # UI consumers can subscribe to ui.plan.delta uniformly with
+            # other component types.
+            if self._emit_ui_events and task_idx is not None:
+                from orqest.ui.spec import UIDeltaEvent
+
+                if subtask_id is not None and sub_idx is not None:
+                    delta_path = f"tasks.{task_idx}.subtasks.{sub_idx}.status"
+                else:
+                    delta_path = f"tasks.{task_idx}.status"
+                delta = UIDeltaEvent(
+                    component_id=self._ui_component_id,
+                    component_type="plan",
+                    op="replace",
+                    path=delta_path,
+                    value=status,
+                )
+                await bus.emit(
+                    AgentEvent(
+                        event_type="ui.plan.delta",
+                        agent_name=agent_name,
+                        data=delta.model_dump(mode="json"),
+                    )
+                )
         return payload
 
     async def emit_init(
@@ -153,6 +218,15 @@ class ExecutionPlan(BaseModel):
                 data=payload,
             )
         )
+        if self._emit_ui_events:
+            component = self.as_component()
+            await bus.emit(
+                AgentEvent(
+                    event_type="ui.plan.init",
+                    agent_name=agent_name,
+                    data=component.to_event_data(),
+                )
+            )
         return payload
 
     @classmethod

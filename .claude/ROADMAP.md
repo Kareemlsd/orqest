@@ -34,7 +34,11 @@ Orqest's goal: **make the jump from 1 agent to N agents incremental, not archite
 
 ---
 
-## Phase 2 — Memory Architecture 🔄 IN PROGRESS
+> **Status note (2026-04-25):** This roadmap predates the v2 vision and the audit. Phases 2–5 below have all shipped. The five novel features that now drive Orqest's strategic direction are anchored in `.claude/VISION.md`; the current state is mapped against them in `.claude/AUDIT_2026-04-25.md`. The "Current Status" checklist at the bottom of this file is the authoritative status. Treat the headline phase markers as historical until this file is rewritten against the v2 phasing.
+
+---
+
+## Phase 2 — Memory Architecture ✅ SHIPPED (procedural memory deferred to Phase 2-extended)
 
 **Goal:** Agents that learn, remember, and forget intelligently across sessions.
 
@@ -59,7 +63,7 @@ Orqest's goal: **make the jump from 1 agent to N agents incremental, not archite
 
 ---
 
-## Phase 3 — Autonomy (Dynamic Agent Spawning)
+## Phase 3 — Autonomy (Dynamic Agent Spawning) ✅ SHIPPED
 
 **Goal:** Orchestrator can design and spawn new agents at runtime.
 
@@ -82,7 +86,7 @@ Orqest's goal: **make the jump from 1 agent to N agents incremental, not archite
 
 ---
 
-## Phase 4 — Observability
+## Phase 4 — Observability ✅ SHIPPED
 
 **Goal:** When agent 4 in a pipeline produces bad output, trace the root cause.
 
@@ -93,7 +97,7 @@ Orqest's goal: **make the jump from 1 agent to N agents incremental, not archite
 
 ---
 
-## Phase 5 — MCP Server (Claude Code Integration)
+## Phase 5 — MCP Server (Claude Code Integration) ✅ SHIPPED
 
 **Goal:** Claude Code builds agentic software using orqest as a tool.
 
@@ -103,7 +107,7 @@ Orqest's goal: **make the jump from 1 agent to N agents incremental, not archite
 
 ---
 
-## Phase 6 — Resilience
+## Phase 6 — Resilience (now framed as **Self-healing primitives** per v2 vision)
 
 **Goal:** Autonomous systems that detect and repair their own degradation.
 
@@ -111,6 +115,57 @@ Orqest's goal: **make the jump from 1 agent to N agents incremental, not archite
 - Diagnostic retry: error→diagnosis→enriched retry pattern
 - Resource quotas enforcement
 - Policy inheritance for spawned agents
+
+> **Audit note (2026-04-25):** the audit confirms wide gaps here — `ToolHook` is observe-only, `resolve_model` has no fallback cascade, `MCPDiscovery → ToolRegistry` auto-wire is unbuilt, no watchdog primitives exist. **Blocked on Phase 7 (metacognition) — you can't recover from what you can't detect.**
+
+---
+
+## Phase 7 — Metacognition primitives (NEW — v2 vision feature #3)
+
+**Goal:** Agents that report their own confidence and capability boundaries.
+
+**Why this is the next move:** the audit identifies `BaseAgent.run` returning raw `OutputT` as the keystone gap. Without enriched output, `RefinementLoop` can't use agent self-evaluation (its evaluator already accepts a `BaseAgent`, latent), `SubAgentTool` can't expose confidence, `ContextManager` can't do salience-driven compaction, and `MetaOrchestrator` can't re-decompose on confidence drop. Highest distance from existing frameworks.
+
+- `orqest.metacognition` module: `EnrichedOutput[T]` (output + confidence + uncertainty_targets + capability_boundary)
+- `MetacognitionHook` — `ToolHook` that runs agent self-evaluation post-turn
+- `BaseAgent.run_enriched(state) -> EnrichedOutput[T]` (additive)
+- `RefinementLoop` `use_agent_confidence` flag — uses `EnrichedOutput.confidence` for convergence
+- `SubAgentResult.confidence: float | None`
+- `ToolHook` decision protocol upgrade (`HookDecision = Continue | Skip | Redirect | Abort`) — small interface change unlocking Phase 6 self-healing flows
+
+---
+
+## Phase 8 — Generative UI (NEW — v2 vision feature #5)
+
+**Goal:** Agents emit UI component specs; the frontend hot-loads them.
+
+- `UIComponentSpec[T]` Pydantic model + discriminator
+- `ComponentRegistry` (server-side schema registry)
+- Frontend resolver protocol (component-type → React component)
+- Refactor `ExecutionPlan` to use the protocol (it's already the closest pattern in the codebase)
+- Generic init+delta event shape on top of `AgentEvent`
+
+---
+
+## Phase 9 — Orchestration specs (closes runtime-agent-design loop)
+
+**Goal:** LLM emits not just `AgentSpec` but `PipelineSpec`, `ParallelSpec`, `RouterSpec`, `RefinementLoopSpec`.
+
+- Pydantic models for each orchestration primitive
+- `from_json` hydrators in the autonomy `AgentFactory` (or a new `OrchestrationFactory`)
+- LLM can design topology at runtime, not just agents
+
+---
+
+## Phase 2-extended — Procedural memory + production backend
+
+**Goal:** Cognitive memory typology completeness.
+
+- Add `Literal["semantic", "episodic", "procedural"]` to `MemoryEntry.memory_type`
+- `Skill` / `Recipe` shape for procedural memory (tool-sequence-with-outcome)
+- Per-kind retrieval strategies in `LocalMemoryStore` (semantic = vector, procedural = exact-match-on-trigger, episodic = time-windowed)
+- Per-kind config in `MemoryConfig` (TTL for episodic, version-on-edit for procedural)
+- Supabase pgvector backend
 
 ---
 
@@ -150,7 +205,15 @@ After profiling confirms bottlenecks:
 - [x] Parallel (concurrent with merge + timeout)
 - [x] Router (rule-based + LLM classifier)
 - [x] RefinementLoop (iterative with convergence detection)
-- [x] Test suite (193 tests)
+- [x] Test suite (612 tests as of 2026-04-25 — was 360 baseline + 252 across three waves)
 - [x] Examples: 01-07 (tested with real LLMs)
 - [x] MkDocs documentation site
-- [ ] **Next: Phase 2 — Memory Architecture**
+- [x] Memory subsystem (`MemoryStore` + `LocalMemoryStore`, semantic/episodic/**procedural**)
+- [x] Autonomy (`AgentSpec`, `AgentFactory`, `ToolRegistry`, `MetaOrchestrator`)
+- [x] Observability (`Span`, `Tracer`, `JSONTracer`, `EventBus`, `EventBusPublishHook`, `sse_sidecar`)
+- [x] MCP client + server + **auto-discovery** (`ToolRegistry.get_or_discover`, `DiscoveryHook`, `PermissionGate`)
+- [x] Polymath flagship demo (`demo/polymath/`)
+- [x] **Wave 1: HookDecision + Metacognition + Procedural memory** (2026-04-25)
+- [x] **Wave 2: Healing subsystem + MCP auto-wire** (2026-04-25)
+- [x] **Wave 3: Generative UI** (2026-04-25)
+- [ ] **All five novel vision features now ship.** Next strategic moves: (a) Polymath consolidation onto orqest.ui + orqest.healing (move Polymath's hand-coded ChartsTab/ReportTab to typed components, wire HealingRunner into its Workbench); (b) production memory backend (Supabase + pgvector); (c) docs concept pages for the new modules.

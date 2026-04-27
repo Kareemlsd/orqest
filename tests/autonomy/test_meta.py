@@ -399,11 +399,24 @@ async def test_memory_integration(model: TestModel) -> None:
 
     await orch.solve("memory test")
 
-    # Each spawned agent should have its spec stored
-    assert len(memory.stored) == 2
-    # Verify stored content is valid AgentSpec JSON
-    for entry in memory.stored:
-        assert entry.memory_type == "episodic"
+    # Each spawned agent should have its spec stored. Dual-write:
+    # one episodic mirror (legacy) + one procedural Skill (new shape).
+    assert len(memory.stored) == 4  # 2 subtasks × 2 entries each
+    episodic = [e for e in memory.stored if e.memory_type == "episodic"]
+    procedural = [e for e in memory.stored if e.memory_type == "procedural"]
+    assert len(episodic) == 2
+    assert len(procedural) == 2
+
+    for entry in episodic:
         assert entry.source_agent == "meta_orchestrator"
         spec = AgentSpec.model_validate_json(entry.content)
+        assert spec.name.startswith("subtask_")
+
+    for entry in procedural:
+        assert entry.source_agent == "meta_orchestrator"
+        assert entry.structured_content is not None
+        # The Skill payload embeds the AgentSpec for cheap rehydration.
+        assert entry.structured_content["name"].startswith("subtask_")
+        assert "spec" in entry.structured_content
+        spec = AgentSpec.model_validate(entry.structured_content["spec"])
         assert spec.name.startswith("subtask_")

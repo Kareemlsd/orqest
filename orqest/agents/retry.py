@@ -7,6 +7,11 @@ retries with an enriched prompt carrying the previous error.
 The helper handles: hook dispatch (before/after/error), retry up to
 ``max_attempts``, optional note enrichment between attempts, and an
 optional retryability filter for non-transient failures.
+
+When the registered hooks return a :class:`HookDecision`, the helper
+honors :class:`Skip` (short-circuits the operation with ``stub_result``),
+:class:`Redirect` (mutates the note for this attempt), and :class:`Abort`
+(propagates :class:`HookAbortError` to the caller).
 """
 
 from __future__ import annotations
@@ -18,7 +23,7 @@ from typing import Any
 
 from loguru import logger
 
-from orqest.hooks import HookRunner
+from orqest.hooks import HookRunner, Redirect, Skip
 
 
 def _default_enrich(original_note: str, last_error: str) -> str:
@@ -47,6 +52,13 @@ async def run_with_retry(
     with the final result — whether success or exhausted failure. The caller
     does not need to fire hooks itself.
 
+    Honors :class:`HookDecision` directives:
+      - :class:`Skip` from ``before_tool`` → short-circuit; return
+        ``stub_result`` (JSON-serialised if non-string).
+      - :class:`Redirect(new_args=...)` from ``before_tool`` → if
+        ``new_args["note"]`` is set, override the note for this run.
+      - :class:`Abort` → :class:`HookAbortError` propagates.
+
     Args:
         operation: Async callable that takes a (possibly enriched) note and
             returns a serialized result string. Raises on failure.
@@ -66,7 +78,20 @@ async def run_with_retry(
         JSON-serialized failure payload (``{success, error, attempts}``) when
         attempts are exhausted or a non-retryable error occurs.
     """
-    await hooks.run_before(tool_name, args, state)
+    before_decision = await hooks.run_before(tool_name, args, state)
+
+    # Skip short-circuits the whole operation.
+    if isinstance(before_decision, Skip):
+        stub = before_decision.stub_result
+        result_str = stub if isinstance(stub, str) else json.dumps(stub)
+        await hooks.run_after(tool_name, args, result_str, state, 0.0)
+        return result_str
+
+    # Redirect can override the note for this run via new_args["note"].
+    if isinstance(before_decision, Redirect):
+        if before_decision.new_args and "note" in before_decision.new_args:
+            note = str(before_decision.new_args["note"])
+
     start = time.monotonic()
     enrich = enrich_note or _default_enrich
     last_error: str | None = None

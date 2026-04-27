@@ -146,6 +146,7 @@ class BaseAgent(Generic[StateT, OutputT]):
         result_budget: int | None = 20_000,
         context_manager: ContextManager | None = None,
         model_settings: ModelSettings | None = None,
+        confidence_protocol: Any = None,
     ):
         """Initialize the agent.
 
@@ -211,6 +212,7 @@ class BaseAgent(Generic[StateT, OutputT]):
         if context_manager is not None:
             self._history_processors.insert(0, context_manager.compact)
 
+        self._confidence_protocol = confidence_protocol
         self._agent: Agent | None = None
 
     @property
@@ -326,6 +328,51 @@ class BaseAgent(Generic[StateT, OutputT]):
     async def run(self, state: StateT, **kwargs: Any) -> OutputT:
         """Execute the agent. Exceptions propagate to the caller."""
         return await self._run_implementation(state, **kwargs)
+
+    async def run_enriched(
+        self,
+        state: StateT,
+        *,
+        confidence_protocol: Any = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Execute the agent and pair its output with self-assessment.
+
+        Returns :class:`~orqest.metacognition.EnrichedOutput[OutputT]`.
+        Best-effort: a protocol that fails surfaces ``confidence=None``
+        and a ``protocol_error`` in the metadata; the underlying output
+        is always returned. Exceptions raised by ``_run_implementation``
+        propagate, exactly like :meth:`run`.
+
+        Args:
+            state: The agent's state, same as ``run``.
+            confidence_protocol: Per-call override of the agent-level
+                default (set via constructor). When neither is provided,
+                returns ``EnrichedOutput(output=...)`` with all
+                metacognitive fields at their defaults.
+            **kwargs: Forwarded to ``_run_implementation`` and to the
+                protocol's ``enrich`` call.
+        """
+        from orqest.metacognition.enriched import EnrichedOutput
+
+        output = await self._run_implementation(state, **kwargs)
+        protocol = confidence_protocol or self._confidence_protocol
+        if protocol is None:
+            return EnrichedOutput(output=output)
+        try:
+            return await protocol.enrich(self, state, output, **kwargs)
+        except Exception as exc:
+            from loguru import logger as _logger
+
+            _logger.debug(
+                "ConfidenceProtocol {p} failed: {e}",
+                p=getattr(protocol, "name", type(protocol).__name__),
+                e=str(exc),
+            )
+            return EnrichedOutput(
+                output=output,
+                metadata={"protocol_error": type(exc).__name__},
+            )
 
     @abstractmethod
     async def _run_implementation(self, state: StateT, **kwargs: Any) -> OutputT:

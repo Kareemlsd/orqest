@@ -62,9 +62,11 @@ site/
 recup_dir.*
 .gstack/
 
-# Demo artifacts
-demo/frontend/.next/
-demo/frontend/node_modules/
-demo/backend/__pycache__/
-demo/backend/workbench/__pycache__/
-demo/backend/demos/__pycache__/
+# -------------------------------
+# JS/TS — anywhere in the tree
+node_modules/
+.next/
+.turbo/
+*.tsbuildinfo
+**/.next/cache/
+*.sst

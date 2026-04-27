@@ -3,6 +3,16 @@
 Defines the MemoryStore protocol for pluggable memory backends, along with
 MemoryEntry (the unit of stored knowledge) and MemoryFilter (query-time
 constraints). Backends implement MemoryStore; callers depend only on the protocol.
+
+Supports three cognitive memory kinds:
+
+* **semantic** — what's true (facts, summaries, learned content)
+* **episodic** — what happened (sessions, traces, prior runs)
+* **procedural** — how to do things (skills, recipes, learned tool sequences)
+
+Procedural entries carry a structured ``Skill`` payload in
+``MemoryEntry.structured_content``; the searchable trigger text lives in
+``MemoryEntry.content`` so FTS5 indexing keeps working uniformly.
 """
 
 from __future__ import annotations
@@ -11,16 +21,62 @@ from datetime import datetime
 from typing import Any, Literal, Protocol, runtime_checkable
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+
+# ---- Procedural memory shape ------------------------------------------
+
+
+class ToolCallSpec(BaseModel):
+    """One step in a Skill's tool_sequence."""
+
+    tool_name: str
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    notes: str = ""
+
+
+class SkillExample(BaseModel):
+    """A worked example of a successful Skill invocation."""
+
+    inputs: dict[str, Any] = Field(default_factory=dict)
+    outputs: dict[str, Any] = Field(default_factory=dict)
+    occurred_at: datetime = Field(default_factory=datetime.now)
+
+
+class Skill(BaseModel):
+    """Procedural memory content — a learned tool sequence with outcome.
+
+    Stored inside :class:`MemoryEntry.structured_content` when
+    ``memory_type == "procedural"``. The ``trigger`` field is the
+    natural-language phrase the agent matches against to decide whether
+    to invoke the skill; it is also written verbatim into
+    :class:`MemoryEntry.content` so FTS5 still indexes it.
+    """
+
+    name: str
+    description: str
+    trigger: str
+    tool_sequence: list[ToolCallSpec] = Field(default_factory=list)
+    expected_outcome: str = ""
+    success_examples: list[SkillExample] = Field(default_factory=list)
+    version: int = 1
+
+
+# ---- MemoryFilter / MemoryEntry ---------------------------------------
 
 
 class MemoryFilter(BaseModel):
     """Query-time constraints for memory recall."""
 
-    memory_type: Literal["semantic", "episodic"] | None = None
+    memory_type: Literal["semantic", "episodic", "procedural"] | None = None
     source_agent: str | None = None
     min_confidence: float | None = None
     min_reliability: float | None = None
+    skill_name: str | None = None
+    """Exact-match on ``structured_content.name`` — only applies when
+    ``memory_type == "procedural"``. No-op otherwise."""
+    skill_min_version: int | None = None
+    """Filter procedural entries to ``version >= skill_min_version``."""
 
 
 class MemoryEntry(BaseModel):
@@ -28,7 +84,13 @@ class MemoryEntry(BaseModel):
 
     id: str = Field(default_factory=lambda: str(uuid4()))
     content: str
-    memory_type: Literal["semantic", "episodic"] = "semantic"
+    structured_content: dict[str, Any] | None = None
+    """Typed payload for non-text memory (e.g. ``Skill`` for procedural).
+    When ``memory_type == "procedural"`` and this field is set, it must
+    validate against the :class:`Skill` schema. Validation is gated to
+    procedural entries to keep the legacy semantic/episodic paths
+    untouched."""
+    memory_type: Literal["semantic", "episodic", "procedural"] = "semantic"
     source_agent: str = "unknown"
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     embedding: list[float] | None = None
@@ -37,6 +99,18 @@ class MemoryEntry(BaseModel):
     last_accessed: datetime = Field(default_factory=datetime.now)
     access_count: int = 0
     reliability_score: float = Field(default=1.0, ge=0.0, le=1.0)
+
+    @model_validator(mode="after")
+    def _validate_procedural_shape(self) -> MemoryEntry:
+        """Enforce the Skill shape on procedural entries — best-effort.
+
+        Only fires when ``memory_type == "procedural"`` AND
+        ``structured_content`` is not None, so legacy callers writing
+        semantic/episodic entries with no structured payload are unaffected.
+        """
+        if self.memory_type == "procedural" and self.structured_content is not None:
+            Skill.model_validate(self.structured_content)
+        return self
 
 
 @runtime_checkable

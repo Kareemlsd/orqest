@@ -70,6 +70,8 @@ class RefinementLoop(Generic[StateT, OutputT]):
         timeout: float | None = None,
         convergence_window: int | None = None,
         convergence_threshold: float = 0.01,
+        confidence_threshold: float | None = None,
+        agent_self_eval: BaseAgent | None = None,
     ) -> None:
         """Configure the refinement loop.
 
@@ -81,10 +83,27 @@ class RefinementLoop(Generic[StateT, OutputT]):
             timeout: Optional wall-clock timeout in seconds.
             convergence_window: Number of recent scores to check for convergence.
             convergence_threshold: Max score variance within the window.
+            confidence_threshold: When set AND ``EvalResult.score`` reaches
+                this value, the loop exits with ``exit_reason="confident"``.
+                Pairs naturally with ``agent_self_eval``.
+            agent_self_eval: Optional :class:`BaseAgent` whose
+                ``run_enriched`` is used to produce the per-iteration
+                score (the agent's *own* confidence). When set,
+                ``confidence_threshold`` is required. Mutually exclusive
+                with using ``evaluator`` for self-rating: when
+                ``agent_self_eval`` is set, the standard ``evaluator`` is
+                bypassed for scoring and a synthetic
+                ``EvalResult(passed=False, score=enriched.confidence)``
+                is produced instead.
 
         """
         if max_iterations < 1:
             raise ValueError("max_iterations must be >= 1")
+        if agent_self_eval is not None and confidence_threshold is None:
+            raise ValueError(
+                "agent_self_eval requires confidence_threshold to be set; "
+                "self-eval scores are meaningless without a passing bar."
+            )
 
         self._step = _coerce_step(step)
         self._evaluator = evaluator
@@ -93,6 +112,8 @@ class RefinementLoop(Generic[StateT, OutputT]):
         self._timeout = timeout
         self._convergence_window = convergence_window
         self._convergence_threshold = convergence_threshold
+        self._confidence_threshold = confidence_threshold
+        self._agent_self_eval = agent_self_eval
 
     async def run(self, initial_input: StateT) -> LoopResult[OutputT]:
         """Execute the refinement loop starting from *initial_input*."""
@@ -136,6 +157,19 @@ class RefinementLoop(Generic[StateT, OutputT]):
             if eval_result.score is not None:
                 scores.append(eval_result.score)
 
+            # Confidence-driven exit: agent self-rated above the bar.
+            if (
+                self._confidence_threshold is not None
+                and eval_result.score is not None
+                and eval_result.score >= self._confidence_threshold
+            ):
+                return LoopResult(
+                    output=output,
+                    iterations=i,
+                    exit_reason="confident",
+                    history=history,
+                )
+
             if self._check_convergence(scores):
                 return LoopResult(
                     output=output,
@@ -154,7 +188,23 @@ class RefinementLoop(Generic[StateT, OutputT]):
         )
 
     async def _call_evaluator(self, output: Any) -> EvalResult:
-        """Invoke the evaluator, handling sync/async callables and BaseAgent."""
+        """Invoke the evaluator, handling sync/async callables and BaseAgent.
+
+        When ``agent_self_eval`` is configured, it takes precedence: the
+        agent runs with ``run_enriched`` against the current output, and
+        we synthesise an :class:`EvalResult` whose score is the agent's
+        own confidence. ``passed=False`` so the loop only exits via
+        ``confidence_threshold`` (the explicit metacognitive bar) rather
+        than the implicit ``passed`` short-circuit.
+        """
+        if self._agent_self_eval is not None:
+            state = GlobalState()
+            state.add_message("user", str(output))
+            enriched = await self._agent_self_eval.run_enriched(state)
+            score = enriched.confidence
+            feedback = ", ".join(enriched.uncertainty_targets)
+            return EvalResult(passed=False, feedback=feedback, score=score)
+
         if isinstance(self._evaluator, BaseAgent):
             state = GlobalState()
             state.add_message("user", str(output))

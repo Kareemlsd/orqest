@@ -54,6 +54,24 @@ class SubAgentResult(BaseModel, Generic[ResultT]):
         default="passed",
         description="'passed' | 'max_refinements' | 'refinement_failed_keep_original'",
     )
+    confidence: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Self-confidence reported by the underlying agent on "
+        "the final iteration (after refinement). None when no "
+        "confidence_protocol is configured. Best-effort.",
+    )
+    uncertainty_targets: list[str] = Field(
+        default_factory=list,
+        description="Free-text bottlenecks the agent flagged on its final "
+        "iteration. Empty when no enrichment ran.",
+    )
+    capability_boundary: bool = Field(
+        default=False,
+        description="True iff the agent flagged the task as outside its "
+        "verifiable capability on the final iteration.",
+    )
 
     model_config = {"arbitrary_types_allowed": True}
 
@@ -144,6 +162,8 @@ class SubAgentTool(Generic[StateT, ResultT]):
         self,
         state: StateT,
         prompt: str,
+        *,
+        use_enriched: bool = False,
         **agent_kwargs: Any,
     ) -> SubAgentResult[ResultT]:
         """Execute one (agent + executor + state-update) cycle, then
@@ -153,13 +173,37 @@ class SubAgentTool(Generic[StateT, ResultT]):
         begins — so a failed refinement leaves the original result in
         place (best-effort semantics). Extra keyword arguments are
         forwarded verbatim to ``agent.run``.
+
+        Args:
+            state: The agent's state object.
+            prompt: The user-facing prompt for the sub-agent.
+            use_enriched: When ``True``, runs the agent via
+                :meth:`BaseAgent.run_enriched` and lifts the final-pass
+                ``confidence`` / ``uncertainty_targets`` /
+                ``capability_boundary`` onto the returned
+                :class:`SubAgentResult`. The executor still receives the
+                raw agent output (unwrapped from
+                :class:`EnrichedOutput`). Default ``False`` preserves
+                pre-metacognition behavior.
+            **agent_kwargs: Forwarded to the agent.
         """
+
+        async def _run_agent(state: StateT, **kw: Any) -> tuple[Any, dict[str, Any]]:
+            """Returns ``(raw_output, enrichment_dict)``. The enrichment
+            dict is empty when ``use_enriched`` is False or the agent
+            has no protocol configured."""
+            if use_enriched:
+                enriched = await self._agent.run_enriched(state, **kw)
+                return enriched.output, {
+                    "confidence": enriched.confidence,
+                    "uncertainty_targets": list(enriched.uncertainty_targets),
+                    "capability_boundary": enriched.capability_boundary,
+                }
+            return await self._agent.run(state, **kw), {}
+
         # --- First pass ---
-        # Default the common "note" kwarg to the prompt; caller-supplied
-        # kwargs win, so existing BaseAgent subclasses with different
-        # signatures aren't forced to adopt "note=..."
         call_kwargs = {"note": prompt, **agent_kwargs}
-        agent_output = await self._agent.run(state, **call_kwargs)
+        agent_output, last_enrichment = await _run_agent(state, **call_kwargs)
         first_result = await self._executor(agent_output, state)
         self._state_updater(first_result, state)
 
@@ -180,11 +224,11 @@ class SubAgentTool(Generic[StateT, ResultT]):
             ):
                 next_prompt = self._build_refinement_prompt(current_result, prompt)
                 try:
-                    refined_agent_output = await self._agent.run(
+                    refined_output, last_enrichment = await _run_agent(
                         state, note=next_prompt,
                     )
                     refined_result = await self._executor(
-                        refined_agent_output, state,
+                        refined_output, state,
                     )
                     self._state_updater(refined_result, state)
                     current_result = refined_result
@@ -204,4 +248,7 @@ class SubAgentTool(Generic[StateT, ResultT]):
             iterations=iterations,
             refined=refined,
             exit_reason=exit_reason,
+            confidence=last_enrichment.get("confidence"),
+            uncertainty_targets=last_enrichment.get("uncertainty_targets") or [],
+            capability_boundary=bool(last_enrichment.get("capability_boundary", False)),
         )

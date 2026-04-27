@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import time
+from datetime import UTC, datetime
 from typing import Any
 
 from loguru import logger
@@ -18,7 +19,8 @@ from pydantic import BaseModel, Field
 
 from orqest.agents.base_agent import BaseAgent
 from orqest.agents.state import GlobalState
-from orqest.hooks import HookRunner
+from orqest.hooks import HookAbortError, HookRunner, Redirect, Skip
+from orqest.observability import AgentEvent, EventBus
 
 
 class SubTask(BaseModel):
@@ -88,6 +90,8 @@ class MetaOrchestrator:
         hooks: HookRunner | None = None,
         max_subtasks: int = 10,
         max_spawn_depth: int = 3,
+        metacognition: Any = None,
+        bus: EventBus | None = None,
     ) -> None:
         """Initialize the MetaOrchestrator.
 
@@ -99,6 +103,13 @@ class MetaOrchestrator:
             hooks: Optional HookRunner for lifecycle events.
             max_subtasks: Upper bound on subtasks per goal.
             max_spawn_depth: Maximum nesting depth for spawned agents.
+            metacognition: Optional :class:`MetacognitionConfig`. When
+                set, after each successful subtask the orchestrator
+                inspects the result's confidence; if it falls below
+                ``redecompose_threshold`` (and the re-decomposition
+                budget remains), the planner is re-invoked to rewrite
+                the remaining subtasks. ``None`` preserves the legacy
+                straight-through behavior.
 
         """
         self._planner = planner
@@ -108,23 +119,84 @@ class MetaOrchestrator:
         self._hooks = hooks or HookRunner()
         self._max_subtasks = max_subtasks
         self._max_spawn_depth = max_spawn_depth
+        self._metacognition = metacognition
+        self._bus = bus
         self._spawned_agents: dict[str, BaseAgent] = {}
 
     async def solve(self, goal: str) -> ExecutionResult:
-        """Decompose a goal into subtasks, spawn agents, and execute."""
+        """Decompose a goal into subtasks, spawn agents, and execute.
+
+        When :class:`MetacognitionConfig` is configured, low-confidence
+        subtask results trigger re-decomposition of the remaining
+        subtasks (bounded by ``max_redecompositions``).
+        """
         start = time.monotonic()
 
         decomposition = await self._decompose(goal)
-        subtasks = decomposition.subtasks[: self._max_subtasks]
+        subtasks = list(decomposition.subtasks[: self._max_subtasks])
 
         results: list[SubTaskResult] = []
         context: dict[str, Any] = {}
+        redecomposition_count = 0
 
-        for subtask in subtasks:
+        i = 0
+        while i < len(subtasks):
+            subtask = subtasks[i]
             result = await self._execute_subtask(subtask, context)
             results.append(result)
             if result.success:
                 context[subtask.name] = result.output
+
+                # Confidence-driven re-decomposition.
+                conf = _extract_confidence(result.output)
+                if (
+                    self._metacognition is not None
+                    and conf is not None
+                    and conf < self._metacognition.redecompose_threshold
+                    and redecomposition_count
+                    < self._metacognition.max_redecompositions
+                ):
+                    # Surface the cognitive moment — when configured with
+                    # an event bus, emit a typed event so consumers
+                    # (Polymath's metacognition badge / healing log) can
+                    # render "the orchestrator just re-planned because
+                    # confidence dropped to X". Best-effort; bus failures
+                    # are logged but never propagate.
+                    if self._bus is not None:
+                        try:
+                            await self._bus.emit(
+                                AgentEvent(
+                                    event_type="metacognition.redecomposition_triggered",
+                                    agent_name=self._planner.agent_name,
+                                    timestamp=datetime.now(UTC),
+                                    data={
+                                        "subtask_name": subtask.name,
+                                        "confidence": conf,
+                                        "threshold": self._metacognition.redecompose_threshold,
+                                        "attempt": redecomposition_count + 1,
+                                        "max_attempts": self._metacognition.max_redecompositions,
+                                        "remaining_subtasks": [
+                                            s.name for s in subtasks[i + 1 :]
+                                        ],
+                                    },
+                                )
+                            )
+                        except Exception as exc:  # noqa: BLE001
+                            logger.warning(
+                                "metacognition redecomposition emit failed: {e}",
+                                e=exc,
+                            )
+
+                    new_remaining = await self._redecompose(
+                        original_goal=goal,
+                        completed=results,
+                        remaining=subtasks[i + 1 :],
+                        triggering_result=result,
+                        triggering_confidence=conf,
+                    )
+                    subtasks = subtasks[: i + 1] + list(new_remaining)
+                    redecomposition_count += 1
+            i += 1
 
         total_ms = (time.monotonic() - start) * 1000
         all_success = all(r.success for r in results)
@@ -171,21 +243,39 @@ class MetaOrchestrator:
             state = GlobalState()
             state.add_message("user", prompt)
 
-            await self._hooks.run_before(
-                f"meta:{subtask.name}",
-                {"subtask": subtask.name},
-                state,
+            hook_args = {"subtask": subtask.name}
+            before_decision = await self._hooks.run_before(
+                f"meta:{subtask.name}", hook_args, state,
             )
+
+            # Skip → synthetic success with stub_result.
+            if isinstance(before_decision, Skip):
+                duration = (time.monotonic() - start) * 1000
+                stub = before_decision.stub_result
+                await self._hooks.run_after(
+                    f"meta:{subtask.name}", hook_args, stub, state, duration,
+                )
+                return SubTaskResult(
+                    subtask_name=subtask.name,
+                    success=True,
+                    output=stub,
+                    agent_used=agent.agent_name,
+                    was_spawned=was_spawned,
+                    duration_ms=duration,
+                )
+
+            # Redirect → mutate prompt via new_args["prompt"], if provided.
+            if isinstance(before_decision, Redirect):
+                if before_decision.new_args and "prompt" in before_decision.new_args:
+                    new_prompt = str(before_decision.new_args["prompt"])
+                    state = GlobalState()
+                    state.add_message("user", new_prompt)
 
             output = await agent.run(state)
             duration = (time.monotonic() - start) * 1000
 
             await self._hooks.run_after(
-                f"meta:{subtask.name}",
-                {"subtask": subtask.name},
-                output,
-                state,
-                duration,
+                f"meta:{subtask.name}", hook_args, output, state, duration,
             )
 
             return SubTaskResult(
@@ -194,6 +284,22 @@ class MetaOrchestrator:
                 output=output,
                 agent_used=agent.agent_name,
                 was_spawned=was_spawned,
+                duration_ms=duration,
+            )
+
+        except HookAbortError as abort:
+            duration = (time.monotonic() - start) * 1000
+            logger.warning(
+                "Subtask {name} aborted by hook: {reason}",
+                name=subtask.name,
+                reason=abort.reason,
+            )
+            return SubTaskResult(
+                subtask_name=subtask.name,
+                success=False,
+                error=f"aborted: {abort.reason}",
+                agent_used=subtask.agent_name or "unknown",
+                was_spawned=False,
                 duration_ms=duration,
             )
 
@@ -222,16 +328,43 @@ class MetaOrchestrator:
     async def _find_or_spawn(
         self, subtask: SubTask
     ) -> tuple[BaseAgent, bool]:
-        """Find an existing agent or spawn a new one for the subtask."""
+        """Find an existing agent or spawn a new one for the subtask.
+
+        Memory-recall path is procedural-first: a stored ``Skill`` whose
+        ``trigger`` matches ``subtask.name`` is used preferentially.
+        Falls back to the legacy episodic recall on miss. Stores into
+        BOTH episodic (legacy mirror) and procedural (the cognitively-
+        correct kind) for forward compat.
+        """
         # Check cache of previously spawned agents
         if subtask.agent_name and subtask.agent_name in self._spawned_agents:
             return self._spawned_agents[subtask.agent_name], False
 
-        # Check memory for a previously successful spec
+        # Check memory for a previously successful spec — procedural first
         if self._memory and subtask.agent_name:
-            try:
-                from orqest.memory.store import MemoryFilter
+            from orqest.autonomy.spec import AgentSpec
+            from orqest.memory.store import MemoryFilter
 
+            try:
+                proc_memories = await self._memory.recall(
+                    subtask.agent_name,
+                    k=1,
+                    filters=MemoryFilter(
+                        memory_type="procedural", min_reliability=0.5
+                    ),
+                )
+                if proc_memories and proc_memories[0].structured_content:
+                    spec_payload = proc_memories[0].structured_content.get("spec")
+                    if spec_payload:
+                        spec = AgentSpec.model_validate(spec_payload)
+                        agent = self._factory.spawn(spec)
+                        self._spawned_agents[spec.name] = agent
+                        return agent, True
+            except Exception:
+                logger.debug("No usable procedural skill in memory")
+
+            # Fallback: episodic recall (legacy path)
+            try:
                 memories = await self._memory.recall(
                     subtask.agent_name,
                     k=1,
@@ -240,8 +373,6 @@ class MetaOrchestrator:
                     ),
                 )
                 if memories:
-                    from orqest.autonomy.spec import AgentSpec
-
                     spec = AgentSpec.model_validate_json(memories[0].content)
                     agent = self._factory.spawn(spec)
                     self._spawned_agents[spec.name] = agent
@@ -276,11 +407,12 @@ class MetaOrchestrator:
         agent = self._factory.spawn(spec)
         self._spawned_agents[spec.name] = agent
 
-        # Persist the spec to memory for future reuse (best-effort)
+        # Persist the spec to memory for future reuse (best-effort).
+        # Dual-write: episodic mirror (legacy) + procedural Skill (new).
         if self._memory:
-            try:
-                from orqest.memory.store import MemoryEntry
+            from orqest.memory.store import MemoryEntry, Skill, ToolCallSpec
 
+            try:
                 await self._memory.store(
                     MemoryEntry(
                         content=spec.model_dump_json(),
@@ -290,7 +422,33 @@ class MetaOrchestrator:
                     )
                 )
             except Exception:
-                logger.debug("Failed to persist agent spec to memory")
+                logger.debug("Failed to persist agent spec to episodic memory")
+
+            try:
+                skill_payload = Skill(
+                    name=spec.name,
+                    description=subtask.description,
+                    trigger=subtask.name,
+                    tool_sequence=[
+                        ToolCallSpec(tool_name=t.name, arguments={})
+                        for t in spec.tools
+                    ],
+                    expected_outcome="Spawn-and-run agent for matching subtask.",
+                ).model_dump()
+                # Embed the AgentSpec inside the skill payload so
+                # _find_or_spawn can rehydrate without a second lookup.
+                skill_payload["spec"] = spec.model_dump()
+                await self._memory.store(
+                    MemoryEntry(
+                        content=subtask.name,
+                        structured_content=skill_payload,
+                        memory_type="procedural",
+                        source_agent="meta_orchestrator",
+                        metadata={"subtask": subtask.name},
+                    )
+                )
+            except Exception:
+                logger.debug("Failed to persist agent spec to procedural memory")
 
         return agent, True
 
@@ -298,3 +456,74 @@ class MetaOrchestrator:
     def spawned_agents(self) -> dict[str, BaseAgent]:
         """Access the cache of dynamically spawned agents."""
         return dict(self._spawned_agents)
+
+    async def _redecompose(
+        self,
+        *,
+        original_goal: str,
+        completed: list[SubTaskResult],
+        remaining: list[SubTask],
+        triggering_result: SubTaskResult,
+        triggering_confidence: float,
+    ) -> list[SubTask]:
+        """Re-invoke the planner with the partially-completed context.
+
+        Builds a re-planning prompt with the original goal, the completed
+        subtask outputs (clipped), the triggering low-confidence result,
+        and the remaining subtasks for context. Returns the planner's
+        rewritten remaining subtasks. On any failure, returns
+        ``remaining`` unchanged — best-effort behavior.
+        """
+        try:
+            completed_summary = "\n".join(
+                f"- {r.subtask_name}: success={r.success} agent={r.agent_used}"
+                for r in completed
+            )
+            remaining_summary = "\n".join(f"- {s.name}: {s.description}" for s in remaining)
+            prompt = (
+                f"Original goal: {original_goal}\n\n"
+                f"Completed subtasks:\n{completed_summary}\n\n"
+                f"The most recent subtask '{triggering_result.subtask_name}' "
+                f"reported low confidence ({triggering_confidence:.2f}). "
+                "Re-plan the REMAINING subtasks given what we've learned.\n\n"
+                f"Currently remaining:\n{remaining_summary}\n\n"
+                "Return a fresh TaskDecomposition for ONLY the remaining steps."
+            )
+            state = GlobalState()
+            state.add_message("user", prompt)
+            new_decomp = await self._planner.run(state)
+            return list(new_decomp.subtasks)[: self._max_subtasks]
+        except Exception as exc:
+            logger.warning("Re-decomposition failed: {e}", e=exc)
+            return list(remaining)
+
+
+def _extract_confidence(output: Any) -> float | None:
+    """Best-effort extraction of a confidence number from a subtask output.
+
+    Tries (in order):
+      1. ``output.confidence`` — covers EnrichedOutput and the
+         existing structured-output pattern that ``_find_or_spawn``
+         already prompts spawned agents to emit.
+      2. ``output.metadata["confidence"]`` — for dict outputs.
+
+    Returns ``None`` when no confidence is discoverable.
+    """
+    direct = getattr(output, "confidence", None)
+    if direct is None and isinstance(output, dict):
+        direct = output.get("confidence")
+        if direct is None:
+            md = output.get("metadata")
+            if isinstance(md, dict):
+                direct = md.get("confidence")
+    if direct is None:
+        return None
+    try:
+        f = float(direct)
+    except (TypeError, ValueError):
+        return None
+    if f < 0.0:
+        return 0.0
+    if f > 1.0:
+        return 1.0
+    return f
