@@ -24,8 +24,10 @@ from loguru import logger
 from orqest.memory.config import MemoryConfig, PerKindConfig
 from orqest.memory.store import MemoryEntry, MemoryFilter
 from orqest.memory.strategies import (
+    EmbedderT,
     RetrievalStrategy,
     default_strategy_table,
+    embed_text,
 )
 
 _CREATE_TABLE = """
@@ -88,6 +90,7 @@ class LocalMemoryStore:
         db_path: str | Path | None = None,
         *,
         config: MemoryConfig | None = None,
+        embedder: EmbedderT | None = None,
         strategies: dict[str, RetrievalStrategy] | None = None,
     ) -> None:
         """Initialize the store.
@@ -96,22 +99,43 @@ class LocalMemoryStore:
             db_path: SQLite file path (created lazily). When omitted,
                 ``config.local_db_path`` is used.
             config: Memory subsystem configuration. Supplies the per-kind
-                reliability policy (``decay_on_failure`` / ``prune_below``)
-                read by :meth:`update_reliability`. Defaults to
-                :class:`MemoryConfig` defaults.
+                policy read by :meth:`update_reliability`, :meth:`store`,
+                and :meth:`prune_expired`. Defaults to :class:`MemoryConfig`
+                defaults.
+            embedder: Optional ``Callable[[str], list[float]]`` (sync or
+                async). When supplied, :meth:`store` embeds entry content
+                and semantic recall ranks by cosine similarity instead of
+                FTS5 keyword match. Orqest stays embedding-model-neutral —
+                the consumer wires the embedder.
             strategies: Optional override of the per-kind retrieval table.
-                Defaults to ``default_strategy_table()`` (Semantic / Episodic
-                / Procedural). Unknown ``memory_type`` values fall back to
-                the ``"semantic"`` strategy at recall time.
+                Defaults to ``default_strategy_table(embedder=...)`` (Semantic
+                / Episodic / Procedural). Unknown ``memory_type`` values fall
+                back to the ``"semantic"`` strategy at recall time. When you
+                pass an explicit table, wiring the embedder into it is yours.
         """
         self._config = config or MemoryConfig()
+        self._embedder = embedder
         resolved_path = (
             db_path if db_path is not None else self._config.local_db_path
         )
         self._db_path = Path(resolved_path).expanduser()
         self._db: aiosqlite.Connection | None = None
         self._fts_available: bool = False
-        self._strategies = strategies or default_strategy_table()
+        self._strategies = strategies or default_strategy_table(embedder=embedder)
+
+    async def _embed(self, text: str) -> list[float] | None:
+        """Compute an embedding via the configured embedder.
+
+        Returns ``None`` when no embedder is configured or it raises —
+        best-effort, like the rest of the store.
+        """
+        if self._embedder is None:
+            return None
+        try:
+            return await embed_text(self._embedder, text)
+        except Exception:
+            logger.warning("embedder failed for stored content")
+            return None
 
     def _policy_for(self, memory_type: str) -> PerKindConfig:
         """Per-kind reliability policy; unknown kinds fall back to semantic."""
@@ -166,6 +190,7 @@ class LocalMemoryStore:
         try:
             db = await self._ensure_db()
             structured = await self._maybe_version(db, entry)
+            embedding = entry.embedding or await self._embed(entry.content)
             await db.execute(
                 """INSERT OR REPLACE INTO memories
                    (id, content, structured_content, memory_type, source_agent,
@@ -179,7 +204,7 @@ class LocalMemoryStore:
                     entry.memory_type,
                     entry.source_agent,
                     entry.confidence,
-                    json.dumps(entry.embedding) if entry.embedding else None,
+                    json.dumps(embedding) if embedding else None,
                     json.dumps(entry.metadata),
                     entry.created_at.isoformat(),
                     entry.last_accessed.isoformat(),

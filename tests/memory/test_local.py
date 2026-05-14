@@ -245,3 +245,31 @@ class TestLocalMemoryStore:
         rows = await store.list_recent(memory_type="procedural")
         assert {r.structured_content["version"] for r in rows} == {1}
         await store.close()
+
+    @pytest.mark.asyncio
+    async def test_embedding_recall_ranks_by_cosine(
+        self, tmp_path: Path
+    ) -> None:
+        """With an embedder, semantic recall ranks by cosine similarity over
+        stored vectors instead of an FTS5 keyword match."""
+        vectors = {
+            "cats are independent": [1.0, 0.0, 0.0],
+            "felines like solitude": [0.9, 0.1, 0.0],
+            "dogs are loyal": [0.0, 1.0, 0.0],
+        }
+
+        def fake_embedder(text: str) -> list[float]:
+            return vectors.get(text, [0.0, 0.0, 1.0])
+
+        store = LocalMemoryStore(tmp_path / "emb.db", embedder=fake_embedder)
+        for content in vectors:
+            await store.store(MemoryEntry(content=content))
+
+        # The query embeds to [1, 0, 0]; ranking is cats > felines > dogs.
+        results = await store.recall("cats are independent", k=3)
+        assert [r.content for r in results] == [
+            "cats are independent",
+            "felines like solitude",
+            "dogs are loyal",
+        ]
+        await store.close()

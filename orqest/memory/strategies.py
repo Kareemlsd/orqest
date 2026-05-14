@@ -20,6 +20,7 @@ strategy can pick FTS5 vs LIKE without re-probing.
 
 from __future__ import annotations
 
+import inspect
 import json
 from collections.abc import Awaitable, Callable
 from typing import Any, Protocol, runtime_checkable
@@ -32,6 +33,38 @@ from orqest.memory.store import MemoryFilter
 # of candidate triggers, returns the indices of triggers it judges
 # matching. Index-based so callers don't have to dedupe.
 FuzzyJudge = Callable[[str, list[str]], Awaitable[list[int]]]
+
+# Public type for the optional embedder: maps text to a vector. Sync or
+# async — Orqest stays embedding-model-neutral; the consumer wires one.
+EmbedderT = Callable[[str], list[float] | Awaitable[list[float]]]
+
+
+async def embed_text(embedder: EmbedderT, text: str) -> list[float]:
+    """Call a sync-or-async embedder and return the vector as a list."""
+    result = embedder(text)
+    if inspect.isawaitable(result):
+        result = await result
+    return list(result)
+
+
+def _cosine(a: list[float], b: list[float]) -> float:
+    """Cosine similarity in ``[-1, 1]``; ``0.0`` for mismatched or zero vectors."""
+    if len(a) != len(b):
+        return 0.0
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = sum(x * x for x in a) ** 0.5
+    norm_b = sum(y * y for y in b) ** 0.5
+    if norm_a == 0.0 or norm_b == 0.0:
+        return 0.0
+    return dot / (norm_a * norm_b)
+
+
+def _parse_vec(raw: Any) -> list[float] | None:
+    """Parse a JSON-encoded embedding; ``None`` on malformed input."""
+    try:
+        return json.loads(raw)
+    except Exception:
+        return None
 
 
 @runtime_checkable
@@ -76,14 +109,20 @@ def _apply_common_filters(
 
 
 class SemanticStrategy:
-    """FTS5 (or LIKE fallback) on ``content``, ordered by recency of access.
+    """Content retrieval — embedding cosine, or FTS5 / LIKE keyword match.
 
-    Identical to v0.0.1 behavior. Embedding-cosine path is wired only
-    when an ``embedding`` column has data AND the caller has registered
-    a vector-similarity SQL fn; otherwise we degrade to FTS5 / LIKE.
+    With no ``embedder`` this is identical to the v0.0.1 keyword behavior,
+    ordered by recency of access. With an ``embedder``, recall embeds the
+    query, brute-force scores every stored vector by cosine similarity, and
+    returns the top-k — fine for the local SQLite store; the pgvector
+    backend is the path to scale.
     """
 
     name = "semantic"
+
+    def __init__(self, embedder: EmbedderT | None = None) -> None:
+        """Store the optional embedder; ``None`` selects the FTS5 path."""
+        self._embedder = embedder
 
     async def recall(
         self,
@@ -95,6 +134,11 @@ class SemanticStrategy:
         fts_available: bool,
     ) -> list[aiosqlite.Row]:
         conditions, params = _apply_common_filters(filters)
+
+        if self._embedder is not None:
+            return await self._recall_by_embedding(
+                db, query, k, conditions, params, self._embedder
+            )
 
         if fts_available:
             conditions.append(
@@ -115,6 +159,35 @@ class SemanticStrategy:
         params.append(k)
         cursor = await db.execute(sql, params)
         return list(await cursor.fetchall())
+
+    async def _recall_by_embedding(
+        self,
+        db: aiosqlite.Connection,
+        query: str,
+        k: int,
+        conditions: list[str],
+        params: list[Any],
+        embedder: EmbedderT,
+    ) -> list[aiosqlite.Row]:
+        """Brute-force cosine ranking over rows that carry an embedding."""
+        conditions = [*conditions, "m.embedding IS NOT NULL"]
+        where = " AND ".join(conditions) if conditions else "1=1"
+        sql = f"SELECT * FROM memories m WHERE {where}"  # noqa: S608
+        cursor = await db.execute(sql, params)
+        rows = list(await cursor.fetchall())
+        if not rows:
+            return []
+        try:
+            query_vec = await embed_text(embedder, query)
+        except Exception:
+            return []  # best-effort: a failed embedder yields no results
+        scored: list[tuple[float, aiosqlite.Row]] = []
+        for row in rows:
+            vec = _parse_vec(row["embedding"])
+            if vec is not None:
+                scored.append((_cosine(query_vec, vec), row))
+        scored.sort(key=lambda pair: pair[0], reverse=True)
+        return [row for _score, row in scored[:k]]
 
 
 class EpisodicStrategy:
@@ -265,10 +338,16 @@ class ProceduralStrategy:
         return [candidates[i] for i in chosen_idx if 0 <= i < len(candidates)][:k]
 
 
-def default_strategy_table() -> dict[str, RetrievalStrategy]:
-    """The default per-kind retrieval table used by :class:`LocalMemoryStore`."""
+def default_strategy_table(
+    embedder: EmbedderT | None = None,
+) -> dict[str, RetrievalStrategy]:
+    """The default per-kind retrieval table used by :class:`LocalMemoryStore`.
+
+    When ``embedder`` is supplied, :class:`SemanticStrategy` ranks by
+    embedding cosine similarity; otherwise it falls back to FTS5 / LIKE.
+    """
     return {
-        "semantic": SemanticStrategy(),
+        "semantic": SemanticStrategy(embedder=embedder),
         "episodic": EpisodicStrategy(),
         "procedural": ProceduralStrategy(),
     }
