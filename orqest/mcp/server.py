@@ -11,7 +11,7 @@ def create_orqest_server(
     factory: Any = None,
     registry: Any = None,
     meta: Any = None,
-    default_model: str = "openai:gpt-4o",
+    default_model: str = "openai:gpt-4.1",
     api_key: str = "",
 ) -> Any:
     """Create a FastMCP server exposing Orqest capabilities.

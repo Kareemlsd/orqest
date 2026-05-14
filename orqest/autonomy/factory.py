@@ -42,7 +42,7 @@ class AgentFactory:
     def __init__(
         self,
         registry: ToolRegistry | None = None,
-        default_model: str = "openai:gpt-4o",
+        default_model: str = "openai:gpt-4.1",
         api_key: str = "",
     ) -> None:
         """Initialize with an optional registry, default model, and API key."""

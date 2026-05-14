@@ -13,10 +13,10 @@ def _build_registry() -> dict[str, tuple[type, type]]:
     """Lazily import provider classes and return the registry.
 
     Imports are deferred so the module has no import-time side effects beyond
-    defining names, and so users only pay for the providers they actually use.
-    Providers that fail to import (e.g. due to missing or incompatible SDK
-    versions) are silently skipped — they'll raise at resolve_model() time
-    if actually requested.
+    defining names. Providers that fail to import (e.g. due to missing or
+    incompatible SDK versions) are skipped and raise at resolve_model() time
+    only if actually requested — defensive belt-and-suspenders, since the
+    full ``pydantic-ai`` dependency already bundles every provider SDK.
     """
     import logging
 
@@ -63,7 +63,7 @@ def resolve_model(model_name: str, *, api_key: str) -> Model:
     """Resolve a 'provider:model_id' string into a pydantic-ai Model.
 
     Args:
-        model_name: In 'provider:model_id' format (e.g. 'openai:gpt-4o').
+        model_name: In 'provider:model_id' format (e.g. 'openai:gpt-4.1').
         api_key: API key passed to the provider constructor.
 
     Raises:
@@ -72,7 +72,7 @@ def resolve_model(model_name: str, *, api_key: str) -> Model:
     if ":" not in model_name:
         raise ValueError(
             f"Model name {model_name!r} must use 'provider:model_id' format "
-            f"(e.g., 'openai:gpt-4o'). Update your LLM_MODEL environment variable."
+            f"(e.g., 'openai:gpt-4.1'). Update your LLM_MODEL environment variable."
         )
 
     provider_prefix, model_id = model_name.split(":", maxsplit=1)

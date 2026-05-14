@@ -76,7 +76,7 @@ class SubAgentResult(BaseModel, Generic[ResultT]):
     model_config = {"arbitrary_types_allowed": True}
 
 
-class EvalResult(BaseModel):
+class SubAgentEvalResult(BaseModel):
     """Pass/fail signal from the optional evaluator."""
 
     passed: bool
@@ -93,7 +93,7 @@ class SubAgentTool(Generic[StateT, ResultT]):
       (e.g. run the MCP pipeline and return a payload).
     * ``state_updater(result, state) -> None`` — mutates the long-
       lived session state with whatever needs to persist.
-    * ``evaluator(result) -> EvalResult`` (optional) — decides whether
+    * ``evaluator(result) -> SubAgentEvalResult`` (optional) — decides whether
       the result is good enough or a refinement cycle should fire.
 
     If ``max_refinements > 0`` and the evaluator rejects the first
@@ -112,7 +112,7 @@ class SubAgentTool(Generic[StateT, ResultT]):
         executor: Callable[[Any, StateT], Awaitable[ResultT]],
         state_updater: Callable[[ResultT, StateT], None],
         *,
-        evaluator: Callable[[ResultT], EvalResult] | None = None,
+        evaluator: Callable[[ResultT], SubAgentEvalResult] | None = None,
         max_refinements: int = 0,
         build_refinement_prompt: Callable[[ResultT, str], str] | None = None,
         name: str | None = None,

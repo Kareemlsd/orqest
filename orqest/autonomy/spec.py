@@ -31,7 +31,7 @@ class AgentSpec(BaseModel):
     system_prompt: str
     output_schema: dict[str, Any]
     tools: list[ToolSpec] = Field(default_factory=list)
-    model: str = "openai:gpt-4o"
+    model: str = "openai:gpt-4.1"
     constraints: list[str] = Field(default_factory=list)
     token_budget: int | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)

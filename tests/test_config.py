@@ -10,7 +10,7 @@ class TestOrqestConfig:
 
     def test_fields(self, test_config):
         assert test_config.llm_api_key == "test-key-123"
-        assert test_config.llm_model == "openai:gpt-3.5-turbo"
+        assert test_config.llm_model == "openai:gpt-4.1"
         assert test_config.embedding_model == "all-MiniLM-L6-v2"
         assert test_config.embedding_api_key == "test-key-123"
 
@@ -36,7 +36,7 @@ class TestLoadConfig:
         monkeypatch.delenv("EMBEDDING_API_KEY", raising=False)
         # Pass nonexistent dotenv_path to prevent loading the real .env
         config = load_config(dotenv_path="/nonexistent/.env")
-        assert config.llm_model == "openai:gpt-3.5-turbo"
+        assert config.llm_model == "openai:gpt-4.1"
         assert config.embedding_model == "all-MiniLM-L6-v2"
 
     def test_embedding_api_key_falls_back_to_llm_key(self, monkeypatch):

@@ -8,7 +8,7 @@ import pytest
 from pydantic import BaseModel
 
 from orqest.compound import SubAgentTool
-from orqest.compound.sub_agent_tool import EvalResult
+from orqest.compound.sub_agent_tool import SubAgentEvalResult
 
 
 # --- fixtures ---
@@ -126,8 +126,8 @@ class TestRefinement:
         )
         passes = iter([False, True])  # fail first, pass second
 
-        def evaluator(result: str) -> EvalResult:
-            return EvalResult(passed=next(passes))
+        def evaluator(result: str) -> SubAgentEvalResult:
+            return SubAgentEvalResult(passed=next(passes))
 
         def build_refine(result: str, prompt: str) -> str:
             return f"REFINED({prompt}) because of {result}"
@@ -157,8 +157,8 @@ class TestRefinement:
     async def test_first_pass_passes_no_refinement(self):
         agent = _FakeAgent(outputs=[_Output(note_seen="a")])
 
-        def evaluator(result: str) -> EvalResult:
-            return EvalResult(passed=True)
+        def evaluator(result: str) -> SubAgentEvalResult:
+            return SubAgentEvalResult(passed=True)
 
         def build_refine(result: str, prompt: str) -> str:
             pytest.fail("should not be called")
@@ -188,8 +188,8 @@ class TestRefinement:
             ]
         )
 
-        def evaluator(_result: str) -> EvalResult:
-            return EvalResult(passed=False)  # always fail
+        def evaluator(_result: str) -> SubAgentEvalResult:
+            return SubAgentEvalResult(passed=False)  # always fail
 
         def build_refine(result: str, prompt: str) -> str:
             return f"refine-{result}"
@@ -222,8 +222,8 @@ class TestRefinement:
             ]
         )
 
-        def evaluator(_result: str) -> EvalResult:
-            return EvalResult(passed=False)
+        def evaluator(_result: str) -> SubAgentEvalResult:
+            return SubAgentEvalResult(passed=False)
 
         def build_refine(result: str, prompt: str) -> str:
             return "r"
@@ -266,7 +266,7 @@ class TestValidation:
                 agent=agent,
                 executor=_executor_factory([]),
                 state_updater=_updater,
-                evaluator=lambda r: EvalResult(passed=True),
+                evaluator=lambda r: SubAgentEvalResult(passed=True),
                 max_refinements=1,
             )
 

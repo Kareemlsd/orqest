@@ -24,7 +24,7 @@ class TestAgentSpec:
         )
         assert spec.name == "summarizer"
         assert spec.tools == []
-        assert spec.model == "openai:gpt-4o"
+        assert spec.model == "openai:gpt-4.1"
         assert spec.constraints == []
         assert spec.token_budget is None
         assert spec.metadata == {}

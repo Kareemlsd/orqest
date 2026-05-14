@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from orqest.agents.base_agent import BaseAgent
 from orqest.agents.context_manager import ContextManager
 from orqest.agents.state import GlobalState
-from orqest.compound.sub_agent_tool import EvalResult as SubEvalResult
+from orqest.compound.sub_agent_tool import SubAgentEvalResult as SubEvalResult
 from orqest.compound.sub_agent_tool import SubAgentTool
 from orqest.orchestration.loop import EvalResult
 from orqest.metacognition import (
