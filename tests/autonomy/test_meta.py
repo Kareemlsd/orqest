@@ -133,6 +133,7 @@ class MockMemoryStore:
 
     def __init__(self) -> None:
         self.stored: list[MemoryEntry] = []
+        self.recall_queries: list[str] = []
         self._entries: dict[str, MemoryEntry] = {}
 
     async def store(self, entry: MemoryEntry) -> str:
@@ -143,6 +144,7 @@ class MockMemoryStore:
     async def recall(
         self, query: str, *, k: int = 5, filters: Any = None
     ) -> list[MemoryEntry]:
+        self.recall_queries.append(query)
         return []
 
     async def forget(self, entry_id: str) -> None:
@@ -470,3 +472,21 @@ async def test_on_error_redirect_retries_subtask(model: TestModel) -> None:
     assert result.subtask_results[0].success is True
     assert result.subtask_results[0].output.result == "recovered"
     assert flaky.attempts == 2
+
+
+@pytest.mark.asyncio
+async def test_find_or_spawn_recalls_by_subtask_name(model: TestModel) -> None:
+    """Memory recall is queried by subtask.name — not the usually-None
+    subtask.agent_name — so a stored skill is actually retrievable."""
+    memory = MockMemoryStore()
+    decomposition = _make_decomposition(num_subtasks=1)  # subtask_0
+    orch = MetaOrchestrator(
+        PlannerAgent(model, decomposition),
+        MockFactory(model),
+        MockRegistry(),
+        memory=memory,
+    )
+    await orch.solve("recall test")
+
+    assert memory.recall_queries, "recall was never attempted"
+    assert all(q == "subtask_0" for q in memory.recall_queries)

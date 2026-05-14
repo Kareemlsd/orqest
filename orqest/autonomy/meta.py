@@ -405,18 +405,21 @@ class MetaOrchestrator:
         BOTH episodic (legacy mirror) and procedural (the cognitively-
         correct kind) for forward compat.
         """
-        # Check cache of previously spawned agents
-        if subtask.agent_name and subtask.agent_name in self._spawned_agents:
-            return self._spawned_agents[subtask.agent_name], False
+        # Check cache of previously spawned agents — keyed by subtask.name.
+        if subtask.name in self._spawned_agents:
+            return self._spawned_agents[subtask.name], False
 
-        # Check memory for a previously successful spec — procedural first
-        if self._memory and subtask.agent_name:
+        # Check memory for a previously successful spec — procedural first.
+        # Recall query, skill trigger, and the cache are all keyed by
+        # subtask.name (subtask.agent_name is an optional planner hint and
+        # is usually None, so it cannot be the reuse key).
+        if self._memory:
             from orqest.autonomy.spec import AgentSpec
             from orqest.memory.store import MemoryFilter
 
             try:
                 proc_memories = await self._memory.recall(
-                    subtask.agent_name,
+                    subtask.name,
                     k=1,
                     filters=MemoryFilter(
                         memory_type="procedural", min_reliability=0.5
@@ -427,7 +430,7 @@ class MetaOrchestrator:
                     if spec_payload:
                         spec = AgentSpec.model_validate(spec_payload)
                         agent = self._factory.spawn(spec)
-                        self._spawned_agents[spec.name] = agent
+                        self._spawned_agents[subtask.name] = agent
                         return agent, True
             except Exception:
                 logger.debug("No usable procedural skill in memory")
@@ -435,7 +438,7 @@ class MetaOrchestrator:
             # Fallback: episodic recall (legacy path)
             try:
                 memories = await self._memory.recall(
-                    subtask.agent_name,
+                    subtask.name,
                     k=1,
                     filters=MemoryFilter(
                         memory_type="episodic", min_reliability=0.5
@@ -444,7 +447,7 @@ class MetaOrchestrator:
                 if memories:
                     spec = AgentSpec.model_validate_json(memories[0].content)
                     agent = self._factory.spawn(spec)
-                    self._spawned_agents[spec.name] = agent
+                    self._spawned_agents[subtask.name] = agent
                     return agent, True
             except Exception:
                 logger.debug("No usable agent spec found in memory")
@@ -474,7 +477,7 @@ class MetaOrchestrator:
         )
 
         agent = self._factory.spawn(spec)
-        self._spawned_agents[spec.name] = agent
+        self._spawned_agents[subtask.name] = agent
 
         # Persist the spec to memory for future reuse (best-effort).
         # Dual-write: episodic mirror (legacy) + procedural Skill (new).
