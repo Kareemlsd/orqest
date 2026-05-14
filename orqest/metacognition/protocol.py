@@ -154,18 +154,6 @@ class StructuredOutputProtocol:
 # ---- LLMSelfRatingProtocol --------------------------------------------
 
 
-class _SelfRating:
-    """Internal structured output for the rater agent.
-
-    Defined as a plain dataclass-ish class to avoid pulling Pydantic
-    everywhere; the protocol uses duck-typing on the rater's response.
-    """
-
-    confidence: float | None
-    uncertainty_targets: list[str]
-    capability_boundary: bool
-
-
 _DEFAULT_RATING_PROMPT = (
     "You just produced an output for a task. Reflect on it and rate it.\n\n"
     "TASK INPUT (most-recent user message):\n{state_summary}\n\n"

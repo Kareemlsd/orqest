@@ -45,10 +45,6 @@ class HealingConfig:
     """Off by default — needs ``metacognition.confidence`` events
     flowing on the bus."""
 
-    abort_on_unresolved_loop: bool = True
-    """When :class:`LoopDetector` fires and policy yields no recovery,
-    abort the compound flow rather than continuing the loop."""
-
     def __post_init__(self) -> None:
         if self.stall_timeout_s <= 0:
             raise ValueError("stall_timeout_s must be > 0")

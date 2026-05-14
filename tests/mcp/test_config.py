@@ -47,7 +47,6 @@ class TestMCPConfig:
         cfg = MCPConfig()
         assert cfg.servers == []
         assert cfg.auto_discover is True
-        assert cfg.connection_timeout == 30.0
 
     def test_custom_servers(self) -> None:
         s = MCPServerConfig(name="s1", command="python")

@@ -34,10 +34,8 @@ class MCPConfig:
     Args:
         servers: Explicit server configurations.
         auto_discover: Scan standard paths for MCP configs on connect.
-        connection_timeout: Seconds to wait for a server to respond.
 
     """
 
     servers: list[MCPServerConfig] = field(default_factory=list)
     auto_discover: bool = True
-    connection_timeout: float = 30.0

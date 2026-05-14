@@ -19,7 +19,6 @@ def test_defaults():
     assert cfg.enable_stall is True
     assert cfg.enable_loop is True
     assert cfg.enable_regression is False  # off by default — needs metacognition
-    assert cfg.abort_on_unresolved_loop is True
 
 
 def test_frozen():
