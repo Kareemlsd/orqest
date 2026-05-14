@@ -233,7 +233,7 @@ await memory.store(MemoryEntry(
 
 **Variations:**
 - Custom backend: implement `MemoryStore` Protocol; pass to `Workbench(memory=...)`
-- Per-kind config (TTL, decay, version-on-edit): `MemoryConfig` with `PerKindConfig` per kind
+- Per-kind reliability policy (decay-on-failure, prune floor): `MemoryConfig` with a `PerKindConfig` per kind, passed as `LocalMemoryStore(config=...)`
 
 **Skip this recipe if** the app already has its own context store — extend that instead of bolting on memory.
 

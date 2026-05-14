@@ -337,8 +337,8 @@ function projectEvent(evt: AgentEvent): HealingEntry | null {
   switch (evt.event_type) {
     case "healing.detection":
       return { id: evt.timestamp, kind: "detection", summary: evt.data.summary as string, ts: Date.now() };
-    case "healing.retry_initiated":
-      return { id: evt.timestamp, kind: "retry", summary: evt.data.tool_name as string, ts: Date.now() };
+    case "healing.action":
+      return { id: evt.timestamp, kind: "action", summary: evt.data.action as string, ts: Date.now() };
     case "healing.model_fallback":
       return { id: evt.timestamp, kind: "fallback", summary: `${evt.data.from} → ${evt.data.to}`, ts: Date.now() };
     case "healing.model_chain_exhausted":

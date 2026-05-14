@@ -1,14 +1,13 @@
 "use client";
 
 /**
- * useHealingEvents — project the five healing.* event types into a
+ * useHealingEvents — project the four healing.* event types into a
  * bounded ring of HealingEntry records suitable for a transient toast
  * stack.
  *
  * Event types projected:
  *   - healing.detection         → kind: "detection" (e.g. "stall · 23s")
  *   - healing.action            → kind: "action"    (policy decided)
- *   - healing.retry_initiated   → kind: "retry"     (RetrySameTool fired)
  *   - healing.model_fallback    → kind: "fallback"  (FallbackModel advanced)
  *   - healing.model_chain_exhausted → kind: "exhausted" (chain spent)
  *
@@ -26,7 +25,6 @@ import { useSidecar } from "./useSidecar";
 export type HealingKind =
   | "detection"
   | "action"
-  | "retry"
   | "fallback"
   | "exhausted";
 
@@ -61,16 +59,6 @@ function projectEvent(evt: AgentEvent): HealingEntry | null {
     case "healing.action": {
       const action = String(evt.data.action ?? "action");
       return { id, kind: "action", summary: action, severity: null, ts };
-    }
-    case "healing.retry_initiated": {
-      const tool = String(evt.data.tool_name ?? "tool");
-      return {
-        id,
-        kind: "retry",
-        summary: `retry · ${tool}`,
-        severity: null,
-        ts,
-      };
     }
     case "healing.model_fallback": {
       const from = String(evt.data.from_model ?? evt.data.from ?? "?");

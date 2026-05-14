@@ -53,7 +53,7 @@ Cognitive memory typology.
 | `MemoryEntry` | Pydantic — content + memory_type + confidence + metadata |
 | `MemoryFilter` | Query constraints + `skill_name` / `skill_min_version` |
 | `Skill`, `ToolCallSpec`, `SkillExample` | Procedural memory shapes |
-| `MemoryConfig`, `PerKindConfig` | Per-kind TTL / decay / version policy |
+| `MemoryConfig`, `PerKindConfig` | Per-kind reliability policy (decay / prune) |
 
 ### `orqest.observability`
 
@@ -95,7 +95,7 @@ Runtime agent design.
 | `Watchdog`, `Detection` | Protocol + Pydantic record |
 | `StallDetector`, `LoopDetector`, `RegressionDetector` | Concrete watchdogs |
 | `RecoveryAction` | Discriminated union |
-| `RetrySameTool`, `RetryDifferentModel`, `EscalateToUser`, `AbortRun`, `DiscoverAndRetry` | Recovery action variants |
+| `EscalateToUser`, `AbortRun` | Recovery action variants |
 | `WatchdogHook` | ToolHook mapping Detection → policy → HookDecision |
 | `default_policy` | Default Detection → RecoveryAction mapping |
 | `FallbackModel` | pydantic-ai Model subclass with sticky failover |
