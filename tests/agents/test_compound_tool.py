@@ -7,7 +7,7 @@ from pydantic_ai.models.test import TestModel
 from orqest.agents.base_agent import BaseAgent
 from orqest.agents.compound_tool import CompoundTool
 from orqest.agents.state import GlobalState
-from orqest.hooks import HookRunner
+from orqest.hooks import HookRunner, Redirect
 
 
 # --- Helpers ---
@@ -185,3 +185,55 @@ class TestCompoundToolStateUpdater:
         state.add_message("user", "go")
         agent_output, result = await tool.run(state, prompt="go")
         assert result == "ok"
+
+
+class TestCompoundToolOnErrorRedirect:
+    """on_error hooks can issue a Redirect for a bounded executor retry."""
+
+    @pytest.mark.asyncio
+    async def test_on_error_redirect_retries_executor(self, test_model):
+        """A Redirect from on_error retries the executor once (the
+        DiscoveryHook recovery path)."""
+        agent = StubAgent(
+            agent_name="stub",
+            system_prompt="test",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        calls = {"n": 0}
+
+        async def executor(output, state):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise RuntimeError("tool not found")
+            return "recovered"
+
+        class RedirectOnError:
+            async def on_error(self, tool_name, args, error, state):
+                return Redirect(new_tool=tool_name, reason="discovered via MCP")
+
+        tool = CompoundTool(agent, executor, hooks=HookRunner([RedirectOnError()]))
+        state = GlobalState()
+        state.add_message("user", "go")
+        agent_output, result = await tool.run(state, prompt="go")
+        assert result == "recovered"
+        assert calls["n"] == 2
+
+    @pytest.mark.asyncio
+    async def test_on_error_continue_reraises_original(self, test_model):
+        """Without a Redirect, a failed executor still propagates."""
+        agent = StubAgent(
+            agent_name="stub",
+            system_prompt="test",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+
+        async def executor(output, state):
+            raise RuntimeError("boom")
+
+        tool = CompoundTool(agent, executor)
+        state = GlobalState()
+        state.add_message("user", "go")
+        with pytest.raises(RuntimeError, match="boom"):
+            await tool.run(state, prompt="go")

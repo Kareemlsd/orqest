@@ -22,7 +22,7 @@ from orqest.autonomy.meta import (
     TaskDecomposition,
 )
 from orqest.autonomy.spec import AgentSpec
-from orqest.hooks import HookRunner
+from orqest.hooks import HookRunner, Redirect
 from orqest.memory.store import MemoryEntry
 
 # ---------------------------------------------------------------------------
@@ -420,3 +420,53 @@ async def test_memory_integration(model: TestModel) -> None:
         assert "spec" in entry.structured_content
         spec = AgentSpec.model_validate(entry.structured_content["spec"])
         assert spec.name.startswith("subtask_")
+
+
+@pytest.mark.asyncio
+async def test_on_error_redirect_retries_subtask(model: TestModel) -> None:
+    """A Redirect from on_error retries the failed subtask's agent once."""
+
+    class FlakyAgent(BaseAgent[GlobalState, SimpleOutput]):
+        """Fails the first run, succeeds on retry."""
+
+        def __init__(self, m: Any, name: str) -> None:
+            super().__init__(
+                agent_name=name,
+                system_prompt="w",
+                output_type=SimpleOutput,
+                model=m,
+            )
+            self.attempts = 0
+
+        async def _run_implementation(
+            self, state: GlobalState, **kwargs: Any
+        ) -> SimpleOutput:
+            self.attempts += 1
+            if self.attempts == 1:
+                raise RuntimeError("tool not found")
+            return SimpleOutput(result="recovered")
+
+    flaky = FlakyAgent(model, "subtask_0")
+
+    class FlakyFactory:
+        def spawn(self, spec: AgentSpec) -> BaseAgent:
+            return flaky
+
+    class RedirectOnError:
+        async def on_error(self, tool_name, args, error, state):
+            return Redirect(new_args={"prompt": "retry"})
+
+    decomposition = _make_decomposition(num_subtasks=1)
+    planner = PlannerAgent(model, decomposition)
+    orch = MetaOrchestrator(
+        planner,
+        FlakyFactory(),
+        MockRegistry(),
+        hooks=HookRunner([RedirectOnError()]),
+    )
+
+    result = await orch.solve("flaky goal")
+
+    assert result.subtask_results[0].success is True
+    assert result.subtask_results[0].output.result == "recovered"
+    assert flaky.attempts == 2

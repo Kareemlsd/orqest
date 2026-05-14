@@ -102,8 +102,21 @@ class CompoundTool(Generic[StateT, OutputT]):
         except HookAbortError:
             raise
         except Exception as exc:
-            await self._hooks.run_error(effective_name, effective_args, exc, state)
-            raise
+            error_decision = await self._hooks.run_error(
+                effective_name, effective_args, exc, state
+            )
+            if not isinstance(error_decision, Redirect):
+                raise
+            # on_error Redirect → bounded single retry of the executor
+            # (e.g. DiscoveryHook registered the missing tool). A second
+            # failure is not retried — it propagates.
+            if error_decision.new_args is not None:
+                effective_args = {**effective_args, **error_decision.new_args}
+            if error_decision.new_tool is not None:
+                effective_name = error_decision.new_tool
+            start = time.monotonic()
+            result = await self._executor(agent_output, state)
+            duration_ms = (time.monotonic() - start) * 1000
 
         after_decision = await self._hooks.run_after(
             effective_name, effective_args, result, state, duration_ms

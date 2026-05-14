@@ -237,6 +237,8 @@ class MetaOrchestrator:
             )
             prompt += f"\n\nContext from previous steps:\n{context_str}"
 
+        agent: BaseAgent | None = None
+        was_spawned = False
         try:
             agent, was_spawned = await self._find_or_spawn(subtask)
 
@@ -310,12 +312,34 @@ class MetaOrchestrator:
                 name=subtask.name,
                 err=str(exc),
             )
-            await self._hooks.run_error(
-                f"meta:{subtask.name}",
-                {"subtask": subtask.name},
-                exc,
-                GlobalState(),
+            try:
+                error_decision = await self._hooks.run_error(
+                    f"meta:{subtask.name}",
+                    {"subtask": subtask.name},
+                    exc,
+                    GlobalState(),
+                )
+            except HookAbortError as abort:
+                return SubTaskResult(
+                    subtask_name=subtask.name,
+                    success=False,
+                    error=f"aborted: {abort.reason}",
+                    agent_used=subtask.agent_name or "unknown",
+                    was_spawned=False,
+                    duration_ms=duration,
+                )
+
+            retried = await self._retry_subtask_on_redirect(
+                decision=error_decision,
+                agent=agent,
+                was_spawned=was_spawned,
+                subtask=subtask,
+                prompt=prompt,
+                start=start,
             )
+            if retried is not None:
+                return retried
+
             return SubTaskResult(
                 subtask_name=subtask.name,
                 success=False,
@@ -324,6 +348,51 @@ class MetaOrchestrator:
                 was_spawned=False,
                 duration_ms=duration,
             )
+
+    async def _retry_subtask_on_redirect(
+        self,
+        *,
+        decision: Any,
+        agent: BaseAgent | None,
+        was_spawned: bool,
+        subtask: SubTask,
+        prompt: str,
+        start: float,
+    ) -> SubTaskResult | None:
+        """Honor an ``on_error`` :class:`Redirect` with one bounded agent retry.
+
+        Returns the success :class:`SubTaskResult` when the retry ran and
+        succeeded, or ``None`` when no retry applies (the decision is not a
+        :class:`Redirect`, or no agent was spawned) or the retry itself
+        raised — in which case the caller reports the original failure.
+        """
+        if not isinstance(decision, Redirect) or agent is None:
+            return None
+        retry_state = GlobalState()
+        retry_prompt = prompt
+        if decision.new_args and "prompt" in decision.new_args:
+            retry_prompt = str(decision.new_args["prompt"])
+        retry_state.add_message("user", retry_prompt)
+        try:
+            output = await agent.run(retry_state)
+        except Exception:
+            return None
+        duration = (time.monotonic() - start) * 1000
+        await self._hooks.run_after(
+            f"meta:{subtask.name}",
+            {"subtask": subtask.name},
+            output,
+            retry_state,
+            duration,
+        )
+        return SubTaskResult(
+            subtask_name=subtask.name,
+            success=True,
+            output=output,
+            agent_used=agent.agent_name,
+            was_spawned=was_spawned,
+            duration_ms=duration,
+        )
 
     async def _find_or_spawn(
         self, subtask: SubTask
