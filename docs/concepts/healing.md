@@ -54,13 +54,19 @@ detector = RegressionDetector(window_n=10, drop_threshold=0.2)
 
 | Action | When | Effect |
 |--------|------|--------|
-| `RetrySameTool(note)` | Transient failure (timeout, 5xx) | Re-issue the same tool call |
-| `RetryDifferentModel(model)` | Persistent failure with current model | Re-issue with `provider:model_id` |
-| `EscalateToUser(question)` | Ambiguity that needs human input | Surface as a takeover dialog (consumer-side rendering) |
+| `EscalateToUser(question)` | Ambiguity that needs human input | Surface as a `Skip` carrying the question (consumer renders a takeover dialog) |
 | `AbortRun(reason)` | Unrecoverable | Stop the compound flow with `HookAbortError` |
-| `DiscoverAndRetry(capability)` | Tool not found | Search MCP for the capability, register, retry |
 
 Default policy maps every detection to `AbortRun` — conservative. Consumers override with a custom callable.
+
+!!! note "Preview — automated recovery"
+
+    Healing's *detection* and the abort/escalate actions are wired
+    end-to-end. Richer automated recovery (model-switching,
+    discover-and-retry) is not yet wired — the audited `RetryDifferentModel`
+    / `DiscoverAndRetry` / `RetrySameTool` actions were removed because no
+    compound flow consumed their payloads. For tool-not-found recovery
+    today, use `DiscoveryHook` (below), which *is* wired.
 
 ## WatchdogHook — the bridge into HookDecision
 
@@ -165,14 +171,15 @@ Frozen dataclass; one config knob per cross-cutting concern.
 
 | Field | Default | Effect |
 |-------|---------|--------|
-| `stall_timeout_s` | `30.0` | StallDetector timeout |
+| `stall_timeout_s` | `60.0` | StallDetector timeout |
 | `loop_threshold_k` | `3` | LoopDetector match count threshold |
 | `loop_window_n` | `10` | LoopDetector sliding window |
-| `regression_window_n` | `10` | RegressionDetector sliding window |
+| `regression_window_n` | `5` | RegressionDetector sliding window |
 | `regression_drop_threshold` | `0.2` | RegressionDetector head-vs-tail mean delta |
 | `poll_interval_s` | `1.0` | Poll loop tick interval |
 | `fallback_models` | `()` | Tuple of `provider:model_id` strings |
-| `enable_stall` / `enable_loop` / `enable_regression` | `True` | Flag-gate per-detector |
+| `enable_stall` / `enable_loop` | `True` | Flag-gate per-detector |
+| `enable_regression` | `False` | Off by default — needs `metacognition.confidence` events |
 
 ## Cross-feature handshake — metacognition → healing
 
@@ -182,16 +189,16 @@ Frozen dataclass; one config knob per cross-cutting concern.
 agent.run_enriched(...)
     → MetacognitionHook emits metacognition.confidence on bus
     → RegressionDetector buffers → signals Detection
-    → policy returns RetryDifferentModel(...)
-    → WatchdogHook returns Redirect(new_args=...)
-    → HookRunner aggregates → CompoundTool re-issues with the new model
+    → policy returns a RecoveryAction (default: AbortRun)
+    → WatchdogHook translates it to a HookDecision (Abort)
+    → HookRunner aggregates → the compound flow halts with HookAbortError
 ```
 
 The whole chain is composable. Drop in metacognition without healing → events fire, nobody listens. Drop in healing without metacognition → `RegressionDetector` no-ops, `Stall`/`Loop` still work. Each piece degrades gracefully.
 
-## MCP auto-discovery (DiscoverAndRetry)
+## MCP auto-discovery (DiscoveryHook)
 
-When a runtime "tool not found" error fires, `DiscoveryHook` searches MCP for the missing capability. Gated by `PermissionGate` (default `DenyAll` — opt-in). Recovery action `DiscoverAndRetry(capability=name)` returns `Redirect(new_tool=name)` after registration.
+When a runtime "tool not found" error fires, `DiscoveryHook` searches MCP for the missing capability, registers it, and returns `Redirect(new_tool=name)` from `on_error` — the compound flow then retries the call once. Gated by `PermissionGate` (default `DenyAll` — opt-in).
 
 ```python
 from orqest.mcp import DiscoveryHook, AllowList

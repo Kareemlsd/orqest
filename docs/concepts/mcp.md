@@ -259,5 +259,5 @@ Auto-discovery scans the standard config locations: `~/.claude.json`, `~/.claude
 
 - [Autonomy](autonomy.md) — `ToolRegistry` is the substrate MCP integrates with
 - [Hooks & Lifecycle](hooks-and-lifecycle.md) — `DiscoveryHook` returns `HookDecision`s through `HookRunner`
-- [Self-Healing](healing.md) — `DiscoverAndRetry` recovery action triggers the discovery flow
+- [Self-Healing](healing.md) — `DiscoveryHook` recovers from "tool not found" errors via the discovery flow
 - [Observability](observability.md) — `discovery.*` audit events flow on the `EventBus`

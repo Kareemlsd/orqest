@@ -22,7 +22,7 @@ from pydantic import BaseModel
 
 from orqest.agents import BaseAgent
 from orqest.compound import SubAgentTool
-from orqest.compound.sub_agent_tool import EvalResult
+from orqest.compound.sub_agent_tool import SubAgentEvalResult
 
 
 class GeoOutput(BaseModel):
@@ -53,8 +53,8 @@ def update_state(result: dict, state: State) -> None:
     state.quality = result["quality"]
 
 
-def check_quality(result: dict) -> EvalResult:
-    return EvalResult(passed=result["quality"] >= 0.5)
+def check_quality(result: dict) -> SubAgentEvalResult:
+    return SubAgentEvalResult(passed=result["quality"] >= 0.5)
 
 
 def refine_prompt(result: dict, prompt: str) -> str:

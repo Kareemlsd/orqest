@@ -103,10 +103,10 @@ A single unit of stored knowledge:
 |-------|------|---------|-------------|
 | `id` | `str` | Auto UUID | Unique identifier |
 | `content` | `str` | required | The memory content |
-| `memory_type` | `"semantic"` or `"episodic"` | `"semantic"` | Classification |
+| `memory_type` | `"semantic"`, `"episodic"`, or `"procedural"` | `"semantic"` | Classification |
 | `source_agent` | `str` | `"unknown"` | Which agent created this |
 | `confidence` | `float` | `1.0` | How confident the agent was (0-1) |
-| `embedding` | `list[float] \| None` | `None` | Vector embedding for similarity search |
+| `embedding` | `list[float] \| None` | `None` | Vector embedding (stored; embedding-based retrieval is preview) |
 | `metadata` | `dict` | `{}` | Arbitrary key-value pairs |
 | `created_at` | `datetime` | now | Creation timestamp |
 | `last_accessed` | `datetime` | now | Last recall timestamp |
@@ -118,15 +118,27 @@ A single unit of stored knowledge:
 Configuration for the memory subsystem:
 
 ```python
-from orqest.memory import MemoryConfig
+from orqest.memory import LocalMemoryStore, MemoryConfig, PerKindConfig
 
 config = MemoryConfig(
     backend="local",                    # "local" or "supabase"
     local_db_path="~/.orqest/memory.db",
     embedding_model="all-MiniLM-L6-v2",
     embedding_dim=384,
+    # Per-kind reliability policy — wired into LocalMemoryStore:
+    semantic=PerKindConfig(decay_on_failure=0.7, prune_below=0.1),
 )
+
+store = LocalMemoryStore(config=config)
 ```
+
+!!! note "Preview — non-local backends & embeddings"
+
+    `backend="supabase"`, `supabase_url` / `supabase_key`, and
+    `embedding_model` / `embedding_dim` are designed seams for a future
+    pgvector backend and embedding-based retrieval — accepted but not yet
+    wired. The `local` backend and the per-kind `PerKindConfig`
+    reliability policy *are* wired.
 
 ## What's Happening Under the Hood
 
@@ -134,7 +146,7 @@ config = MemoryConfig(
 2. Tables and FTS5 indexes are created if they don't exist
 3. `recall()` uses FTS5 `MATCH` (or `LIKE` fallback) and applies filter conditions as SQL `WHERE` clauses
 4. Each recall updates `last_accessed` and increments `access_count` for accessed entries
-5. `update_reliability(success=False)` multiplies the score by 0.7 and prunes entries below 0.1
+5. `update_reliability(success=False)` multiplies the score by the per-kind `decay_on_failure` factor (default 0.7) and prunes entries below the per-kind `prune_below` floor (default 0.1)
 
 ## Related Concepts
 

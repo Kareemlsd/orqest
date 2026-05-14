@@ -24,11 +24,11 @@ The `model` parameter can be provided in two ways:
 
 ```python
 # Option 1: String format (most common)
-agent = MyAgent(..., model="openai:gpt-4o", api_key="sk-...")
+agent = MyAgent(..., model="openai:gpt-4.1", api_key="sk-...")
 
 # Option 2: Pre-built pydantic-ai Model instance
 from orqest.utils.llm_model import resolve_model
-model = resolve_model("openai:gpt-4o", api_key="sk-...")
+model = resolve_model("openai:gpt-4.1", api_key="sk-...")
 agent = MyAgent(..., model=model)
 ```
 

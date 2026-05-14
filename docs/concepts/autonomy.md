@@ -53,7 +53,7 @@ spec = AgentSpec(
 | `system_prompt` | `str` | The agent's role/instructions |
 | `output_schema` | `dict` | JSON Schema for the structured output (becomes a runtime Pydantic model) |
 | `tools` | `list[ToolSpec]` | References to tools by name (resolved via registry) |
-| `model` | `str` | `provider:model_id` (defaults to `"openai:gpt-4o"`) |
+| `model` | `str` | `provider:model_id` (defaults to `"openai:gpt-4.1"`) |
 | `constraints` | `list[str]` | Free-text constraints injected into the system prompt |
 | `token_budget` | `int \| None` | Per-agent token hint (consumer-side enforcement) |
 | `metadata` | `dict` | Free-form passthrough |

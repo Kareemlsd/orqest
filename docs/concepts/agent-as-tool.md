@@ -21,8 +21,8 @@ The orchestrator's LLM decides which tool to call based on the user's request.
 from orqest.agents import as_tool
 
 # Create specialized agents
-summarizer = SummaryAgent(model="openai:gpt-4o", api_key="sk-...")
-translator = TranslationAgent(model="openai:gpt-4o", api_key="sk-...")
+summarizer = SummaryAgent(model="openai:gpt-4.1", api_key="sk-...")
+translator = TranslationAgent(model="openai:gpt-4.1", api_key="sk-...")
 
 # Wrap as tools — one line each
 summary_tool = as_tool(
