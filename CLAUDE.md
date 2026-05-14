@@ -8,7 +8,7 @@ Orqest is a Python framework for building autonomous agentic AI systems on top o
 
 **Domain-agnostic litmus test:** "Can a developer building a headless coding assistant use this feature without knowing what Polymath is?" If no, it belongs in the consumer, not Orqest.
 
-**Current version:** `0.3.0` (`pyproject.toml`). **All five novel vision features shipped (2026-04-25)** — runtime agent design, cognitive memory typology (semantic / episodic / procedural), metacognition primitives, self-healing primitives, generative UI. See `.claude/VISION.md` for the strategic frame and `.claude/IMPLEMENTATION_2026-04-25.md` for the three-wave ship plan.
+**Current version:** `0.4.0` (`pyproject.toml`). **All five novel vision features shipped (2026-04-25)** — runtime agent design, cognitive memory typology (semantic / episodic / procedural), metacognition primitives, self-healing primitives, generative UI. See `.claude/VISION.md` for the strategic frame and `.claude/IMPLEMENTATION_2026-04-25.md` for the three-wave ship plan.
 
 ## Project Structure
 
@@ -68,7 +68,7 @@ orqest/
 │   ├── config.py            # MCPServerConfig, MCPConfig
 │   ├── client.py            # MCPConnection, MCPServerManager (multi-server lifecycle)
 │   ├── adapter.py           # MCPToolAdapter — MCP tool defs → pydantic-ai Tool instances
-│   ├── discovery.py         # MCPDiscovery, DiscoveredServer (online registry search — preview)
+│   ├── discovery.py         # MCPDiscovery, DiscoveredServer (registry + well-known search)
 │   ├── discovery_hook.py    # DiscoveryHook (ToolHook → opportunistic auto-register on tool-not-found)
 │   ├── permission.py        # PermissionGate Protocol + AllowAll / DenyAll / AllowList (default DenyAll)
 │   └── server.py            # create_orqest_server() — expose Orqest as FastMCP
@@ -116,7 +116,7 @@ Other subsystems are imported via their submodules (`from orqest.memory import L
 
 ### Tests
 
-Mirrors source layout under `tests/`. As of latest collect: **664 tests** (655 before the `[0.3.0]` reconcile pass; +12 test-first additions, −3 obsolete recovery-action tests). Coverage spans agents, orchestration, memory, mcp, autonomy, observability, workbench, compound, plan, tools, utils, io_utils, **metacognition, healing, ui**, plus root-level tests for config, hooks, hook_decision, budget_tool_results, context_manager.
+Mirrors source layout under `tests/`. As of latest collect: **670 tests** (655 baseline → 664 after the `[0.3.0]` reconcile pass → 670 after the `[0.4.0]` advance pass's 6 test-first additions). Coverage spans agents, orchestration, memory, mcp, autonomy, observability, workbench, compound, plan, tools, utils, io_utils, **metacognition, healing, ui**, plus root-level tests for config, hooks, hook_decision, budget_tool_results, context_manager.
 
 ### Examples
 
@@ -142,7 +142,7 @@ Mirrors source layout under `tests/`. As of latest collect: **664 tests** (655 b
 # Install in editable mode (local venv)
 uv pip install -e .
 
-# Run full suite (664 tests)
+# Run full suite (670 tests)
 .venv/bin/python -m pytest tests/ -v
 
 # Single file / test-by-name
@@ -194,9 +194,9 @@ python -m build
 - `MemoryEntry` — `content`, `structured_content`, `memory_type` (`"semantic" | "episodic" | "procedural"`), `source_agent`, `confidence`, `embedding`, `metadata`, `created_at`, `last_accessed`, `access_count`, `reliability_score`.
 - `Skill` / `ToolCallSpec` / `SkillExample` — Pydantic shapes for procedural memory content (tool-sequence-with-outcome). Validation gated to `memory_type == "procedural"`.
 - `MemoryFilter` — query constraints + `skill_name` / `skill_min_version` for procedural filtering.
-- `LocalMemoryStore` — SQLite + FTS5 (with LIKE fallback), lazy init, errors swallowed. Recall dispatches to a per-kind :class:`RetrievalStrategy` (Semantic / Episodic / Procedural). Also exposes `list_recent(*, memory_type=None, limit=50)` (added 2026-04-26) — browse-style enumeration newest-first that complements the query-driven `recall(...)`. Used by consumer-side surfaces that want a "memory inspector" view without issuing a search.
+- `LocalMemoryStore` — SQLite + FTS5 (with LIKE fallback), lazy init, errors swallowed. Recall dispatches to a per-kind :class:`RetrievalStrategy` (Semantic / Episodic / Procedural). Also exposes `list_recent(*, memory_type=None, limit=50)` — browse-style enumeration newest-first — and `prune_expired()` — best-effort TTL maintenance. Optional `embedder` param: when set, `store()` embeds content and semantic recall ranks by cosine similarity (else FTS5/LIKE).
 - `ProceduralStrategy` — exact-match on `structured_content.trigger` (case-insensitive substring); optional injected `fuzzy_judge` callable for near-miss queries.
-- `MemoryConfig` + `PerKindConfig` — frozen dataclass. `PerKindConfig` carries the per-kind reliability policy (`decay_on_failure` / `prune_below`), read by `LocalMemoryStore.update_reliability`. `backend` / `supabase_*` / `embedding_*` are preview seams (not yet wired).
+- `MemoryConfig` + `PerKindConfig` — frozen dataclass. `PerKindConfig` carries the per-kind policy: `decay_on_failure` / `prune_below` (read by `update_reliability`), `ttl_days` (read by `prune_expired`), `version_on_edit` (read by `store` — bumps a procedural skill's `version` and keeps prior rows). `backend` / `supabase_*` are preview seams for a future pgvector backend.
 
 ### Phase 3 — Autonomy ✅
 
@@ -221,7 +221,7 @@ python -m build
 - `MCPConnection(config)` — single server lifecycle: `await connect()` → `.tools` → `await disconnect()`.
 - `MCPServerManager` — multi-server orchestration, `async with` context manager, `connect_all`, `get_all_tools` (flat list), `search_tools`.
 - `MCPToolAdapter.adapt[_many]` — MCP tool definitions → pydantic-ai `Tool` instances. Wraps callers in graceful error-string return.
-- `MCPDiscovery.search(query, max_results)` — online discovery against registry endpoints. Returns `DiscoveredServer` records. **Preview** — `probe_wellknown` exists but is not wired into `search()`; there is no web-search fallback.
+- `MCPDiscovery.search(query, max_results)` — probes any configured `well_known_urls` for `/.well-known/mcp.json`, then queries the registry endpoints; dedups by name. Returns `DiscoveredServer` records. **Preview** — registry response-shape parsing is untested against live registries; no web-search fallback.
 - Auto-discovery scans `~/.claude.json`, `~/.claude/claude.json`, `~/.config/Claude/claude_desktop_config.json`.
 - `create_orqest_server(factory, registry, meta, default_model, api_key)` — FastMCP server exposing `create_agent`, `run_agent`, `solve_goal`, `list_agents`. Run with `python -m orqest.mcp.server`.
 - **Auto-wire (2026-04-25):** `ToolRegistry.get_or_discover` (deliberate path) + `DiscoveryHook` (opportunistic recovery from "tool not found" errors) + `PermissionGate` (`AllowAll` / `DenyAll` / `AllowList` regex; default `DenyAll` — discovery is opt-in). Audit-log emission via `discovery.requested` / `discovery.connected` / `discovery.denied` / `discovery.failed` events.
@@ -232,7 +232,7 @@ python -m build
 - `StallDetector` — flags open tool calls exceeding `timeout_s`; idempotent subscribe; suppresses double-fire on same call.
 - `LoopDetector` — sliding window of `(tool_name, args_hash)` pairs; fires when count > `threshold_k`; suppression resets when pair changes.
 - `RegressionDetector` — sliding window of `metacognition.confidence` events; fires on head-half-mean − tail-half-mean ≥ `drop_threshold`. Silently no-ops when no metacog events flow (graceful degradation).
-- `RecoveryAction` discriminated union: `EscalateToUser` / `AbortRun` — both produce a real `HookDecision` (`Skip` / `Abort`). `default_policy` → `AbortRun` for every detector; consumers override via custom callable.
+- `RecoveryAction` discriminated union: `EscalateToUser` / `AbortRun` — both produce a real `HookDecision` (`Skip` / `Abort`). `default_policy` → `AbortRun` for every detector; consumers override via custom callable. The union is **deliberately lean** — model-level recovery is `FallbackModel`, tool-level recovery is `DiscoveryHook`; both are dedicated, composable mechanisms rather than `RecoveryAction` variants.
 - `WatchdogHook(watchdogs, *, policy, bus)` — `ToolHook` whose `before_tool` consults watchdogs and returns a `HookDecision`. Emits `healing.action` events when bus is configured.
 - `FallbackModel` — subclasses `pydantic_ai.models.Model`. Sticky failover; transient classifier (5xx / timeout / rate-limit → fall back; auth / validation → propagate). Emits `healing.model_fallback` on chain advance, **and `healing.model_chain_exhausted`** (added 2026-04-26) with `{models_tried, last_error_type, last_error}` immediately before raising `RuntimeError` when the chain is fully spent.
 - `resolve_model_with_fallback(models, *, api_key, bus, transient_predicate)` — accepts a chain; skips per-provider keys missing from `dict[provider, key]` map; raises `ValueError` if no entry resolves.
@@ -323,7 +323,7 @@ For top-level discoverability, [`SKILLS.md`](SKILLS.md) at the repo root points 
 - `README.md` refreshed 2026-05-02 with current elevator pitch + pointer to SKILLS.md.
 - `mkdocs.yml` nav now wires all 19 concept docs under three groups; `mkdocs build --strict` clean as of 2026-05-02.
 - `examples/05_refinement_loop/` shipped 2026-05-02 with `main.py` + `README.md` demonstrating `confidence_threshold` + `agent_self_eval` (Wave 1.3 metacognition integration).
-- `CHANGELOG.md` cut into `[0.1.0] - 2026-04-24` (Phases 2–5), `[0.2.0] - 2026-04-25` (Waves 1–3), and `[0.3.0] - 2026-05-14` (the reconcile pass); fresh `[Unreleased]` for the next ship.
+- `CHANGELOG.md` cut into `[0.1.0] - 2026-04-24` (Phases 2–5), `[0.2.0] - 2026-04-25` (Waves 1–3), `[0.3.0] - 2026-05-14` (the reconcile pass), and `[0.4.0] - 2026-05-14` (the advance pass — preview tier finished into Tier 1); fresh `[Unreleased]` for the next ship.
 
 ## Operating Mode
 

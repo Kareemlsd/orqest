@@ -106,7 +106,7 @@ A single unit of stored knowledge:
 | `memory_type` | `"semantic"`, `"episodic"`, or `"procedural"` | `"semantic"` | Classification |
 | `source_agent` | `str` | `"unknown"` | Which agent created this |
 | `confidence` | `float` | `1.0` | How confident the agent was (0-1) |
-| `embedding` | `list[float] \| None` | `None` | Vector embedding (stored; embedding-based retrieval is preview) |
+| `embedding` | `list[float] \| None` | `None` | Vector embedding — computed by the store's `embedder` if one is configured |
 | `metadata` | `dict` | `{}` | Arbitrary key-value pairs |
 | `created_at` | `datetime` | now | Creation timestamp |
 | `last_accessed` | `datetime` | now | Last recall timestamp |
@@ -115,7 +115,9 @@ A single unit of stored knowledge:
 
 ## MemoryConfig
 
-Configuration for the memory subsystem:
+Configuration for the memory subsystem. `PerKindConfig` carries the
+per-kind policy — `decay_on_failure` / `prune_below` (reliability),
+`ttl_days` (retention), `version_on_edit` (skill audit trail):
 
 ```python
 from orqest.memory import LocalMemoryStore, MemoryConfig, PerKindConfig
@@ -123,22 +125,41 @@ from orqest.memory import LocalMemoryStore, MemoryConfig, PerKindConfig
 config = MemoryConfig(
     backend="local",                    # "local" or "supabase"
     local_db_path="~/.orqest/memory.db",
-    embedding_model="all-MiniLM-L6-v2",
-    embedding_dim=384,
-    # Per-kind reliability policy — wired into LocalMemoryStore:
     semantic=PerKindConfig(decay_on_failure=0.7, prune_below=0.1),
+    episodic=PerKindConfig(ttl_days=90),          # auto-expire old sessions
+    procedural=PerKindConfig(version_on_edit=True),  # keep a skill history
 )
 
 store = LocalMemoryStore(config=config)
 ```
 
-!!! note "Preview — non-local backends & embeddings"
+### Embedding-based retrieval
 
-    `backend="supabase"`, `supabase_url` / `supabase_key`, and
-    `embedding_model` / `embedding_dim` are designed seams for a future
-    pgvector backend and embedding-based retrieval — accepted but not yet
-    wired. The `local` backend and the per-kind `PerKindConfig`
-    reliability policy *are* wired.
+Pass an `embedder` and semantic recall ranks by cosine similarity over
+stored vectors instead of FTS5 keyword match. Orqest stays
+embedding-model-neutral — the consumer brings the embedder (a local
+`sentence-transformers` model, an embeddings API, anything):
+
+```python
+def embed(text: str) -> list[float]:
+    ...  # your embedding model — sync or async
+
+store = LocalMemoryStore(config=config, embedder=embed)
+```
+
+With no `embedder`, recall falls back to FTS5 / LIKE — unchanged.
+
+### Maintenance
+
+`await store.prune_expired()` deletes entries older than their per-kind
+`ttl_days` and returns the count — a manual maintenance call (schedule it
+yourself; it is not auto-run).
+
+!!! note "Preview — non-local backend"
+
+    `backend="supabase"` and `supabase_url` / `supabase_key` are designed
+    seams for a future pgvector backend — accepted but not yet wired. The
+    `local` backend, per-kind policy, and embedding retrieval *are* wired.
 
 ## What's Happening Under the Hood
 

@@ -82,11 +82,16 @@ In practice, `MCPServerManager.get_all_tools()` already does the adaptation — 
 
 ## MCPDiscovery — search
 
-Finds MCP servers that advertise a given capability. Composes three sources:
+Finds MCP servers that advertise a given capability. `search()` composes two sources:
 
-1. **Online registry** — known MCP server registry (well-known endpoints)
-2. **Well-known manifests** — servers advertising themselves at well-known URLs
-3. **Web fallback** — search-engine-driven discovery for less common capabilities
+1. **Well-known manifests** — base URLs passed as `well_known_urls` are probed for `/.well-known/mcp.json` (explicitly configured, so tried first)
+2. **Online registry** — the configured registry endpoints are queried by capability
+
+!!! note "Preview — live registries"
+
+    The well-known probe and registry query are wired. What remains
+    preview: the registry response-shape parsing is untested against live
+    registries, and there is no search-engine fallback.
 
 ```python
 from orqest.mcp import MCPDiscovery

@@ -10,6 +10,13 @@ This three-layer split — detection / intent / decision — keeps
 detectors composable across consumers. Numatics-AI may want a different
 policy than a default open-source consumer; both reuse the same
 detectors and the same :class:`HookDecision` plumbing.
+
+The :data:`RecoveryAction` union is deliberately lean — :class:`AbortRun`
+and :class:`EscalateToUser` are the two universal responses. Model-level
+and tool-level recovery have dedicated, composable mechanisms instead:
+:class:`~orqest.healing.fallback.FallbackModel` for provider failover,
+:class:`~orqest.mcp.discovery_hook.DiscoveryHook` for missing-tool
+recovery.
 """
 
 from __future__ import annotations

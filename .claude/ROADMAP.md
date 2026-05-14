@@ -205,7 +205,7 @@ After profiling confirms bottlenecks:
 - [x] Parallel (concurrent with merge + timeout)
 - [x] Router (rule-based + LLM classifier)
 - [x] RefinementLoop (iterative with convergence detection)
-- [x] Test suite (664 tests as of 2026-05-14 — 655 before the `[0.3.0]` reconcile pass, +12 test-first additions, −3 obsolete recovery-action tests)
+- [x] Test suite (670 tests as of 2026-05-14 — 655 baseline → 664 after the `[0.3.0]` reconcile pass → 670 after the `[0.4.0]` advance pass)
 - [x] Examples: 01-07 (tested with real LLMs)
 - [x] MkDocs documentation site
 - [x] Memory subsystem (`MemoryStore` + `LocalMemoryStore`, semantic/episodic/**procedural**)

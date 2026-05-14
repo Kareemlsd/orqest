@@ -59,14 +59,12 @@ detector = RegressionDetector(window_n=10, drop_threshold=0.2)
 
 Default policy maps every detection to `AbortRun` — conservative. Consumers override with a custom callable.
 
-!!! note "Preview — automated recovery"
+The `RecoveryAction` union is deliberately lean — `AbortRun` and `EscalateToUser` are the two universal responses. The two recovery patterns that *do* have wired support live in dedicated, composable mechanisms rather than as `RecoveryAction` variants:
 
-    Healing's *detection* and the abort/escalate actions are wired
-    end-to-end. Richer automated recovery (model-switching,
-    discover-and-retry) is not yet wired — the audited `RetryDifferentModel`
-    / `DiscoverAndRetry` / `RetrySameTool` actions were removed because no
-    compound flow consumed their payloads. For tool-not-found recovery
-    today, use `DiscoveryHook` (below), which *is* wired.
+- **Switch model on failure** → `FallbackModel`. It wraps a chain of models, fails over on transient errors (5xx / timeout / rate-limit), and is a `pydantic_ai.Model` subclass — so it drops straight into `BaseAgent(model=...)`. See section "Model fallback" below.
+- **Recover from a missing tool** → `DiscoveryHook`. Its `on_error` discovers + registers the tool and returns `Redirect(new_tool=...)`; the compound flow retries. See [MCP](mcp.md).
+
+So healing's recovery story is: *detect → abort or escalate*, composed with `FallbackModel` / `DiscoveryHook` for the model- and tool-level recoveries. An earlier design had `RetryDifferentModel` / `DiscoverAndRetry` / `RetrySameTool` as `RecoveryAction` variants; they were dropped because they duplicated those mechanisms and produced payloads no compound flow consumed.
 
 ## WatchdogHook — the bridge into HookDecision
 

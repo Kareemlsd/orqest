@@ -2,7 +2,7 @@
 
 A Python library for building **agentic harnesses** on top of [pydantic-ai](https://ai.pydantic.dev). Not an agent framework with a runtime, server, or UI of its own — Orqest ships the plumbing you import to build those: typed agents, composition primitives, lifecycle hooks, memory typology, runtime agent design, metacognition, self-healing, and generative UI. All opt-in.
 
-> **Status:** v0.3.0. The five novel cognitive-substrate features have shipped (2026-04-25): runtime agent design, cognitive memory typology, metacognition primitives, self-healing primitives, generative UI. `[0.3.0]` is the reconcile pass — code and docs brought into honest agreement. Test count: 664.
+> **Status:** v0.4.0. The five novel cognitive-substrate features have shipped (2026-04-25): runtime agent design, cognitive memory typology, metacognition primitives, self-healing primitives, generative UI. `[0.3.0]` was the reconcile pass — code and docs brought into honest agreement; `[0.4.0]` is the advance pass — the preview tier finished into Tier 1. Test count: 670.
 
 ## Install
 
@@ -64,7 +64,7 @@ asyncio.run(main())
 Eight composable batteries — **opt-in**, picked à-la-carte per application:
 
 - **Composition** — `Pipeline`, `Parallel`, `Router`, `RefinementLoop`. Sequence agents, fan out + merge, route by classifier, iterate until "good enough."
-- **Memory** — `LocalMemoryStore` (SQLite + FTS5) with typed `semantic` / `episodic` / `procedural` retrieval. Per-kind reliability policy (decay-on-failure, prune floor). Pluggable `MemoryStore` Protocol for production backends.
+- **Memory** — `LocalMemoryStore` (SQLite + FTS5, or embedding-cosine recall via a pluggable embedder) with typed `semantic` / `episodic` / `procedural` retrieval. Per-kind policy: reliability decay, TTL retention, skill versioning. Pluggable `MemoryStore` Protocol for production backends.
 - **Autonomy** — `AgentSpec` + `AgentFactory` + `ToolRegistry` + `MetaOrchestrator`. Agents that decompose goals and spawn specialists at runtime.
 - **Metacognition** — `EnrichedOutput[OutputT]` carrying `confidence`, `uncertainty_targets`, `capability_boundary`. Three pluggable `ConfidenceProtocol` strategies (free / +1 call / +k calls). Agents that know what they don't know.
 - **Self-healing** — `Watchdog` Protocol + `StallDetector` / `LoopDetector` / `RegressionDetector`. `RecoveryAction` discriminated union → `HookDecision` flow. `FallbackModel` for transparent provider failover.

@@ -49,11 +49,11 @@ Cognitive memory typology.
 | Symbol | Purpose |
 |--------|---------|
 | `MemoryStore` | Protocol — `store`, `recall`, `forget`, `update_reliability`, `count` |
-| `LocalMemoryStore` | SQLite + FTS5 default backend |
+| `LocalMemoryStore` | SQLite + FTS5 backend; optional embedding-cosine recall via an `embedder`; `prune_expired()` maintenance |
 | `MemoryEntry` | Pydantic — content + memory_type + confidence + metadata |
 | `MemoryFilter` | Query constraints + `skill_name` / `skill_min_version` |
 | `Skill`, `ToolCallSpec`, `SkillExample` | Procedural memory shapes |
-| `MemoryConfig`, `PerKindConfig` | Per-kind reliability policy (decay / prune) |
+| `MemoryConfig`, `PerKindConfig` | Per-kind policy — decay / prune / `ttl_days` / `version_on_edit` |
 
 ### `orqest.observability`
 
@@ -127,7 +127,7 @@ Model Context Protocol — client + server + auto-discovery.
 | `MCPServerConfig`, `MCPConfig` | Connection definitions |
 | `MCPConnection`, `MCPServerManager` | Single + multi-server lifecycles |
 | `MCPToolAdapter` | MCP tool defs → pydantic-ai Tool |
-| `MCPDiscovery`, `DiscoveredServer` | Online + well-known + web search |
+| `MCPDiscovery`, `DiscoveredServer` | Search — registry endpoints + configured well-known manifests |
 | `DiscoveryHook` | Opportunistic auto-register on tool-not-found |
 | `PermissionGate` | Protocol — `AllowAll`, `DenyAll` (default), `AllowList` (regex) |
 
