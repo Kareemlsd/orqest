@@ -164,7 +164,7 @@ Orqest's goal: **make the jump from 1 agent to N agents incremental, not archite
 - Add `Literal["semantic", "episodic", "procedural"]` to `MemoryEntry.memory_type`
 - `Skill` / `Recipe` shape for procedural memory (tool-sequence-with-outcome)
 - Per-kind retrieval strategies in `LocalMemoryStore` (semantic = vector, procedural = exact-match-on-trigger, episodic = time-windowed)
-- Per-kind config in `MemoryConfig` (TTL for episodic, version-on-edit for procedural)
+- Per-kind reliability policy in `MemoryConfig` / `PerKindConfig` (`decay_on_failure`, `prune_below`)
 - Supabase pgvector backend
 
 ---
