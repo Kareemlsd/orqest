@@ -21,6 +21,7 @@ from typing import Any
 import aiosqlite
 from loguru import logger
 
+from orqest.memory.config import MemoryConfig, PerKindConfig
 from orqest.memory.store import MemoryEntry, MemoryFilter
 from orqest.memory.strategies import (
     RetrievalStrategy,
@@ -84,23 +85,37 @@ class LocalMemoryStore:
 
     def __init__(
         self,
-        db_path: str | Path,
+        db_path: str | Path | None = None,
         *,
+        config: MemoryConfig | None = None,
         strategies: dict[str, RetrievalStrategy] | None = None,
     ) -> None:
-        """Initialize with the path to the SQLite database file.
+        """Initialize the store.
 
         Args:
-            db_path: SQLite file path (created lazily).
+            db_path: SQLite file path (created lazily). When omitted,
+                ``config.local_db_path`` is used.
+            config: Memory subsystem configuration. Supplies the per-kind
+                reliability policy (``decay_on_failure`` / ``prune_below``)
+                read by :meth:`update_reliability`. Defaults to
+                :class:`MemoryConfig` defaults.
             strategies: Optional override of the per-kind retrieval table.
                 Defaults to ``default_strategy_table()`` (Semantic / Episodic
                 / Procedural). Unknown ``memory_type`` values fall back to
                 the ``"semantic"`` strategy at recall time.
         """
-        self._db_path = Path(db_path).expanduser()
+        self._config = config or MemoryConfig()
+        resolved_path = (
+            db_path if db_path is not None else self._config.local_db_path
+        )
+        self._db_path = Path(resolved_path).expanduser()
         self._db: aiosqlite.Connection | None = None
         self._fts_available: bool = False
         self._strategies = strategies or default_strategy_table()
+
+    def _policy_for(self, memory_type: str) -> PerKindConfig:
+        """Per-kind reliability policy; unknown kinds fall back to semantic."""
+        return getattr(self._config, memory_type, self._config.semantic)
 
     async def _ensure_db(self) -> aiosqlite.Connection:
         """Lazily open the database and create tables on first access.
@@ -234,22 +249,34 @@ class LocalMemoryStore:
     async def update_reliability(
         self, entry_id: str, *, success: bool
     ) -> None:
-        """Adjust reliability score. On failure, multiply by 0.7. Prune if below 0.1."""
+        """Decay an entry's reliability on a failed-recall report.
+
+        ``success`` is a no-op — reliability only decays. On failure the
+        entry's reliability is multiplied by the per-kind
+        ``decay_on_failure`` factor, and the entry is pruned if it drops
+        below the per-kind ``prune_below`` floor (see :class:`PerKindConfig`).
+        """
         if success:
             return
 
         try:
             db = await self._ensure_db()
-            await db.execute(
-                """UPDATE memories
-                   SET reliability_score = reliability_score * 0.7
-                   WHERE id = ?""",
-                (entry_id,),
+            cursor = await db.execute(
+                "SELECT memory_type FROM memories WHERE id = ?", (entry_id,)
             )
-            # Prune entries that have become unreliable
+            row = await cursor.fetchone()
+            if row is None:
+                return
+            policy = self._policy_for(row["memory_type"])
             await db.execute(
-                "DELETE FROM memories WHERE id = ? AND reliability_score < 0.1",
-                (entry_id,),
+                "UPDATE memories SET reliability_score = reliability_score * ? "
+                "WHERE id = ?",
+                (policy.decay_on_failure, entry_id),
+            )
+            # Prune entries that have decayed below the reliability floor.
+            await db.execute(
+                "DELETE FROM memories WHERE id = ? AND reliability_score < ?",
+                (entry_id, policy.prune_below),
             )
             await db.commit()
         except Exception:

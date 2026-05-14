@@ -3,11 +3,10 @@
 Provides MemoryConfig as an immutable container for memory backend settings.
 Follows the same frozen-dataclass pattern as OrqestConfig.
 
-Per-kind policies (TTL, decay, version-on-edit) live in
-:class:`PerKindConfig` instances on :class:`MemoryConfig`. Defaults
-preserve v0.0.1 behavior — semantic and episodic policies match the
-inline behavior of :class:`LocalMemoryStore`; procedural defaults to
-``version_on_edit=True`` to give skill versioning out of the box.
+Per-kind reliability policy (decay-on-failure, prune floor) lives in
+:class:`PerKindConfig` instances on :class:`MemoryConfig`, one per
+cognitive memory kind. :class:`~orqest.memory.local.LocalMemoryStore`
+reads them in its ``update_reliability`` path.
 """
 
 from __future__ import annotations
@@ -18,32 +17,12 @@ from typing import Literal
 
 @dataclass(frozen=True)
 class PerKindConfig:
-    """Per-kind retention/decay/versioning policy.
+    """Per-kind reliability decay/prune policy."""
 
-    Defaults match the v0.0.1 behavior so existing semantic/episodic
-    callers see no change.
-    """
-
-    ttl_days: int | None = None
-    """``None`` means forever; otherwise entries past this age are
-    eligible for pruning during maintenance."""
     decay_on_failure: float = 0.7
-    """Reliability multiplier on failed-recall reports."""
+    """Reliability multiplier applied on a failed-recall report."""
     prune_below: float = 0.1
-    """Reliability floor below which an entry is pruned."""
-    version_on_edit: bool = False
-    """When True, storing an entry whose
-    ``structured_content.name`` matches an existing entry increments
-    ``version`` rather than overwriting. Used by procedural memory to
-    keep an audit of skill revisions."""
-
-
-def _episodic_default() -> PerKindConfig:
-    return PerKindConfig(ttl_days=90)
-
-
-def _procedural_default() -> PerKindConfig:
-    return PerKindConfig(version_on_edit=True)
+    """Reliability floor below which an entry is pruned after decay."""
 
 
 @dataclass(frozen=True)
@@ -57,5 +36,5 @@ class MemoryConfig:
     supabase_url: str | None = None
     supabase_key: str | None = None
     semantic: PerKindConfig = field(default_factory=PerKindConfig)
-    episodic: PerKindConfig = field(default_factory=_episodic_default)
-    procedural: PerKindConfig = field(default_factory=_procedural_default)
+    episodic: PerKindConfig = field(default_factory=PerKindConfig)
+    procedural: PerKindConfig = field(default_factory=PerKindConfig)

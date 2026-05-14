@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 import pytest_asyncio
 
+from orqest.memory.config import MemoryConfig, PerKindConfig
 from orqest.memory.local import LocalMemoryStore
 from orqest.memory.store import MemoryEntry, MemoryFilter
 
@@ -130,6 +131,23 @@ class TestLocalMemoryStore:
         results = await store.recall("shaky")
         assert len(results) == 1
         assert results[0].reliability_score == pytest.approx(0.7)
+
+    @pytest.mark.asyncio
+    async def test_update_reliability_respects_config_decay(
+        self, tmp_path: Path
+    ) -> None:
+        """Per-kind decay_on_failure from MemoryConfig drives the decay
+        factor — not a hardcoded constant."""
+        store = LocalMemoryStore(
+            tmp_path / "decay.db",
+            config=MemoryConfig(semantic=PerKindConfig(decay_on_failure=0.5)),
+        )
+        entry = MemoryEntry(content="shaky", reliability_score=1.0)
+        await store.store(entry)
+        await store.update_reliability(entry.id, success=False)
+        results = await store.recall("shaky")
+        assert results[0].reliability_score == pytest.approx(0.5)
+        await store.close()
 
     @pytest.mark.asyncio
     async def test_recall_updates_access_metadata(

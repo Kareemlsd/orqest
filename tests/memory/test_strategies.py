@@ -226,22 +226,22 @@ async def test_unknown_memory_type_falls_back_to_semantic(tmp_path):
 
 def test_memory_config_defaults_per_kind():
     cfg = MemoryConfig()
-    assert cfg.semantic.ttl_days is None
-    assert cfg.episodic.ttl_days == 90
-    assert cfg.procedural.version_on_edit is True
+    assert cfg.semantic.decay_on_failure == 0.7
+    assert cfg.episodic.prune_below == 0.1
+    assert cfg.procedural.decay_on_failure == 0.7
 
 
 def test_memory_config_per_kind_override():
     cfg = MemoryConfig(
-        semantic=PerKindConfig(ttl_days=30),
+        semantic=PerKindConfig(decay_on_failure=0.5),
     )
-    assert cfg.semantic.ttl_days == 30
+    assert cfg.semantic.decay_on_failure == 0.5
     # Other defaults preserved.
-    assert cfg.episodic.ttl_days == 90
-    assert cfg.procedural.version_on_edit is True
+    assert cfg.episodic.decay_on_failure == 0.7
+    assert cfg.procedural.prune_below == 0.1
 
 
 def test_per_kind_config_is_frozen():
     cfg = PerKindConfig()
     with pytest.raises(Exception):  # frozen dataclass → FrozenInstanceError
-        cfg.ttl_days = 10  # type: ignore[misc]
+        cfg.decay_on_failure = 0.1  # type: ignore[misc]
