@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from orqest.mcp.client import MCPServerManager
+from orqest.mcp.client import MCPConnection, MCPServerManager
 from orqest.mcp.config import MCPConfig, MCPServerConfig
 
 
@@ -117,3 +117,40 @@ class TestDiscoverLocalConfigs:
             Path.home = original  # type: ignore[assignment]
 
         assert len(configs) == 1
+
+
+class TestMCPConnectionTransport:
+    """MCPConnection.connect() routes the transport by config.transport."""
+
+    def test_stdio_transport_builds_a_context_manager(self) -> None:
+        conn = MCPConnection(
+            MCPServerConfig(name="s", command="python", args=["-m", "x"])
+        )
+        ctx = conn._open_transport()
+        assert hasattr(ctx, "__aenter__")
+
+    def test_sse_transport_builds_a_context_manager(self) -> None:
+        conn = MCPConnection(
+            MCPServerConfig(
+                name="s",
+                command="",
+                transport="sse",
+                url="http://localhost:3000/sse",
+            )
+        )
+        ctx = conn._open_transport()
+        assert hasattr(ctx, "__aenter__")
+
+    def test_sse_transport_without_url_raises(self) -> None:
+        conn = MCPConnection(
+            MCPServerConfig(name="s", command="", transport="sse")
+        )
+        with pytest.raises(ValueError, match="no url"):
+            conn._open_transport()
+
+    def test_unknown_transport_raises(self) -> None:
+        conn = MCPConnection(
+            MCPServerConfig(name="s", command="x", transport="grpc")
+        )
+        with pytest.raises(ValueError, match="unknown transport"):
+            conn._open_transport()

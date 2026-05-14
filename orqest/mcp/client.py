@@ -30,17 +30,16 @@ class MCPConnection:
         self._connected = False
 
     async def connect(self) -> None:
-        """Establish the MCP connection and discover tools."""
-        from mcp import ClientSession, StdioServerParameters
-        from mcp.client.stdio import stdio_client
+        """Establish the MCP connection and discover tools.
 
-        params = StdioServerParameters(
-            command=self.config.command,
-            args=self.config.args,
-            env=self.config.env or None,
-        )
+        Branches on ``config.transport``: ``"stdio"`` launches the server
+        process via ``stdio_client``; ``"sse"`` connects to ``config.url``
+        via ``sse_client``. Both transports yield a ``(read, write)`` pair
+        that drives an identical ``ClientSession`` lifecycle.
+        """
+        from mcp import ClientSession
 
-        self._client_ctx = stdio_client(params)
+        self._client_ctx = self._open_transport()
         read, write = await self._client_ctx.__aenter__()
 
         self._session_ctx = ClientSession(read, write)
@@ -64,6 +63,42 @@ class MCPConnection:
             "Connected to MCP server '{name}' — {n} tools",
             name=self.name,
             n=len(self._tools),
+        )
+
+    def _open_transport(self) -> Any:
+        """Build the transport context manager for this server's config.
+
+        ``stdio`` launches the configured command; ``sse`` connects to
+        ``config.url``. Both return an async context manager yielding a
+        ``(read, write)`` stream pair.
+
+        Raises:
+            ValueError: Unknown transport, or an ``sse`` config with no url.
+
+        """
+        transport = self.config.transport
+        if transport == "stdio":
+            from mcp import StdioServerParameters
+            from mcp.client.stdio import stdio_client
+
+            return stdio_client(
+                StdioServerParameters(
+                    command=self.config.command,
+                    args=self.config.args,
+                    env=self.config.env or None,
+                )
+            )
+        if transport == "sse":
+            if not self.config.url:
+                raise ValueError(
+                    f"MCP server '{self.name}' uses sse transport but has no url"
+                )
+            from mcp.client.sse import sse_client
+
+            return sse_client(self.config.url)
+        raise ValueError(
+            f"MCP server '{self.name}' has unknown transport {transport!r} "
+            "(expected 'stdio' or 'sse')"
         )
 
     async def disconnect(self) -> None:
