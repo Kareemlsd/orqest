@@ -47,11 +47,10 @@ def _is_tool_not_found(error: Exception) -> bool:
 class DiscoveryHook:
     """ToolHook that recovers from "tool not found" via MCP discovery.
 
-    Returns:
-        :class:`Redirect(new_tool=name)` after the tool is registered
-        (caller should retry with the registered tool).
-        :class:`Continue` otherwise — including when the gate denies
-        or discovery fails.
+    The hook's :meth:`on_error` returns :class:`Redirect(new_tool=name)`
+    after the tool is registered (caller should retry with the registered
+    tool), or :class:`Continue` otherwise — including when the gate denies
+    or discovery fails.
     """
 
     def __init__(

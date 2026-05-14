@@ -205,7 +205,7 @@ After profiling confirms bottlenecks:
 - [x] Parallel (concurrent with merge + timeout)
 - [x] Router (rule-based + LLM classifier)
 - [x] RefinementLoop (iterative with convergence detection)
-- [x] Test suite (612 tests as of 2026-04-25 — was 360 baseline + 252 across three waves)
+- [x] Test suite (655 tests as of 2026-05-02 — 360 baseline + 252 across the three Wave 1–3 ship days on 2026-04-25 + 43 from consumer-side polish 2026-04-26)
 - [x] Examples: 01-07 (tested with real LLMs)
 - [x] MkDocs documentation site
 - [x] Memory subsystem (`MemoryStore` + `LocalMemoryStore`, semantic/episodic/**procedural**)
@@ -216,4 +216,12 @@ After profiling confirms bottlenecks:
 - [x] **Wave 1: HookDecision + Metacognition + Procedural memory** (2026-04-25)
 - [x] **Wave 2: Healing subsystem + MCP auto-wire** (2026-04-25)
 - [x] **Wave 3: Generative UI** (2026-04-25)
-- [ ] **All five novel vision features now ship.** Next strategic moves: (a) Polymath consolidation onto orqest.ui + orqest.healing (move Polymath's hand-coded ChartsTab/ReportTab to typed components, wire HealingRunner into its Workbench); (b) production memory backend (Supabase + pgvector); (c) docs concept pages for the new modules.
+- [x] **All five novel vision features ship as of 2026-04-25.**
+- [x] Polymath consolidation onto `orqest.ui` + `orqest.healing` — shipped 2026-04-25 (ChartsTab/ReportTab absorbed into the dynamic dockview tab manifest; HealingRunner wired into Workbench)
+- [x] Polymath cognitive surfacing (Cognitive Gutter, healing toasts, Memory tab, Agents tab) — shipped 2026-04-26
+- [x] Polymath editorial redesign (claude.ai/design handoff: warm-neutral oklch + amber accent + Newsreader serif + Inter Tight grotesk) — shipped 2026-04-26
+- [x] Concept pages for `metacognition`, `healing`, `generative_ui`, `autonomy`, `mcp` — shipped 2026-05-02
+- [x] `orqest` skill folder for Claude Code (`.claude/skills/orqest/`) — shipped 2026-05-02
+- [ ] Production memory backend (Supabase + pgvector) — purely additive; `MemoryStore` Protocol + `MemoryConfig` already accommodate it
+- [ ] `ToolSandbox` for generated-code safety (Phase 3's deferred safety item) — relevant for agents that author + run their own tools
+- [ ] PyPI release pipeline + version cuts (`0.1.0` and `0.2.0` cut in CHANGELOG; not yet published)

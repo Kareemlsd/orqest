@@ -6,7 +6,7 @@ Orqest is a Python framework for building autonomous agentic AI systems on top o
 
 **Design principle:** *"Core Orqest manages the shape and flow of intelligence; Extensions manage the matter and action of the domain."*
 
-**Domain-agnostic litmus test:** "Can a developer building a headless coding assistant use this feature without knowing what numatics-ai is?" If no, it belongs in the consumer, not Orqest.
+**Domain-agnostic litmus test:** "Can a developer building a headless coding assistant use this feature without knowing what Polymath is?" If no, it belongs in the consumer, not Orqest.
 
 **Current version:** `0.0.1` (`pyproject.toml`). **All five novel vision features shipped (2026-04-25)** — runtime agent design, cognitive memory typology (semantic / episodic / procedural), metacognition primitives, self-healing primitives, generative UI. See `.claude/VISION.md` for the strategic frame and `.claude/IMPLEMENTATION_2026-04-25.md` for the three-wave ship plan.
 
@@ -304,17 +304,26 @@ Outstanding consumer-side work (out of Orqest core):
 - **Polymath consolidation** — ✅ shipped 2026-04-25 (`demo/polymath/.claude/CONSOLIDATION_COMPLETE_2026-04-25.md`). The dedicated `ChartsTab` / `ReportTab` were absorbed into the dynamic dockview tab manifest, healing wired into `Workbench`, and sub-agent roster migrated to procedural memory.
 - **Polymath cognitive surfacing** — ✅ shipped 2026-04-26. Confidence per turn, healing toasts, Memory tab (galaxy + 3-kind browser), Agents tab (roster table). See addendums in the same consolidation doc.
 - **Polymath editorial redesign** — ✅ shipped 2026-04-26 from a claude.ai/design handoff. Warm-neutral oklch + amber accent + Newsreader serif + Inter Tight grotesk + the **Cognitive Gutter** (24px left rail per assistant turn — replaces the per-message confidence pill). See `demo/polymath/CLAUDE.md` for the current-state summary.
-- **Production memory backend** — Supabase pgvector (known gap).
-- **Concept docs** — `docs/concepts/{metacognition,healing,generative_ui}.md` (designed but not yet authored).
+- **Concept docs** — ✅ `docs/concepts/{metacognition,healing,generative_ui,autonomy,mcp}.md` shipped 2026-05-02; mkdocs nav wires all 19 concept docs under three groups (Composition / Memory & Cognition / Production).
+- **Orqest skill folder** — ✅ shipped 2026-05-02 at `.claude/skills/orqest/` (and packaged as `.skill`). The canonical playbook for Claude Code consumers; symlinked at `~/.claude/skills/orqest` for global availability.
+- **Production memory backend** — Supabase pgvector (known gap; purely additive — `MemoryStore` Protocol and `MemoryConfig` already accommodate it).
+- **`ToolSandbox`** — generated-tool-code safety surface (Phase 3's deferred safety item; relevant for agents that author + run their own tools).
+- **PyPI release pipeline** — `0.1.0` and `0.2.0` are cut in CHANGELOG; not yet published to PyPI.
+
+## Building With Orqest (For Claude Code)
+
+When a developer asks to add agent capabilities to an existing application, **use the bundled skill** at `.claude/skills/orqest/` (also available globally via `~/.claude/skills/orqest`). The skill enforces a discovery-first integration loop: interview the developer → walk the existing codebase → pick the minimal Orqest surface that fits → integration plan → tracer-bullet build → produce `AGENT_HARNESS.md`. The skill folder bundles eight pattern recipes, the Vercel AI SDK + Orqest integration recipe (Polymath pattern), Python module templates, React frontend hooks (extracted from Polymath, generic-ified), and a `scaffold_agent.py` CLI.
+
+For top-level discoverability, [`SKILLS.md`](SKILLS.md) at the repo root points at the skill folder.
 
 ## Known Doc Gaps (to fix when touched)
 
-- `.claude/ROADMAP.md` was rewritten on 2026-04-25 to reflect the new phasing; treat this CLAUDE.md as ground truth.
-- `.claude/ARCHITECTURE.md` dependency map predates `metacognition/`, `healing/`, `ui/` — still references the older "Planned Extensions" table. Refresh when next touched.
-- `README.md` — **outdated by design**, do not touch unless asked.
-- `mkdocs.yml` nav lists only 9 of 16 concept docs under `docs/concepts/`. Three new modules also need concept pages: `metacognition.md`, `healing.md`, `generative_ui.md`.
-- `examples/05_refinement_loop/` is a skeleton, not a runnable notebook. Worth filling in to demonstrate the `confidence_threshold` / `agent_self_eval` integration shipped in Wave 1.3.
-- `CHANGELOG.md` `Unreleased` section predates everything from Phase 2 onward — worth cutting a `0.1.0` entry covering Phases 2–5 and a `0.2.0` entry covering the Wave 1–3 features.
+- `.claude/ROADMAP.md` is current as of 2026-05-02; treat this CLAUDE.md as ground truth if they ever drift.
+- `.claude/ARCHITECTURE.md` rewritten 2026-05-02 as an extensibility playbook (10 named extension patterns).
+- `README.md` refreshed 2026-05-02 with current elevator pitch + pointer to SKILLS.md.
+- `mkdocs.yml` nav now wires all 19 concept docs under three groups; `mkdocs build --strict` clean as of 2026-05-02.
+- `examples/05_refinement_loop/` shipped 2026-05-02 with `main.py` + `README.md` demonstrating `confidence_threshold` + `agent_self_eval` (Wave 1.3 metacognition integration).
+- `CHANGELOG.md` cut into `[0.1.0] - 2026-04-24` (Phases 2–5) + `[0.2.0] - 2026-04-25` (Waves 1–3) on 2026-05-02; fresh `[Unreleased]` for the next ship.
 
 ## Operating Mode
 
