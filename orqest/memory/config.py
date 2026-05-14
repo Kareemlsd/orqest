@@ -3,11 +3,12 @@
 Provides MemoryConfig as an immutable container for memory backend settings.
 Follows the same frozen-dataclass pattern as OrqestConfig.
 
-Per-kind policy (decay-on-failure, prune floor, retention TTL) lives in
-:class:`PerKindConfig` instances on :class:`MemoryConfig`, one per
-cognitive memory kind. :class:`~orqest.memory.local.LocalMemoryStore`
-reads ``decay_on_failure`` / ``prune_below`` in ``update_reliability``
-and ``ttl_days`` in ``prune_expired``.
+Per-kind policy (decay-on-failure, prune floor, retention TTL,
+version-on-edit) lives in :class:`PerKindConfig` instances on
+:class:`MemoryConfig`, one per cognitive memory kind.
+:class:`~orqest.memory.local.LocalMemoryStore` reads ``decay_on_failure`` /
+``prune_below`` in ``update_reliability``, ``ttl_days`` in
+``prune_expired``, and ``version_on_edit`` in ``store``.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ from typing import Literal
 
 @dataclass(frozen=True)
 class PerKindConfig:
-    """Per-kind reliability / retention policy."""
+    """Per-kind reliability / retention / versioning policy."""
 
     decay_on_failure: float = 0.7
     """Reliability multiplier applied on a failed-recall report."""
@@ -27,6 +28,10 @@ class PerKindConfig:
     ttl_days: int | None = None
     """Retention window. ``None`` means keep forever; otherwise entries
     older than this are deleted by :meth:`LocalMemoryStore.prune_expired`."""
+    version_on_edit: bool = False
+    """When True, storing a procedural entry whose ``structured_content.name``
+    matches an already-stored skill bumps the new entry's ``version`` one past
+    the highest stored version and keeps the prior rows — an audit trail."""
 
 
 @dataclass(frozen=True)

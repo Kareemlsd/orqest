@@ -155,9 +155,17 @@ class LocalMemoryStore:
         return self._db
 
     async def store(self, entry: MemoryEntry) -> str:
-        """Persist a memory entry. Returns the entry id."""
+        """Persist a memory entry. Returns the entry id.
+
+        When the procedural per-kind policy has ``version_on_edit=True`` and
+        a procedural entry's ``structured_content.name`` matches an existing
+        stored skill, the new entry's ``version`` is bumped to one past the
+        highest stored version — the prior rows are kept (entries are keyed
+        by id, so this is always an INSERT, never an overwrite-by-name).
+        """
         try:
             db = await self._ensure_db()
+            structured = await self._maybe_version(db, entry)
             await db.execute(
                 """INSERT OR REPLACE INTO memories
                    (id, content, structured_content, memory_type, source_agent,
@@ -167,9 +175,7 @@ class LocalMemoryStore:
                 (
                     entry.id,
                     entry.content,
-                    json.dumps(entry.structured_content)
-                    if entry.structured_content is not None
-                    else None,
+                    json.dumps(structured) if structured is not None else None,
                     entry.memory_type,
                     entry.source_agent,
                     entry.confidence,
@@ -185,6 +191,34 @@ class LocalMemoryStore:
         except Exception:
             logger.warning("Failed to store memory entry {id}", id=entry.id)
         return entry.id
+
+    async def _maybe_version(
+        self, db: aiosqlite.Connection, entry: MemoryEntry
+    ) -> dict[str, Any] | None:
+        """Version-bump procedural structured content when the policy applies.
+
+        When ``version_on_edit`` is enabled and the entry is a procedural
+        skill whose ``name`` matches an already-stored skill, returns a
+        *copy* with ``version`` set one past the highest stored version.
+        Otherwise returns ``entry.structured_content`` unchanged.
+        """
+        structured = entry.structured_content
+        if (
+            entry.memory_type != "procedural"
+            or not structured
+            or not structured.get("name")
+            or not self._policy_for("procedural").version_on_edit
+        ):
+            return structured
+        cursor = await db.execute(
+            "SELECT MAX(CAST(json_extract(structured_content, '$.version') "
+            "AS INTEGER)) FROM memories WHERE memory_type = 'procedural' "
+            "AND json_extract(structured_content, '$.name') = ?",
+            (structured["name"],),
+        )
+        row = await cursor.fetchone()
+        max_version = row[0] if row and row[0] is not None else 0
+        return {**structured, "version": max_version + 1}
 
     async def recall(
         self,

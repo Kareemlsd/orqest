@@ -10,7 +10,7 @@ import pytest_asyncio
 
 from orqest.memory.config import MemoryConfig, PerKindConfig
 from orqest.memory.local import LocalMemoryStore
-from orqest.memory.store import MemoryEntry, MemoryFilter
+from orqest.memory.store import MemoryEntry, MemoryFilter, Skill
 
 
 @pytest_asyncio.fixture
@@ -201,4 +201,47 @@ class TestLocalMemoryStore:
 
         remaining = {e.content for e in await store.list_recent()}
         assert remaining == {"recent fact", "ancient event"}
+        await store.close()
+
+    @pytest.mark.asyncio
+    async def test_version_on_edit_increments_and_keeps_history(
+        self, tmp_path: Path
+    ) -> None:
+        """With version_on_edit, re-storing a skill by name bumps its version
+        and keeps the prior rows as an audit trail."""
+        store = LocalMemoryStore(
+            tmp_path / "ver.db",
+            config=MemoryConfig(procedural=PerKindConfig(version_on_edit=True)),
+        )
+
+        def skill_entry(desc: str) -> MemoryEntry:
+            skill = Skill(name="deploy", description=desc, trigger="deploy the app")
+            return MemoryEntry(
+                content="deploy the app",
+                structured_content=skill.model_dump(),
+                memory_type="procedural",
+            )
+
+        await store.store(skill_entry("v1 approach"))
+        await store.store(skill_entry("v2 approach"))
+        await store.store(skill_entry("v3 approach"))
+
+        rows = await store.list_recent(memory_type="procedural")
+        versions = sorted(r.structured_content["version"] for r in rows)
+        assert versions == [1, 2, 3]  # three rows, three versions, history kept
+        await store.close()
+
+    @pytest.mark.asyncio
+    async def test_version_on_edit_off_by_default(self, tmp_path: Path) -> None:
+        """Without version_on_edit, stored skills keep their declared version."""
+        store = LocalMemoryStore(tmp_path / "nover.db")  # default config: off
+        for _ in range(2):
+            skill = Skill(name="deploy", description="d", trigger="deploy")
+            await store.store(MemoryEntry(
+                content="deploy",
+                structured_content=skill.model_dump(),
+                memory_type="procedural",
+            ))
+        rows = await store.list_recent(memory_type="procedural")
+        assert {r.structured_content["version"] for r in rows} == {1}
         await store.close()
