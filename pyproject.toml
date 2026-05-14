@@ -40,6 +40,11 @@ docs = [
     "mkdocs-material>=9.6",
     "mkdocstrings[python]>=0.28",
 ]
+notebooks = [
+    "jupyter>=1.0",
+    "ipykernel>=6.0",
+    "nbconvert>=7.0",
+]
 
 [tool.ruff]
 lint.select = [
