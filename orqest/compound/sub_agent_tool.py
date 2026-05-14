@@ -202,6 +202,11 @@ class SubAgentTool(Generic[StateT, ResultT]):
             return await self._agent.run(state, **kw), {}
 
         # --- First pass ---
+        # Deliver the prompt both ways: as a user message on `state` (the
+        # universal BaseAgent channel, when supported) and as a `note=`
+        # kwarg (legacy — agents that read it directly still work).
+        if hasattr(state, "add_message"):
+            state.add_message("user", prompt)
         call_kwargs = {"note": prompt, **agent_kwargs}
         agent_output, last_enrichment = await _run_agent(state, **call_kwargs)
         first_result = await self._executor(agent_output, state)
@@ -224,6 +229,8 @@ class SubAgentTool(Generic[StateT, ResultT]):
             ):
                 next_prompt = self._build_refinement_prompt(current_result, prompt)
                 try:
+                    if hasattr(state, "add_message"):
+                        state.add_message("user", next_prompt)
                     refined_output, last_enrichment = await _run_agent(
                         state, note=next_prompt,
                     )

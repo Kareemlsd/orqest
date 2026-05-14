@@ -237,3 +237,32 @@ class TestCompoundToolOnErrorRedirect:
         state.add_message("user", "go")
         with pytest.raises(RuntimeError, match="boom"):
             await tool.run(state, prompt="go")
+
+
+class TestCompoundToolPromptDelivery:
+    """The prompt passed to run() reaches the wrapped agent via state."""
+
+    @pytest.mark.asyncio
+    async def test_prompt_injected_into_state(self, test_model):
+        """run(state, prompt=...) injects the prompt as a user message so
+        an agent that reads state sees it — without the caller pre-adding."""
+
+        class EchoAgent(BaseAgent[GlobalState, SimpleOutput]):
+            async def _run_implementation(self, state, **kwargs):
+                latest = state.get_latest_message("user")
+                return SimpleOutput(text=str(latest))
+
+        agent = EchoAgent(
+            agent_name="echo",
+            system_prompt="t",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+
+        async def executor(output, state):
+            return output.text
+
+        tool = CompoundTool(agent, executor)
+        state = GlobalState()  # deliberately not pre-adding the message
+        agent_output, result = await tool.run(state, prompt="the-real-prompt")
+        assert result == "the-real-prompt"

@@ -64,12 +64,19 @@ class CompoundTool(Generic[StateT, OutputT]):
     ) -> tuple[OutputT, Any]:
         """Execute the compound tool: agent, decide, execute, update state.
 
+        ``prompt`` is injected into ``state`` as a user message before the
+        agent runs (when ``state`` supports ``add_message``), so the wrapped
+        agent receives it through the same channel as ``as_tool`` /
+        ``AgentStep`` rather than being silently dropped.
+
         Returns ``(agent_output, execution_result)``. Honors
         :class:`Skip` (returns ``stub_result`` in place of executor),
         :class:`Redirect` (mutates args/name; bounded one re-execution
         on ``after_tool`` redirect), and :class:`Abort` (raises
         :class:`HookAbortError` to the caller).
         """
+        if hasattr(state, "add_message"):
+            state.add_message("user", prompt)
         agent_output = await self._agent.run(state, **kwargs)
 
         args = {"agent_output": agent_output, "prompt": prompt}

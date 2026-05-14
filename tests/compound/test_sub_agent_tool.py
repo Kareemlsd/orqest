@@ -279,3 +279,32 @@ class TestValidation:
             state_updater=_updater,
         )
         assert tool._max_refinements == 0
+
+
+# --- prompt delivery ---
+
+
+class TestPromptDelivery:
+    """The prompt reaches the agent via state-injection on GlobalState."""
+
+    @pytest.mark.asyncio
+    async def test_prompt_injected_into_state(self):
+        from orqest.agents.state import GlobalState
+
+        class _StateReadingAgent:
+            agent_name = "state_reader"
+
+            async def run(self, state, **kwargs):
+                return _Output(note_seen=str(state.get_latest_message("user")))
+
+        async def echo_exec(agent_output: _Output, state) -> str:
+            return agent_output.note_seen
+
+        tool = SubAgentTool(
+            agent=_StateReadingAgent(),
+            executor=echo_exec,
+            state_updater=lambda result, state: None,
+        )
+        state = GlobalState()  # deliberately empty — tool must inject
+        out = await tool.run(state, "the-real-prompt")
+        assert out.result == "the-real-prompt"
