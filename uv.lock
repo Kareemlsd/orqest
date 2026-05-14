@@ -490,17 +490,6 @@ wheels = [
 ]
 
 [[package]]
-name = "dotenv"
-version = "0.9.9"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "python-dotenv" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/b7/545d2c10c1fc15e48653c91efde329a790f2eecfbbf2bd16003b5db2bab0/dotenv-0.9.9-py2.py3-none-any.whl", hash = "sha256:29cf74a087b31dafdb5a446b6d7e11cbce8ed2741540e2339c69fbef92c94ce9", size = 1892, upload-time = "2025-02-19T22:15:01.647Z" },
-]
-
-[[package]]
 name = "email-validator"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1748,19 +1737,15 @@ wheels = [
 
 [[package]]
 name = "orqest"
-version = "0.0.1"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
-    { name = "dotenv" },
     { name = "fastapi" },
     { name = "loguru" },
-    { name = "markdown" },
     { name = "mcp" },
-    { name = "openai" },
     { name = "pydantic" },
     { name = "pydantic-ai" },
-    { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "python-dotenv" },
     { name = "uvicorn" },
@@ -1783,15 +1768,11 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.20.0" },
-    { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi", specifier = ">=0.136.0" },
     { name = "loguru", specifier = ">=0.7.3" },
-    { name = "markdown", specifier = ">=3.8.2" },
     { name = "mcp", specifier = ">=1.0.0" },
-    { name = "openai", specifier = ">=1.93.0" },
     { name = "pydantic", specifier = ">=2.11.7" },
     { name = "pydantic-ai", specifier = ">=1.37.0" },
-    { name = "pytest", specifier = ">=8.4.1" },
     { name = "pytest-asyncio", specifier = ">=1.0.0" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "uvicorn", specifier = ">=0.35.0" },
