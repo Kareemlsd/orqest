@@ -221,6 +221,17 @@ class BaseAgent(Generic[StateT, OutputT]):
         return self._model
 
     @property
+    def confidence_protocol(self) -> Any:
+        """The agent-level default ``ConfidenceProtocol``, or ``None``.
+
+        Set via the constructor's ``confidence_protocol`` keyword; used by
+        :meth:`run_enriched` and consulted by callers (e.g.
+        :class:`~orqest.orchestration.loop.RefinementLoop`) that need the
+        agent to be confidence-aware.
+        """
+        return self._confidence_protocol
+
+    @property
     def agent(self) -> Agent:
         """Lazily constructed pydantic-ai Agent."""
         if self._agent is None:

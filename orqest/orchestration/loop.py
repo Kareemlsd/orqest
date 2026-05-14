@@ -104,6 +104,15 @@ class RefinementLoop(Generic[StateT, OutputT]):
                 "agent_self_eval requires confidence_threshold to be set; "
                 "self-eval scores are meaningless without a passing bar."
             )
+        if (
+            agent_self_eval is not None
+            and getattr(agent_self_eval, "confidence_protocol", None) is None
+        ):
+            raise ValueError(
+                "agent_self_eval requires the agent to be constructed with a "
+                "confidence_protocol; without one run_enriched yields "
+                "confidence=None and the loop can never exit via 'confident'."
+            )
 
         self._step = _coerce_step(step)
         self._evaluator = evaluator

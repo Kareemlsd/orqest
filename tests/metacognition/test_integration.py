@@ -199,6 +199,22 @@ def test_refinement_loop_self_eval_requires_threshold():
         )
 
 
+def test_refinement_loop_self_eval_requires_confidence_protocol():
+    """agent_self_eval needs the agent to carry a confidence_protocol —
+    without one run_enriched yields confidence=None and the loop could
+    never exit via 'confident'."""
+    rater = _StubAgent(_Out(answer="x"))  # no confidence_protocol
+    with pytest.raises(ValueError, match="confidence_protocol"):
+        RefinementLoop(
+            step=lambda x: {},
+            evaluator=lambda o: EvalResult(passed=False, feedback=""),
+            state_updater=lambda *a, **k: a[0],
+            max_iterations=3,
+            confidence_threshold=0.9,  # threshold set — the gap is the protocol
+            agent_self_eval=rater,
+        )
+
+
 # ---- SubAgentTool integration ----------------------------------------
 
 
