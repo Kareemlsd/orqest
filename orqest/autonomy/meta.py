@@ -3,8 +3,8 @@
 The MetaOrchestrator is the core of orqest's autonomy layer. It takes a
 high-level goal, uses a planner agent to decompose it into subtasks,
 finds or creates agents for each subtask, executes them sequentially,
-and collects the results. Successful agent specs can be persisted to
-memory for reuse in future runs.
+and collects the results. Each spawned agent spec is persisted to
+memory (at spawn time) so a later matching subtask can reuse it.
 """
 
 from __future__ import annotations
@@ -77,7 +77,7 @@ class MetaOrchestrator:
     3. For each subtask, finds an existing agent or spawns a new one
     4. Executes the subtasks sequentially (v1)
     5. Collects results and produces a summary
-    6. Optionally persists successful agent specs to memory
+    6. Persists each spawned agent spec to memory (at spawn time) for reuse
     """
 
     def __init__(
@@ -110,6 +110,10 @@ class MetaOrchestrator:
                 budget remains), the planner is re-invoked to rewrite
                 the remaining subtasks. ``None`` preserves the legacy
                 straight-through behavior.
+            bus: Optional :class:`~orqest.observability.EventBus`. When
+                set, the orchestrator emits a typed
+                ``metacognition.redecomposition_triggered`` event each
+                time low confidence triggers re-decomposition.
 
         """
         self._planner = planner

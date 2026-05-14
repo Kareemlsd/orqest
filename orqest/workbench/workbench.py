@@ -1,14 +1,14 @@
-"""Workbench — bundle memory + tracer + event bus + recent-events buffer.
+"""Workbench — bundle memory + tracer + event bus + recent-events buffer + UI registry.
 
-Every production Orqest agent needs the same four infrastructure
-pieces: a :class:`MemoryStore` for durable facts, a
-:class:`Tracer` for span capture, an :class:`EventBus` for
-observability fan-out, and a bounded buffer of recent events so late-
-connecting clients (and reconnecting SSE consumers) can catch up on
-what they missed. ``Workbench`` packages those four into a single
-container so consumers configure them once and pass the workbench
-around instead of plumbing the four objects through every function
-signature.
+Every production Orqest agent needs the same infrastructure pieces: a
+:class:`MemoryStore` for durable facts, a :class:`Tracer` for span
+capture, an :class:`EventBus` for observability fan-out, a bounded
+buffer of recent events so late-connecting clients (and reconnecting
+SSE consumers) can catch up on what they missed, and a
+:class:`ComponentRegistry` for generative-UI component schemas.
+``Workbench`` packages those into a single container so consumers
+configure them once and pass the workbench around instead of plumbing
+the pieces through every function signature.
 
 ``Workbench`` does not prescribe a lifetime — callers decide. Typical
 patterns:
@@ -76,8 +76,8 @@ class Workbench:
             ui_registry: Optional :class:`ComponentRegistry` (lazy
                 imported). When ``None`` and
                 ``auto_register_first_party_ui`` is True, a fresh
-                registry pre-loaded with first-party components
-                (Plan/Chart/Table/Form/TakeoverDialog) is constructed.
+                registry pre-loaded with the first-party component set
+                (see :func:`orqest.ui.default_registry`) is constructed.
                 Pass an explicit registry to skip auto-registration or
                 to add custom components.
             auto_register_first_party_ui: When True (default) and

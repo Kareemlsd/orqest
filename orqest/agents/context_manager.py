@@ -131,9 +131,8 @@ class ContextManager:
 
         Keeps the first message plus enough recent messages to reach
         min_recent_tokens. When ``salience_fn`` is configured, *also*
-        keeps any older message whose salience is at or above the
-        ``min_recent_turns``-th highest score — i.e. high-salience old
-        content survives even when age would drop it.
+        keeps any older message whose salience is ``>= 0.7`` — i.e.
+        high-salience old content survives even when age would drop it.
         """
         if not messages:
             return []

@@ -4,10 +4,13 @@ Searches the MCP ecosystem for servers that provide specific tools or
 capabilities, enabling agents to dynamically expand their toolset at
 runtime without pre-configuration.
 
-Discovery sources:
-- **Registry API**: Query the MCP registry for servers by keyword/capability
-- **Well-known manifests**: Probe ``/.well-known/mcp.json`` on known URLs
-- **Web search**: Fall back to web search for MCP servers (via httpx)
+.. note::
+
+   **Preview.** :meth:`MCPDiscovery.search` queries the configured
+   registry endpoints only. :meth:`MCPDiscovery.probe_wellknown` is
+   available for ``/.well-known/mcp.json`` probing but is not yet wired
+   into ``search()``; there is no web-search fallback. The registry
+   response-shape parsing is untested against live registries.
 """
 
 from __future__ import annotations
@@ -52,11 +55,12 @@ class DiscoveredServer:
 
 
 class MCPDiscovery:
-    """Discover MCP servers online by querying registries and probing URLs.
+    """Discover MCP servers online by querying registry endpoints.
 
     Enables agents to find tools they need at runtime without any
     pre-configuration. The MetaOrchestrator uses this when no local
-    tool matches a subtask's requirements.
+    tool matches a subtask's requirements. Preview — see the module
+    docstring for current limitations.
 
     Usage::
 

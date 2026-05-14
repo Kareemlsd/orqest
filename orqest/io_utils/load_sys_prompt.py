@@ -1,16 +1,19 @@
 """Utility to load system prompts from a designated folder."""
-from pathlib import Path
-import inspect
-from typing import Optional, Union
+from __future__ import annotations
 
-def _find_upwards(start: Path, target_dirname: str) -> Optional[Path]:
+import inspect
+from pathlib import Path
+
+
+def _find_upwards(start: Path, target_dirname: str) -> Path | None:
     for parent in [start] + list(start.parents):
         candidate = parent / target_dirname
         if candidate.is_dir():
             return candidate
     return None
 
-def load_sys_prompt(filename: str, start: Optional[Union[str, Path]] = None) -> str:
+
+def load_sys_prompt(filename: str, start: str | Path | None = None) -> str:
     """
     Load a system prompt by searching upwards for a 'system_prompts' folder,
     starting from the caller's file location (preferred) or from `start`/cwd.

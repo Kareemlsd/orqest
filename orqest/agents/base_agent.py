@@ -169,6 +169,10 @@ class BaseAgent(Generic[StateT, OutputT]):
             model_settings: Optional pydantic-ai ``ModelSettings`` applied to
                 every model call (e.g. ``ModelSettings(temperature=0.0,
                 seed=42)``). Default ``None`` preserves provider defaults.
+            confidence_protocol: Optional agent-level default
+                ``ConfidenceProtocol`` used by :meth:`run_enriched`.
+                ``None`` means ``run_enriched`` returns a bare
+                ``EnrichedOutput`` unless a protocol is passed per call.
         """
         if isinstance(model, str):
             if api_key is None:

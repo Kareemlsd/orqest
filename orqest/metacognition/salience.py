@@ -4,8 +4,9 @@ Pure functions that map a :class:`pydantic_ai.messages.ModelMessage` to
 a salience score in ``[0, 1]``. Higher = "keep this when compacting"; 0
 = "drop first." Plug into :class:`ContextManager(salience_fn=...)`.
 
-The scorers read from a side-table cache because pydantic-AI's
-``ModelResponse`` is frozen — see ``ContextManager`` for the cache plumbing.
+The scorers read metadata directly off the message
+(``message.metadata``) when present, falling back to a neutral score
+(``1.0``) otherwise.
 """
 
 from __future__ import annotations
@@ -16,9 +17,8 @@ from typing import Any
 def _read_metadata(message: Any, key: str) -> Any:
     """Best-effort metadata read off a ModelMessage.
 
-    Tries ``message.metadata`` (pydantic-AI v2 field) and a side-table
-    cache attached to the ContextManager (legacy fallback for frozen
-    messages).
+    Reads ``message.metadata`` (pydantic-AI's metadata field) when it is
+    a dict carrying ``key``; returns ``None`` otherwise.
     """
     md = getattr(message, "metadata", None)
     if isinstance(md, dict) and key in md:

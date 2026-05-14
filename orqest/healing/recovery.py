@@ -89,8 +89,8 @@ class WatchdogHook:
 
     Runs the policy on the *first* watchdog whose :meth:`signal`
     returns a Detection in registration order. Subsequent watchdogs are
-    polled as well so they advance their internal state, but their
-    detections are recorded as shadowed in a ``hook.shadowed`` event.
+    still polled so they advance their internal state, but their
+    detections are dropped (no second decision fires per call).
 
     Returns ``None`` from :meth:`after_tool` and :meth:`on_error` —
     decisions only fire on :meth:`before_tool` (the natural seam where

@@ -2,6 +2,7 @@
 
 from orqest.tools.web import (
     WebFetchResult,
+    WebSearchResponse,
     WebSearchResult,
     web_fetch,
     web_search,
@@ -9,6 +10,7 @@ from orqest.tools.web import (
 
 __all__ = [
     "WebFetchResult",
+    "WebSearchResponse",
     "WebSearchResult",
     "web_fetch",
     "web_search",
