@@ -59,7 +59,7 @@ plugins:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
-  - Concepts:
+  - Composition:
       - Agents: concepts/agents.md
       - State & History: concepts/state-and-history.md
       - Agent as Tool: concepts/agent-as-tool.md
@@ -68,14 +68,37 @@ nav:
       - Hooks & Lifecycle: concepts/hooks-and-lifecycle.md
       - Session Persistence: concepts/session-persistence.md
       - Compound Tools: concepts/compound-tools.md
+      - Sub-Agent Tool: concepts/sub-agent-tool.md
+      - Execution Plan: concepts/execution-plan.md
+  - Autonomy:
+      - Runtime Agent Design: concepts/autonomy.md
+      - MCP: concepts/mcp.md
+  - Memory & Cognition:
       - Memory: concepts/memory.md
+      - Metacognition: concepts/metacognition.md
+      - Web Tools: concepts/web-tools.md
+  - Production:
+      - Workbench: concepts/workbench.md
       - Observability: concepts/observability.md
+      - SSE Sidecar: concepts/sse-sidecar.md
+      - Event Bus Hook: concepts/event-bus-publish-hook.md
+      - Self-Healing: concepts/healing.md
+      - Generative UI: concepts/generative_ui.md
   - API Reference:
       - Configuration: api/config.md
       - Agents: api/agents.md
       - Orchestration: api/orchestration.md
       - Hooks: api/hooks.md
       - Memory: api/memory.md
+      - Autonomy: api/autonomy.md
+      - MCP: api/mcp.md
+      - Metacognition: api/metacognition.md
+      - Healing: api/healing.md
+      - Generative UI: api/ui.md
+      - Workbench: api/workbench.md
+      - Compound Tools: api/compound.md
+      - Execution Plan: api/plan.md
+      - Web Tools: api/tools.md
       - Observability: api/observability.md
       - Model Resolution: api/utils.md
       - System Prompts: api/io-utils.md
