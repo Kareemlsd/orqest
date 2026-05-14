@@ -7,10 +7,10 @@ runtime without pre-configuration.
 .. note::
 
    **Preview.** :meth:`MCPDiscovery.search` queries the configured
-   registry endpoints only. :meth:`MCPDiscovery.probe_wellknown` is
-   available for ``/.well-known/mcp.json`` probing but is not yet wired
-   into ``search()``; there is no web-search fallback. The registry
-   response-shape parsing is untested against live registries.
+   registry endpoints and probes any configured ``well_known_urls`` for
+   ``/.well-known/mcp.json`` manifests. What remains preview: the registry
+   response-shape parsing is untested against live registries, and there
+   is no web-search fallback.
 """
 
 from __future__ import annotations
@@ -82,6 +82,7 @@ class MCPDiscovery:
         self,
         *,
         registry_urls: list[str] | None = None,
+        well_known_urls: list[str] | None = None,
         timeout: float = 15.0,
     ) -> None:
         """Initialize discovery.
@@ -89,10 +90,13 @@ class MCPDiscovery:
         Args:
             registry_urls: Custom registry search endpoints.
                 Defaults to the official MCP registry and Glama.
+            well_known_urls: Base URLs to probe for ``/.well-known/mcp.json``
+                manifests on every :meth:`search`. Empty by default.
             timeout: HTTP request timeout in seconds.
 
         """
         self._registry_urls = registry_urls or list(self.REGISTRY_SEARCH_URLS)
+        self._well_known_urls = list(well_known_urls or [])
         self._timeout = timeout
 
     async def search(
@@ -103,8 +107,9 @@ class MCPDiscovery:
     ) -> list[DiscoveredServer]:
         """Search for MCP servers matching a capability query.
 
-        Queries all configured registries in parallel and deduplicates
-        results by server name.
+        Probes any configured ``well_known_urls`` first (explicitly
+        configured = highest intent), then queries the registry endpoints,
+        deduplicating by server name.
 
         Args:
             query: Natural language description of needed capability
@@ -112,12 +117,26 @@ class MCPDiscovery:
             max_results: Maximum servers to return.
 
         Returns:
-            Discovered servers sorted by relevance.
+            Discovered servers, well-known manifests ahead of registry hits.
 
         """
         all_servers: list[DiscoveredServer] = []
         seen_names: set[str] = set()
 
+        # Explicitly-configured well-known manifests first — highest intent.
+        for base_url in self._well_known_urls:
+            try:
+                server = await self.probe_wellknown(base_url)
+            except Exception as exc:
+                logger.debug(
+                    "Well-known probe {url} failed: {err}", url=base_url, err=exc
+                )
+                continue
+            if server is not None and server.name not in seen_names:
+                seen_names.add(server.name)
+                all_servers.append(server)
+
+        # Then fuzzy registry search.
         for url in self._registry_urls:
             try:
                 results = await self._query_registry(url, query, max_results)
@@ -195,6 +214,8 @@ class MCPDiscovery:
             items = data if isinstance(data, list) else data.get("results", data.get("servers", []))
 
             for item in items:
+                if not isinstance(item, dict):
+                    continue  # tolerate a malformed entry without losing the batch
                 servers.append(
                     DiscoveredServer(
                         name=item.get("name", "unknown"),

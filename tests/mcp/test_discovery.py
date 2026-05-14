@@ -215,3 +215,40 @@ class TestDiscoverAndConnect:
             connections = await mgr.discover_and_connect("database SQL")
             assert connections == []  # All failed to connect
             mock_discovery.search.assert_awaited_once()
+
+
+class TestSearchWiring:
+    """search() merges registry results with configured well-known probes."""
+
+    class _FakeDiscovery(MCPDiscovery):
+        """Stubs the HTTP layer to test search() wiring without network."""
+
+        async def _query_registry(self, registry_url, query, max_results):
+            return [DiscoveredServer(
+                name="reg-server", description="from registry", url="http://reg",
+            )]
+
+        async def probe_wellknown(self, base_url):
+            return DiscoveredServer(
+                name=f"wk-{base_url}", description="from well-known",
+                url=base_url, source="wellknown",
+            )
+
+    @pytest.mark.asyncio
+    async def test_search_merges_registry_and_wellknown(self) -> None:
+        disc = self._FakeDiscovery(
+            well_known_urls=["http://a.example", "http://b.example"]
+        )
+        results = await disc.search("anything", max_results=10)
+
+        names = {s.name for s in results}
+        assert names == {
+            "reg-server", "wk-http://a.example", "wk-http://b.example",
+        }
+        assert {s.source for s in results} == {"registry", "wellknown"}
+
+    @pytest.mark.asyncio
+    async def test_search_without_wellknown_urls_is_registry_only(self) -> None:
+        disc = self._FakeDiscovery()  # no well_known_urls configured
+        results = await disc.search("anything")
+        assert {s.source for s in results} == {"registry"}
