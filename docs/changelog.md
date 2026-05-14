@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _(empty — ready for the next ship)_
 
+## [0.4.0] - 2026-05-14
+
+The advance pass — "complete & honest." Finishes the `[0.3.0]` preview tier into Tier 1: every capability that was a designed-but-unwired seam is now wired and test-covered. Test suite: 664 → 670.
+
+### Added
+
+- `PerKindConfig.ttl_days` + `LocalMemoryStore.prune_expired()` — per-kind retention windows; a best-effort maintenance call deletes entries past their TTL and returns the count. A kind with `ttl_days=None` is never pruned.
+- `PerKindConfig.version_on_edit` — when enabled, re-storing a procedural skill by name bumps its `version` one past the highest stored version and keeps the prior rows as an audit trail.
+- `LocalMemoryStore(embedder=...)` — a pluggable sync-or-async embedder. When set, `store()` embeds entry content and `SemanticStrategy` ranks recall by cosine similarity over stored vectors; FTS5 / LIKE otherwise. New `default_strategy_table(embedder=...)` parameter and `embed_text` / `_cosine` helpers in `orqest.memory.strategies`.
+- `MCPDiscovery(well_known_urls=...)` — `search()` probes the configured base URLs for `/.well-known/mcp.json` (highest intent, tried first), then queries the registry endpoints, deduplicating by name. The documented well-known-manifest discovery source is now real.
+
+### Changed
+
+- The `RecoveryAction` union stays lean (`AbortRun` | `EscalateToUser`) by design — model-level recovery is `FallbackModel`, tool-level recovery is `DiscoveryHook`. The advance pass evaluated re-introducing `RetryDifferentModel` / `DiscoverAndRetry` / `RetrySameTool` and concluded they duplicated those dedicated, composable mechanisms.
+
+### Preview
+
+Still accepted but not yet wired:
+
+- `MemoryConfig.backend="supabase"` / `supabase_*` — the pgvector backend.
+- `MCPDiscovery` registry response-shape parsing — untested against live registries; no web-search fallback.
+
 ## [0.3.0] - 2026-05-14
 
 The reconcile pass. A contradiction audit found ~27 places where the code and the docs disagreed — most often an "intent layer" (configs, types, hooks) built ahead of the "effect layer" that consumes it. This release wires the cheap gaps, deletes the dead ones, and corrects every stale claim. Tiered honesty contract: each subsystem's primary path is functional end-to-end; specific advanced capabilities are explicitly labelled **Preview**. Test suite: 655 → 664.
