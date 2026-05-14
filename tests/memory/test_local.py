@@ -166,3 +166,39 @@ class TestLocalMemoryStore:
         results = await store.recall("popular")
         assert len(results) == 1
         assert results[0].access_count >= 1
+
+    @pytest.mark.asyncio
+    async def test_prune_expired_respects_per_kind_ttl(
+        self, tmp_path: Path
+    ) -> None:
+        """prune_expired() deletes entries past their per-kind ttl_days,
+        keeps fresh ones, and never touches a kind whose ttl_days is None."""
+        from datetime import datetime, timedelta
+
+        store = LocalMemoryStore(
+            tmp_path / "ttl.db",
+            config=MemoryConfig(
+                semantic=PerKindConfig(ttl_days=30),    # 30-day window
+                episodic=PerKindConfig(ttl_days=None),  # keep forever
+            ),
+        )
+        now = datetime.now()
+        await store.store(MemoryEntry(
+            content="ancient fact", memory_type="semantic",
+            created_at=now - timedelta(days=100),
+        ))
+        await store.store(MemoryEntry(
+            content="recent fact", memory_type="semantic",
+            created_at=now - timedelta(days=1),
+        ))
+        await store.store(MemoryEntry(
+            content="ancient event", memory_type="episodic",
+            created_at=now - timedelta(days=100),
+        ))
+
+        pruned = await store.prune_expired()
+        assert pruned == 1
+
+        remaining = {e.content for e in await store.list_recent()}
+        assert remaining == {"recent fact", "ancient event"}
+        await store.close()

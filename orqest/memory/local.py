@@ -14,7 +14,7 @@ Memory operations are best-effort: errors are logged, never raised to the caller
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -283,6 +283,33 @@ class LocalMemoryStore:
             logger.warning(
                 "Failed to update reliability for {id}", id=entry_id
             )
+
+    async def prune_expired(self) -> int:
+        """Delete entries older than their per-kind ``ttl_days``.
+
+        Best-effort maintenance: a kind whose :class:`PerKindConfig.ttl_days`
+        is ``None`` is never pruned. Errors are logged, never raised — the
+        method returns the number of rows deleted (``0`` on failure).
+        """
+        pruned = 0
+        try:
+            db = await self._ensure_db()
+            now = datetime.now()
+            for kind in ("semantic", "episodic", "procedural"):
+                ttl_days = getattr(self._config, kind).ttl_days
+                if ttl_days is None:
+                    continue
+                cutoff = (now - timedelta(days=ttl_days)).isoformat()
+                cursor = await db.execute(
+                    "DELETE FROM memories "
+                    "WHERE memory_type = ? AND created_at < ?",
+                    (kind, cutoff),
+                )
+                pruned += max(0, cursor.rowcount)
+            await db.commit()
+        except Exception:
+            logger.warning("prune_expired failed")
+        return pruned
 
     async def count(self) -> int:
         """Return the total number of stored entries."""
