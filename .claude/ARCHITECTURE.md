@@ -89,7 +89,7 @@ orqest/
 │   ├── registry.py          → ComponentRegistry per-Workbench
 │   ├── emitter.py           → UIEmitter (init/delta/remove)
 │   ├── events.py            → ui_init/delta/remove_event_type helpers
-│   └── components/          → Plan/Chart/Table/Form/TakeoverDialog + Layer 2/3
+│   └── components/          → 17 first-party components across 3 layers
 │
 ├── tools/
 │   └── web.py               → web_search, web_fetch (multi-provider, graceful)
@@ -113,11 +113,11 @@ The most distinctive integration in the substrate: **`metacognition` produces th
       ↓ on EventBus
   RegressionDetector → buffers events, signals Detection on drop
       ↓
-  policy → returns RecoveryAction (e.g., RetryDifferentModel)
+  policy → returns RecoveryAction (default: AbortRun)
       ↓
-  WatchdogHook → translates to HookDecision (Redirect)
+  WatchdogHook → translates to HookDecision (Abort)
       ↓
-  HookRunner → CompoundTool.run honors decision → re-issues with new model
+  HookRunner → CompoundTool.run honors decision → halts the flow
 ```
 
 Wire metacognition without healing: events fire, nobody listens (no-op).
@@ -180,7 +180,7 @@ When `Stall` / `Loop` / `Regression` don't catch a failure mode — e.g., schema
 
 ### 2.5 Adding a new RecoveryAction
 
-When the existing 5 actions (`RetrySameTool` / `RetryDifferentModel` / `EscalateToUser` / `AbortRun` / `DiscoverAndRetry`) don't cover an intent — e.g., `EscalateToOps` (Slack handoff), `PauseAndAlert` (set a checkpoint, page on-call).
+When the existing actions (`EscalateToUser` / `AbortRun`) don't cover an intent — e.g., `EscalateToOps` (Slack handoff), `PauseAndAlert` (set a checkpoint, page on-call).
 
 1. Add a new union member in `orqest/healing/recovery.py`:
    ```python

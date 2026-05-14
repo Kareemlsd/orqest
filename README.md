@@ -64,11 +64,11 @@ asyncio.run(main())
 Eight composable batteries — **opt-in**, picked à-la-carte per application:
 
 - **Composition** — `Pipeline`, `Parallel`, `Router`, `RefinementLoop`. Sequence agents, fan out + merge, route by classifier, iterate until "good enough."
-- **Memory** — `LocalMemoryStore` (SQLite + FTS5) with typed `semantic` / `episodic` / `procedural` retrieval. Per-kind TTL, decay, version-on-edit. Pluggable `MemoryStore` Protocol for production backends.
+- **Memory** — `LocalMemoryStore` (SQLite + FTS5) with typed `semantic` / `episodic` / `procedural` retrieval. Per-kind reliability policy (decay-on-failure, prune floor). Pluggable `MemoryStore` Protocol for production backends.
 - **Autonomy** — `AgentSpec` + `AgentFactory` + `ToolRegistry` + `MetaOrchestrator`. Agents that decompose goals and spawn specialists at runtime.
 - **Metacognition** — `EnrichedOutput[OutputT]` carrying `confidence`, `uncertainty_targets`, `capability_boundary`. Three pluggable `ConfidenceProtocol` strategies (free / +1 call / +k calls). Agents that know what they don't know.
 - **Self-healing** — `Watchdog` Protocol + `StallDetector` / `LoopDetector` / `RegressionDetector`. `RecoveryAction` discriminated union → `HookDecision` flow. `FallbackModel` for transparent provider failover.
-- **Generative UI** — `UIComponentSpec[T]` typed components (Plan, Chart, Table, Form, TakeoverDialog, Vega, Mermaid, Markdown, Latex, JsonViewer, SandboxedHTML). Agents emit; frontend resolves.
+- **Generative UI** — `UIComponentSpec[T]` typed components — 17 across 3 layers: compositional primitives (Plan, Chart, Table, Form, TakeoverDialog, Layout, Text, Markdown, Image, Badge, Button, Input), declarative grammars (Vega, Mermaid, Latex, JsonViewer), and a sandboxed HTML escape hatch. Agents emit; frontend resolves.
 - **Observability** — `EventBus`, `JSONTracer`, `sse_sidecar` (with replay + heartbeat + ring buffer). Wire once, every tool emits.
 - **MCP** — client (`MCPServerManager`) + server (`create_orqest_server`) + auto-discovery (`get_or_discover` + `DiscoveryHook` + `PermissionGate`).
 
@@ -80,7 +80,7 @@ The flagship reference consumer is [`demo/polymath/`](demo/polymath/) — every 
 
 ## Supported model providers
 
-`provider:model_id` format routes to the right SDK. Lazy-imported — install only what you use.
+`provider:model_id` format routes to the right SDK. The full `pydantic-ai` dependency bundles every provider SDK; the lazy import is defensive.
 
 | Provider | Format | Example |
 |----------|--------|---------|

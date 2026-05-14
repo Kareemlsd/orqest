@@ -39,7 +39,7 @@ orqest/
 │   ├── store.py             # MemoryStore protocol, MemoryEntry, MemoryFilter, Skill / ToolCallSpec / SkillExample
 │   ├── local.py             # LocalMemoryStore (SQLite + FTS5; strategy-dispatch for per-kind retrieval)
 │   ├── strategies.py        # SemanticStrategy, EpisodicStrategy, ProceduralStrategy (+ injected fuzzy judge)
-│   └── config.py            # MemoryConfig + PerKindConfig (TTL, decay, version-on-edit)
+│   └── config.py            # MemoryConfig + PerKindConfig (per-kind decay / prune policy)
 │
 ├── autonomy/                # Runtime agent spawning (Phase 3 — shipped)
 │   ├── spec.py              # AgentSpec, ToolSpec (serializable contracts)
@@ -53,7 +53,7 @@ orqest/
 │   ├── event_bus_hook.py    # EventBusPublishHook (ToolHook → EventBus bridge)
 │   └── sse_sidecar.py       # sse_sidecar() — SSE stream w/ replay + heartbeat + ring buffer
 │
-├── workbench/               # Runtime container (bundles memory + tracer + bus + recent-events buffer)
+├── workbench/               # Runtime container (bundles memory + tracer + bus + recent-events buffer + ui_registry)
 │   └── workbench.py         # Workbench, reset(), snapshot()
 │
 ├── compound/                # New-style compound tool (Phase 1c)
@@ -68,7 +68,7 @@ orqest/
 │   ├── config.py            # MCPServerConfig, MCPConfig
 │   ├── client.py            # MCPConnection, MCPServerManager (multi-server lifecycle)
 │   ├── adapter.py           # MCPToolAdapter — MCP tool defs → pydantic-ai Tool instances
-│   ├── discovery.py         # MCPDiscovery, DiscoveredServer (online + well-known search)
+│   ├── discovery.py         # MCPDiscovery, DiscoveredServer (online registry search — preview)
 │   ├── discovery_hook.py    # DiscoveryHook (ToolHook → opportunistic auto-register on tool-not-found)
 │   ├── permission.py        # PermissionGate Protocol + AllowAll / DenyAll / AllowList (default DenyAll)
 │   └── server.py            # create_orqest_server() — expose Orqest as FastMCP
@@ -95,7 +95,7 @@ orqest/
 │   ├── registry.py          # ComponentRegistry per-Workbench + default_registry()
 │   ├── emitter.py           # UIEmitter — init/delta/remove convenience over EventBus
 │   ├── events.py            # ui_init/delta/remove_event_type() helpers
-│   └── components/          # First-party: Plan / Chart / Table / Form / TakeoverDialog
+│   └── components/          # First-party: 17 components in 3 layers (see default_registry())
 │
 ├── tools/                   # First-party reusable pydantic-ai Tools
 │   └── web.py               # web_search, web_fetch + result models (tavily/exa/brave/serper)
@@ -175,7 +175,7 @@ python -m build
 - `as_tool()` — wrap any `BaseAgent` as a pydantic-ai Tool (stateless per invocation)
 - `CompoundTool` — agent → execute → state update with HookRunner dispatch
 - `run_with_retry()` — exception-based retry with default enrichment (distinct from `SubAgentTool`'s quality-refinement)
-- `resolve_model()` — lazy registry (OpenAI, Anthropic, Google, OpenRouter); missing SDKs silently skipped
+- `resolve_model()` — lazy registry (OpenAI, Anthropic, Google, OpenRouter); the full `pydantic-ai` dependency bundles every provider SDK, so the lazy import is defensive, not a cost-saving mechanism
 
 **Orchestration**
 - `Pipeline[InputT, OutputT]` — sequential with per-step `ErrorStrategy` (STOP / SKIP / RETRY)
@@ -196,7 +196,7 @@ python -m build
 - `MemoryFilter` — query constraints + `skill_name` / `skill_min_version` for procedural filtering.
 - `LocalMemoryStore` — SQLite + FTS5 (with LIKE fallback), lazy init, errors swallowed. Recall dispatches to a per-kind :class:`RetrievalStrategy` (Semantic / Episodic / Procedural). Also exposes `list_recent(*, memory_type=None, limit=50)` (added 2026-04-26) — browse-style enumeration newest-first that complements the query-driven `recall(...)`. Used by consumer-side surfaces that want a "memory inspector" view without issuing a search.
 - `ProceduralStrategy` — exact-match on `structured_content.trigger` (case-insensitive substring); optional injected `fuzzy_judge` callable for near-miss queries.
-- `MemoryConfig` + `PerKindConfig` — frozen dataclass with per-kind TTL / decay / version-on-edit policies.
+- `MemoryConfig` + `PerKindConfig` — frozen dataclass. `PerKindConfig` carries the per-kind reliability policy (`decay_on_failure` / `prune_below`), read by `LocalMemoryStore.update_reliability`. `backend` / `supabase_*` / `embedding_*` are preview seams (not yet wired).
 
 ### Phase 3 — Autonomy ✅
 
@@ -221,7 +221,7 @@ python -m build
 - `MCPConnection(config)` — single server lifecycle: `await connect()` → `.tools` → `await disconnect()`.
 - `MCPServerManager` — multi-server orchestration, `async with` context manager, `connect_all`, `get_all_tools` (flat list), `search_tools`.
 - `MCPToolAdapter.adapt[_many]` — MCP tool definitions → pydantic-ai `Tool` instances. Wraps callers in graceful error-string return.
-- `MCPDiscovery.search(query, max_results)` — online discovery (registry + well-known manifests + web fallback). Returns `DiscoveredServer` records.
+- `MCPDiscovery.search(query, max_results)` — online discovery against registry endpoints. Returns `DiscoveredServer` records. **Preview** — `probe_wellknown` exists but is not wired into `search()`; there is no web-search fallback.
 - Auto-discovery scans `~/.claude.json`, `~/.claude/claude.json`, `~/.config/Claude/claude_desktop_config.json`.
 - `create_orqest_server(factory, registry, meta, default_model, api_key)` — FastMCP server exposing `create_agent`, `run_agent`, `solve_goal`, `list_agents`. Run with `python -m orqest.mcp.server`.
 - **Auto-wire (2026-04-25):** `ToolRegistry.get_or_discover` (deliberate path) + `DiscoveryHook` (opportunistic recovery from "tool not found" errors) + `PermissionGate` (`AllowAll` / `DenyAll` / `AllowList` regex; default `DenyAll` — discovery is opt-in). Audit-log emission via `discovery.requested` / `discovery.connected` / `discovery.denied` / `discovery.failed` events.
@@ -232,8 +232,8 @@ python -m build
 - `StallDetector` — flags open tool calls exceeding `timeout_s`; idempotent subscribe; suppresses double-fire on same call.
 - `LoopDetector` — sliding window of `(tool_name, args_hash)` pairs; fires when count > `threshold_k`; suppression resets when pair changes.
 - `RegressionDetector` — sliding window of `metacognition.confidence` events; fires on head-half-mean − tail-half-mean ≥ `drop_threshold`. Silently no-ops when no metacog events flow (graceful degradation).
-- `RecoveryAction` discriminated union: `RetrySameTool` / `RetryDifferentModel` / `EscalateToUser` / `AbortRun` / `DiscoverAndRetry`. `default_policy` → `AbortRun` for every detector; consumers override via custom callable.
-- `WatchdogHook(watchdogs, *, policy, bus)` — `ToolHook` whose `before_tool` consults watchdogs and returns a `HookDecision`. Emits `healing.action` events when bus is configured. **Also emits `healing.retry_initiated`** (added 2026-04-26) with `{tool_name, detector, summary, severity}` whenever the policy chooses `RetrySameTool` — feeds the chrome's healing toast surface.
+- `RecoveryAction` discriminated union: `EscalateToUser` / `AbortRun` — both produce a real `HookDecision` (`Skip` / `Abort`). `default_policy` → `AbortRun` for every detector; consumers override via custom callable.
+- `WatchdogHook(watchdogs, *, policy, bus)` — `ToolHook` whose `before_tool` consults watchdogs and returns a `HookDecision`. Emits `healing.action` events when bus is configured.
 - `FallbackModel` — subclasses `pydantic_ai.models.Model`. Sticky failover; transient classifier (5xx / timeout / rate-limit → fall back; auth / validation → propagate). Emits `healing.model_fallback` on chain advance, **and `healing.model_chain_exhausted`** (added 2026-04-26) with `{models_tried, last_error_type, last_error}` immediately before raising `RuntimeError` when the chain is fully spent.
 - `resolve_model_with_fallback(models, *, api_key, bus, transient_predicate)` — accepts a chain; skips per-provider keys missing from `dict[provider, key]` map; raises `ValueError` if no entry resolves.
 - `HealingRunner` async context manager — subscribes watchdogs to a bus, runs poll loop emitting `healing.detection`, owns the `WatchdogHook` and the (optional) `FallbackModel`. Poll loop swallows watchdog crashes.
@@ -250,10 +250,10 @@ python -m build
 - `MetacognitionHook` — `ToolHook` that emits `metacognition.confidence` events when a tool result is an `EnrichedOutput`. Returns `None` (auto-wraps to `Continue`).
 - `BaseAgent.run_enriched(state, *, confidence_protocol=None)` — additive method (`run` untouched). Returns `EnrichedOutput`; protocol failures surface as `confidence=None` with `metadata["protocol_error"]`.
 - `BaseAgent` ctor gains keyword-only `confidence_protocol` for an agent-level default.
-- `RefinementLoop` ctor gains `confidence_threshold: float | None` (exit reason `"confident"` when score ≥ threshold) and `agent_self_eval: BaseAgent | None` (mutually-exclusive scoring path: synthesises `EvalResult(passed=False, score=enriched.confidence)`).
+- `RefinementLoop` ctor gains `confidence_threshold: float | None` (exit reason `"confident"` when score ≥ threshold) and `agent_self_eval: BaseAgent | None` (mutually-exclusive scoring path: synthesises `EvalResult(passed=False, score=enriched.confidence)`). `agent_self_eval` requires the agent to carry a `confidence_protocol` — validated at construction.
 - `SubAgentResult.confidence` / `uncertainty_targets` / `capability_boundary` (additive optional fields). `SubAgentTool.run(use_enriched=True)` lifts the final-iteration enrichment onto the result.
 - `ContextManager(salience_fn=...)` — pluggable per-message salience scorer; emergency truncation rescues high-salience old messages on top of the recency window. `confidence_salience` / `recency_salience` ship in `orqest.metacognition.salience`.
-- `MetaOrchestrator(metacognition: MetacognitionConfig | None = None)` — re-decomposes remaining subtasks when `_extract_confidence(result.output) < redecompose_threshold`, bounded by `max_redecompositions`. The `_extract_confidence` helper reads `EnrichedOutput.confidence`, then `output.confidence`, then `output.metadata["confidence"]` — picking up the latent shape `_find_or_spawn` already prompts spawned agents to emit (`meta.py:267-272`).
+- `MetaOrchestrator(metacognition: MetacognitionConfig | None = None)` — re-decomposes remaining subtasks when `_extract_confidence(result.output) < redecompose_threshold`, bounded by `max_redecompositions`. The `_extract_confidence` helper reads `EnrichedOutput.confidence`, then `output.confidence`, then `output.metadata["confidence"]` — picking up the latent shape `_find_or_spawn` already prompts spawned agents to emit.
 
 ### Phase 8 — Generative UI ✅ (vision feature #5)
 
@@ -262,7 +262,7 @@ python -m build
 - `ComponentRegistry` — per-Workbench (not module-level singleton): `register`, `get`, `list_types`, `validate_payload`. `default_registry()` returns a registry pre-loaded with first-party components.
 - `UIEmitter(bus)` — convenience facade for `init` / `delta` / `remove` events on the bus. Bus failures emit DEBUG log; never raise.
 - SSE event-type conventions: `ui.<component_type>.{init,delta,remove}`. Helpers `ui_init_event_type` / `ui_delta_event_type` / `ui_remove_event_type` keep consumers decoupled from string literals.
-- First-party components: `PlanComponent` (carries `PlanTask` list), `ChartComponent` (line/bar/scatter/pie/heatmap with typed `ChartSeries`), `TableComponent` (typed `TableColumn` + rows), `FormComponent` (typed `FormField` + submit event), `TakeoverDialogComponent` (confirm / input / choice).
+- First-party components — 17 total, wired via `default_registry()`: `PlanComponent`, `ChartComponent`, `TableComponent`, `FormComponent`, `TakeoverDialogComponent`, plus Layer-1 compositional primitives (`Layout`, `Text`, `Markdown`, `Image`, `Badge`, `Button`, `Input`), Layer-2 declarative grammars (`VegaChart`, `Mermaid`, `Latex`, `JsonViewer`), and a Layer-3 `SandboxedHTML` escape hatch.
 - `ExecutionPlan.enable_ui_events(*, component_id="plan")` — opt-in flag-gated dual emission of `ui.plan.init` / `ui.plan.delta` alongside legacy `plan.init` / `plan.task.updated`. Default off so existing emission-count assertions stay byte-identical. `ExecutionPlan.as_component()` wraps the plan as a `PlanComponent`.
 - `Workbench(ui_registry=..., auto_register_first_party_ui=True)` — ctor kwargs; default constructs `default_registry()`.
 
@@ -296,7 +296,7 @@ python -m build
 | 5. MCP Server + Client + auto-wire (`get_or_discover`, `DiscoveryHook`, `PermissionGate`) | ✅ shipped | |
 | 6. Self-healing primitives (`Watchdog` / `Detection` / `RecoveryAction` / `WatchdogHook` / `FallbackModel` / `HealingRunner`) | ✅ shipped (2026-04-25) | |
 | 7. Metacognition primitives (`EnrichedOutput`, `ConfidenceProtocol`, `MetacognitionHook`, integrations) | ✅ shipped (2026-04-25) | |
-| 8. Generative UI (`UIComponentSpec[T]`, `ComponentRegistry`, `UIEmitter`, 5 first-party components) | ✅ shipped (2026-04-25) | |
+| 8. Generative UI (`UIComponentSpec[T]`, `ComponentRegistry`, `UIEmitter`, 17 first-party components across 3 layers) | ✅ shipped (2026-04-25) | |
 
 **All five novel vision features ship.** See `.claude/VISION.md` for the strategic frame, `.claude/IMPLEMENTATION_2026-04-25.md` for the wave-by-wave ship plan, and `.claude/AUDIT_2026-04-25.md` for the audit that drove the implementation. Per-track designs live in `.claude/designs/`.
 
