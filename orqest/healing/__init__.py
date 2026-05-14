@@ -21,11 +21,8 @@ from orqest.healing.fallback import FallbackModel, resolve_model_with_fallback
 from orqest.healing.loop import LoopDetector
 from orqest.healing.recovery import (
     AbortRun,
-    DiscoverAndRetry,
     EscalateToUser,
     RecoveryAction,
-    RetryDifferentModel,
-    RetrySameTool,
     WatchdogHook,
     default_policy,
 )
@@ -37,7 +34,6 @@ from orqest.healing.watchdog import Detection, Watchdog
 __all__ = [
     "AbortRun",
     "Detection",
-    "DiscoverAndRetry",
     "EscalateToUser",
     "FallbackModel",
     "HealingConfig",
@@ -45,8 +41,6 @@ __all__ = [
     "LoopDetector",
     "RecoveryAction",
     "RegressionDetector",
-    "RetryDifferentModel",
-    "RetrySameTool",
     "StallDetector",
     "Watchdog",
     "WatchdogHook",

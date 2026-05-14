@@ -7,17 +7,11 @@ import pytest
 from orqest.healing import (
     AbortRun,
     Detection,
-    DiscoverAndRetry,
     EscalateToUser,
-    LoopDetector,
-    RegressionDetector,
-    RetryDifferentModel,
-    RetrySameTool,
-    StallDetector,
     WatchdogHook,
     default_policy,
 )
-from orqest.hooks import Abort, Continue, HookAbortError, HookRunner, Redirect, Skip
+from orqest.hooks import Continue, HookAbortError, HookRunner, Skip
 from orqest.observability.events import AgentEvent, EventBus
 
 
@@ -86,33 +80,6 @@ async def test_watchdog_hook_abort_action_yields_abort_decision():
 
 
 @pytest.mark.asyncio
-async def test_watchdog_hook_retry_diff_model_yields_redirect():
-    """Custom policy returning RetryDifferentModel translates to Redirect."""
-    det = Detection(detector="loop", summary="x")
-
-    def policy(d: Detection):
-        return RetryDifferentModel(model="anthropic:claude-sonnet-4-6")
-
-    hook = WatchdogHook([_FakeWatchdog(det)], policy=policy)
-    decision = await hook.before_tool("t", {"a": 1}, None)
-    assert isinstance(decision, Redirect)
-    assert decision.new_args["_model"] == "anthropic:claude-sonnet-4-6"
-
-
-@pytest.mark.asyncio
-async def test_watchdog_hook_discover_yields_redirect_with_capability():
-    det = Detection(detector="loop", summary="x")
-
-    def policy(d):
-        return DiscoverAndRetry(capability="run_browser")
-
-    hook = WatchdogHook([_FakeWatchdog(det)], policy=policy)
-    decision = await hook.before_tool("t", {}, None)
-    assert isinstance(decision, Redirect)
-    assert decision.new_args["_discover_capability"] == "run_browser"
-
-
-@pytest.mark.asyncio
 async def test_watchdog_hook_escalate_yields_skip():
     det = Detection(detector="stall", summary="x")
 
@@ -123,18 +90,6 @@ async def test_watchdog_hook_escalate_yields_skip():
     decision = await hook.before_tool("t", {}, None)
     assert isinstance(decision, Skip)
     assert decision.stub_result["escalation_question"] == "Should I continue?"
-
-
-@pytest.mark.asyncio
-async def test_watchdog_hook_retry_same_yields_continue():
-    det = Detection(detector="stall", summary="x")
-
-    def policy(d):
-        return RetrySameTool(note="retry it")
-
-    hook = WatchdogHook([_FakeWatchdog(det)], policy=policy)
-    decision = await hook.before_tool("t", {}, None)
-    assert isinstance(decision, Continue)
 
 
 @pytest.mark.asyncio

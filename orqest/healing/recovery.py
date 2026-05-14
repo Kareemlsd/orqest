@@ -21,27 +21,12 @@ from loguru import logger
 from pydantic import BaseModel, ConfigDict
 
 from orqest.healing.watchdog import Detection
-from orqest.hooks import Abort, Continue, HookDecision, Redirect, Skip
+from orqest.hooks import Abort, Continue, HookDecision, Skip
 from orqest.observability.events import AgentEvent, EventBus
 
 
 class _RecoveryBase(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
-
-
-class RetrySameTool(_RecoveryBase):
-    """Re-issue the same tool call. Note describes why."""
-
-    kind: Literal["retry_same"] = "retry_same"
-    note: str = ""
-
-
-class RetryDifferentModel(_RecoveryBase):
-    """Re-issue the call but switch the model. ``model`` is a
-    ``provider:model_id`` string accepted by ``resolve_model``."""
-
-    kind: Literal["retry_diff_model"] = "retry_diff_model"
-    model: str
 
 
 class EscalateToUser(_RecoveryBase):
@@ -58,21 +43,7 @@ class AbortRun(_RecoveryBase):
     reason: str
 
 
-class DiscoverAndRetry(_RecoveryBase):
-    """Discover a missing capability via MCP, then retry. ``capability``
-    is the tool name to search for."""
-
-    kind: Literal["discover"] = "discover"
-    capability: str
-
-
-RecoveryAction = (
-    RetrySameTool
-    | RetryDifferentModel
-    | EscalateToUser
-    | AbortRun
-    | DiscoverAndRetry
-)
+RecoveryAction = EscalateToUser | AbortRun
 
 
 # ---- default policy ---------------------------------------------------
@@ -97,24 +68,10 @@ def default_policy(detection: Detection) -> RecoveryAction:
 # ---- WatchdogHook -----------------------------------------------------
 
 
-def _action_to_decision(
-    action: RecoveryAction, tool_name: str, args: dict[str, Any]
-) -> HookDecision:
+def _action_to_decision(action: RecoveryAction) -> HookDecision:
     """Convert intent into the :class:`HookDecision` that effects it."""
     if isinstance(action, AbortRun):
         return Abort(reason=action.reason)
-    if isinstance(action, RetrySameTool):
-        return Continue()
-    if isinstance(action, RetryDifferentModel):
-        return Redirect(
-            new_args={**args, "_model": action.model},
-            reason=f"healing: switch to {action.model}",
-        )
-    if isinstance(action, DiscoverAndRetry):
-        return Redirect(
-            new_args={**args, "_discover_capability": action.capability},
-            reason="healing: discover-and-retry",
-        )
     if isinstance(action, EscalateToUser):
         # No protocol path for user escalation in compound flows yet —
         # surface as Skip with the question payload so the caller can
@@ -183,24 +140,7 @@ class WatchdogHook:
                         },
                     )
                 )
-                # Surface a typed retry-initiated event for the chrome
-                # so the healing toast layer can render "retrying X
-                # because of stall/loop/regression" without parsing the
-                # generic action payload.
-                if isinstance(action, RetrySameTool):
-                    await self._bus.emit(
-                        AgentEvent(
-                            event_type="healing.retry_initiated",
-                            agent_name="watchdog",
-                            data={
-                                "tool_name": tool_name,
-                                "detector": det.detector,
-                                "summary": det.summary,
-                                "severity": det.severity,
-                            },
-                        )
-                    )
-            decision = _action_to_decision(action, tool_name, args)
+            decision = _action_to_decision(action)
             if active is None:
                 active = decision
         return active or Continue()
