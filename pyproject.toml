@@ -1,6 +1,6 @@
 [project]
 name = "orqest"
-version = "0.0.1"
+version = "0.3.0"
 description = "Building framework for scalable advanced agentic system using OOP"
 authors = [
   { name="Kareem El Sayed", email="k.elsayed@outlook.com" }

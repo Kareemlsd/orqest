@@ -9,6 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _(empty — ready for the next ship)_
 
+## [0.3.0] - 2026-05-14
+
+The reconcile pass. A contradiction audit found ~27 places where the code and the docs disagreed — most often an "intent layer" (configs, types, hooks) built ahead of the "effect layer" that consumes it. This release wires the cheap gaps, deletes the dead ones, and corrects every stale claim. Tiered honesty contract: each subsystem's primary path is functional end-to-end; specific advanced capabilities are explicitly labelled **Preview**. Test suite: 655 → 664.
+
+### Breaking Changes
+
+- `compound.sub_agent_tool.EvalResult` renamed to `SubAgentEvalResult` — it collided by name with `orchestration.loop.EvalResult` (a different shape).
+- `RecoveryAction` union reduced to `EscalateToUser | AbortRun`. `RetrySameTool` / `RetryDifferentModel` / `DiscoverAndRetry` are removed — they produced payloads no compound flow consumed.
+- `PerKindConfig` reduced to `decay_on_failure` + `prune_below`; `ttl_days` and `version_on_edit` removed (no maintenance routine / versioning logic ever existed).
+- `LocalMemoryStore.__init__` — `db_path` is now optional and a `config: MemoryConfig` keyword param was added.
+- Prompt delivery — `CompoundTool.run` and `SubAgentTool.run` now inject the prompt into `state` as a user message. `CompoundTool` previously never passed the prompt to the agent at all; `SubAgentTool` passed it only as a `note=` kwarg (still forwarded for agents that read it).
+- `RefinementLoop.__init__` raises `ValueError` when `agent_self_eval` is set but the agent has no `confidence_protocol`.
+- Default model is `openai:gpt-4.1` everywhere (was `openai:gpt-3.5-turbo` in config, `openai:gpt-4o` in autonomy / the MCP server).
+- Packaging — the explicit `openai` dependency is removed (still bundled transitively by `pydantic-ai`); `pytest`, the duplicate `dotenv`, and the unused `markdown` deps are removed.
+
+### Fixed
+
+- `on_error` hook decisions are now consumed — `CompoundTool` and `MetaOrchestrator` honor a `Redirect` from `on_error` as a bounded single retry. `DiscoveryHook` (whose only behaviour is an `on_error` `Redirect`) is functional again.
+- `PerKindConfig.decay_on_failure` / `prune_below` are now wired into `LocalMemoryStore.update_reliability` (the decay factor and prune floor were hardcoded; the config was inert).
+- `MCPConnection.connect()` branches on `config.transport` — `sse` servers (including everything `MCPDiscovery` returns) can now actually connect instead of being driven through the stdio client with an empty command.
+- `MetaOrchestrator` memory-reuse is keyed consistently on `subtask.name` — the recall query, skill trigger, and spawned-agent cache were mismatched, so reuse was effectively never hit.
+- `RefinementLoop` no longer silently accepts an `agent_self_eval` agent with no confidence protocol (the loop could never exit via `"confident"`).
+- ~12 stale doc / docstring claims corrected: the `salience` "side-table cache", the `WatchdogHook` "hook.shadowed event", `MCPDiscovery`'s "three discovery sources", the `ContextManager` salience threshold, generative UI's "5 first-party components" (it is 17 across 3 layers), the MetaOrchestrator "successful specs" persistence claim, the "pay for what you use" provider claim, `load_sys_prompt` typing, and missing `__all__` exports (`WebSearchResponse`, `budget_tool_results`).
+
+### Removed
+
+- `RetrySameTool`, `RetryDifferentModel`, `DiscoverAndRetry` recovery actions and the `healing.retry_initiated` event.
+- `HealingConfig.abort_on_unresolved_loop` — dead config flag, never read.
+- `MCPConfig.connection_timeout` — dead config field, never read.
+- `metacognition.protocol._SelfRating` — dead class, never referenced.
+- `PerKindConfig.ttl_days` / `version_on_edit` and the `_episodic_default` / `_procedural_default` factories.
+
+### Preview
+
+The following are accepted but not yet wired end-to-end, and are now labelled as such in their docstrings and concept docs:
+
+- `MemoryConfig.backend` / `supabase_*` / `embedding_*` — designed seams for a future pgvector backend and embedding-based retrieval.
+- `MCPDiscovery` online registry search — untested against live registries; `probe_wellknown` exists but is not wired into `search()`.
+
 ## [0.2.0] - 2026-04-25
 
 The cognitive-substrate completion. Three implementation waves landed in sequence on the same day (Wave 1: HookDecision + procedural memory + metacognition; Wave 2: healing + MCP auto-wire; Wave 3: generative UI). Test suite: 360 → 612 (+252).

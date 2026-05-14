@@ -8,7 +8,7 @@ Orqest is a Python framework for building autonomous agentic AI systems on top o
 
 **Domain-agnostic litmus test:** "Can a developer building a headless coding assistant use this feature without knowing what Polymath is?" If no, it belongs in the consumer, not Orqest.
 
-**Current version:** `0.0.1` (`pyproject.toml`). **All five novel vision features shipped (2026-04-25)** — runtime agent design, cognitive memory typology (semantic / episodic / procedural), metacognition primitives, self-healing primitives, generative UI. See `.claude/VISION.md` for the strategic frame and `.claude/IMPLEMENTATION_2026-04-25.md` for the three-wave ship plan.
+**Current version:** `0.3.0` (`pyproject.toml`). **All five novel vision features shipped (2026-04-25)** — runtime agent design, cognitive memory typology (semantic / episodic / procedural), metacognition primitives, self-healing primitives, generative UI. See `.claude/VISION.md` for the strategic frame and `.claude/IMPLEMENTATION_2026-04-25.md` for the three-wave ship plan.
 
 ## Project Structure
 
@@ -116,7 +116,7 @@ Other subsystems are imported via their submodules (`from orqest.memory import L
 
 ### Tests
 
-Mirrors source layout under `tests/`. As of latest collect: **655 tests** (was 360 baseline + 252 added across the three implementation waves + a handful added with the consumer-side polish). Coverage spans agents, orchestration, memory, mcp, autonomy, observability, workbench, compound, plan, tools, utils, io_utils, **metacognition, healing, ui**, plus root-level tests for config, hooks, hook_decision, budget_tool_results, context_manager.
+Mirrors source layout under `tests/`. As of latest collect: **664 tests** (655 before the `[0.3.0]` reconcile pass; +12 test-first additions, −3 obsolete recovery-action tests). Coverage spans agents, orchestration, memory, mcp, autonomy, observability, workbench, compound, plan, tools, utils, io_utils, **metacognition, healing, ui**, plus root-level tests for config, hooks, hook_decision, budget_tool_results, context_manager.
 
 ### Examples
 
@@ -142,7 +142,7 @@ Mirrors source layout under `tests/`. As of latest collect: **655 tests** (was 3
 # Install in editable mode (local venv)
 uv pip install -e .
 
-# Run full suite (655 tests)
+# Run full suite (664 tests)
 .venv/bin/python -m pytest tests/ -v
 
 # Single file / test-by-name
@@ -323,7 +323,7 @@ For top-level discoverability, [`SKILLS.md`](SKILLS.md) at the repo root points 
 - `README.md` refreshed 2026-05-02 with current elevator pitch + pointer to SKILLS.md.
 - `mkdocs.yml` nav now wires all 19 concept docs under three groups; `mkdocs build --strict` clean as of 2026-05-02.
 - `examples/05_refinement_loop/` shipped 2026-05-02 with `main.py` + `README.md` demonstrating `confidence_threshold` + `agent_self_eval` (Wave 1.3 metacognition integration).
-- `CHANGELOG.md` cut into `[0.1.0] - 2026-04-24` (Phases 2–5) + `[0.2.0] - 2026-04-25` (Waves 1–3) on 2026-05-02; fresh `[Unreleased]` for the next ship.
+- `CHANGELOG.md` cut into `[0.1.0] - 2026-04-24` (Phases 2–5), `[0.2.0] - 2026-04-25` (Waves 1–3), and `[0.3.0] - 2026-05-14` (the reconcile pass); fresh `[Unreleased]` for the next ship.
 
 ## Operating Mode
 

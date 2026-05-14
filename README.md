@@ -2,7 +2,7 @@
 
 A Python library for building **agentic harnesses** on top of [pydantic-ai](https://ai.pydantic.dev). Not an agent framework with a runtime, server, or UI of its own — Orqest ships the plumbing you import to build those: typed agents, composition primitives, lifecycle hooks, memory typology, runtime agent design, metacognition, self-healing, and generative UI. All opt-in.
 
-> **Status:** v0.0.1. The five novel cognitive-substrate features have shipped (2026-04-25): runtime agent design, cognitive memory typology, metacognition primitives, self-healing primitives, generative UI. Test count: 655.
+> **Status:** v0.3.0. The five novel cognitive-substrate features have shipped (2026-04-25): runtime agent design, cognitive memory typology, metacognition primitives, self-healing primitives, generative UI. `[0.3.0]` is the reconcile pass — code and docs brought into honest agreement. Test count: 664.
 
 ## Install
 
