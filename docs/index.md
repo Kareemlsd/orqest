@@ -1,21 +1,23 @@
 # Orqest
 
-A Python framework for building autonomous agentic AI systems on top of [pydantic-ai](https://ai.pydantic.dev). Orqest provides typed agent primitives, orchestration patterns, lifecycle hooks, memory, observability, and agent composition -- so you can focus on your agent's logic instead of infrastructure.
+A Python library for building **agentic harnesses** on top of [pydantic-ai](https://ai.pydantic.dev). Not an agent framework with a runtime, server, or UI of its own — Orqest ships the plumbing you import to build those: typed agent primitives, orchestration, lifecycle hooks, a cognitive memory typology, runtime agent design, metacognition, self-healing, and generative UI. All opt-in.
 
-> **Status:** Active development (v0.0.1). Core agent primitives, orchestration, hooks, memory, and observability are implemented. API may evolve.
+> **Status:** v0.4.0. The five novel cognitive-substrate features have shipped — runtime agent design, cognitive memory typology, metacognition primitives, self-healing primitives, generative UI. The `[0.3.0]` reconcile pass brought code and docs into honest agreement; the `[0.4.0]` advance pass finished the preview tier into Tier 1.
 
-## Features
+## What Orqest gives you
 
-- **Generic base agent** -- `BaseAgent[StateT, OutputT]` gives you a typed, async-first foundation. Define your state and output models, implement `_run_implementation()`, done.
-- **Orchestration** -- `Pipeline`, `Parallel`, `Router`, and `RefinementLoop` compose agents into complex workflows with error strategies, merge strategies, conditional routing, and iterative refinement.
-- **Lifecycle hooks** -- `HookRunner` and `ToolHook` provide fire-and-forget before/after/error callbacks. Broken hooks never crash your agent.
-- **Session persistence** -- `BaseSessionState` adds session tracking and JSON-safe serialization with ModelMessage round-tripping for cross-session persistence.
-- **Compound tools** -- `CompoundTool` implements the agent-decides, system-acts pattern with hook integration and state updates.
-- **Memory** -- `MemoryStore` protocol with `LocalMemoryStore` (SQLite + FTS5 full-text search), self-healing reliability decay, and pluggable backends.
-- **Observability** -- Structured tracing with `Span` and `JSONTracer`, plus an `EventBus` pub/sub for agent events linked to traces.
-- **Multi-turn conversations** -- `call_model()` automatically wires conversation history through pydantic-ai with sliding-window truncation.
-- **Multi-provider routing** -- A single `provider:model_id` string routes to OpenAI, Anthropic, Google, or OpenRouter.
-- **Agent-as-tool composition** -- Wrap any agent as a pydantic-ai `Tool` with `as_tool()` for orchestrator patterns.
+Eight composable batteries — **opt-in**, picked à-la-carte per application:
+
+- **Composition** — `Pipeline`, `Parallel`, `Router`, `RefinementLoop`. Sequence agents, fan out and merge, route by classifier, iterate until "good enough."
+- **Memory** — `LocalMemoryStore` (SQLite + FTS5, or embedding-cosine recall via a pluggable embedder) with typed `semantic` / `episodic` / `procedural` retrieval, per-kind reliability decay, TTL retention, and skill versioning.
+- **Autonomy** — `AgentSpec` + `AgentFactory` + `ToolRegistry` + `MetaOrchestrator`. Agents that decompose a goal and spawn the specialists to do it, at runtime.
+- **Metacognition** — `EnrichedOutput[OutputT]` carrying `confidence`, `uncertainty_targets`, `capability_boundary`. Three pluggable `ConfidenceProtocol` strategies (free / +1 call / +k calls). Agents that know what they don't know.
+- **Self-healing** — `Watchdog` + `StallDetector` / `LoopDetector` / `RegressionDetector`, the `RecoveryAction` → `HookDecision` flow, and `FallbackModel` for transparent provider failover.
+- **Generative UI** — `UIComponentSpec[T]` typed components across three layers. Agents emit; the frontend resolves.
+- **Observability** — `EventBus`, `JSONTracer`, `sse_sidecar` (with replay + heartbeat + ring buffer). Wire once, every tool emits.
+- **MCP** — client (`MCPServerManager`) + server (`create_orqest_server`) + auto-discovery, gated by an explicit `PermissionGate`.
+
+`BaseAgent[StateT, OutputT]` is the typed, async-first foundation underneath all of it: define your state and output models, implement `_run_implementation()`, done. `Workbench` bundles memory + tracer + event bus + UI registry into one container you pass around.
 
 ## Quick Start
 
@@ -66,16 +68,12 @@ pipeline = Pipeline([research_agent, draft_agent, review_agent], name="content")
 result = await pipeline.run("Write about quantum computing")
 ```
 
-## What's Next
+## Documentation
 
-- [Getting Started](getting-started.md) -- installation, configuration, and your first agent
-- **Concepts:**
-    - [Agents](concepts/agents.md) -- base agent, tools, streaming
-    - [Orchestration](concepts/orchestration.md) -- pipeline, parallel, router, refinement loop
-    - [Hooks & Lifecycle](concepts/hooks-and-lifecycle.md) -- fire-and-forget hook system
-    - [Session Persistence](concepts/session-persistence.md) -- cross-session state serialization
-    - [Compound Tools](concepts/compound-tools.md) -- agent-decides, system-acts pattern
-    - [Memory](concepts/memory.md) -- pluggable memory with SQLite backend
-    - [Observability](concepts/observability.md) -- tracing and event bus
-- [API Reference](api/config.md) -- auto-generated documentation from source
-- [Changelog](changelog.md) -- version history
+- [Getting Started](getting-started.md) — installation, configuration, and your first agent
+- **Composition** — [Agents](concepts/agents.md), [State & History](concepts/state-and-history.md), [Orchestration](concepts/orchestration.md), [Hooks & Lifecycle](concepts/hooks-and-lifecycle.md), [Compound Tools](concepts/compound-tools.md), [Sub-Agent Tool](concepts/sub-agent-tool.md), [Execution Plan](concepts/execution-plan.md)
+- **Autonomy** — [Runtime Agent Design](concepts/autonomy.md), [MCP](concepts/mcp.md)
+- **Memory & Cognition** — [Memory](concepts/memory.md), [Metacognition](concepts/metacognition.md), [Web Tools](concepts/web-tools.md)
+- **Production** — [Workbench](concepts/workbench.md), [Observability](concepts/observability.md), [SSE Sidecar](concepts/sse-sidecar.md), [Self-Healing](concepts/healing.md), [Generative UI](concepts/generative_ui.md)
+- [API Reference](api/config.md) — auto-generated from source
+- [Changelog](changelog.md) — version history

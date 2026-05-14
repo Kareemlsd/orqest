@@ -142,7 +142,7 @@ Event payload includes `confidence`, `uncertainty_targets`, `capability_boundary
 Confidence flows automatically through the rest of the framework:
 
 - **`RefinementLoop(confidence_threshold=0.85)`** — exit reason `"confident"` when score ≥ threshold; saves iterations once the agent is sure
-- **`RefinementLoop(agent_self_eval=critic_agent)`** — mutually-exclusive scoring path that synthesises an `EvalResult(passed=False, score=enriched.confidence)` from the agent's own self-rating
+- **`RefinementLoop(agent_self_eval=critic_agent)`** — mutually-exclusive scoring path that synthesises an `EvalResult(passed=False, score=enriched.confidence)` from the agent's own self-rating. The agent must carry a `confidence_protocol` (validated at `RefinementLoop` construction) — without one, `run_enriched` yields `confidence=None` and the loop could never exit `"confident"`.
 - **`MetaOrchestrator(metacognition=MetacognitionConfig(redecompose_threshold=0.5))`** — re-decomposes remaining subtasks when a subtask's confidence drops below threshold, bounded by `max_redecompositions`
 - **`ContextManager(salience_fn=confidence_salience)`** — emergency truncation rescues high-confidence old messages on top of the recency window
 - **`SubAgentTool.run(use_enriched=True)`** — lifts the final-iteration enrichment onto the result so callers see `SubAgentResult.confidence`

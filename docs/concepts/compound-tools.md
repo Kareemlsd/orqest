@@ -50,7 +50,7 @@ async def main():
     )
 
     state = GlobalState()
-    state.add_message("user", "Find papers on quantum error correction")
+    # run() injects `prompt` into state as a user message before the agent runs.
     agent_output, results = await tool.run(state, prompt="Find papers on quantum error correction")
     print(f"Query: {agent_output.query}")
     print(f"Results: {results}")
@@ -104,7 +104,7 @@ tool = CompoundTool(
 
 ## What's Happening Under the Hood
 
-1. `tool.run(state, prompt)` calls `agent.run(state)` to get structured output
+1. `tool.run(state, prompt)` injects `prompt` into `state` as a user message, then calls `agent.run(state)` to get structured output
 2. `hooks.run_before(tool_name, args, state)` dispatches to all hooks
 3. `executor(agent_output, state)` runs the action, timed for `duration_ms`
 4. On success: `hooks.run_after(...)` fires, then `state_updater(state, result)` if configured

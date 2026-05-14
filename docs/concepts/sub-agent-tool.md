@@ -84,7 +84,7 @@ async def main() -> None:
 - You want quality-based refinement without hand-rolling a retry loop.
 - You want best-effort semantics: a failed refinement keeps the
   original result rather than propagating an exception.
-- You compose with [`run_with_retry`](../api/agents.md#run_with_retry)
+- You compose with [`run_with_retry`](../api/agents.md)
   at the outer tool boundary to handle *exceptions* separately from
   *quality failures*.
 
