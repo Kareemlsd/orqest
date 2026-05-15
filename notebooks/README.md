@@ -15,6 +15,9 @@ run cleanly is a bug report.
 | [`02_meta_orchestrator.ipynb`](02_meta_orchestrator.ipynb) | Decompose a goal, spawn specialists at runtime | `AgentSpec` · `AgentFactory` · `ToolRegistry` · `MetaOrchestrator` · `LocalMemoryStore` |
 | [`03_generative_ui.ipynb`](03_generative_ui.ipynb) | Agents that design their own surface | `Workbench` · `ComponentRegistry` · `UIEmitter` · `ExecutionPlan` · `sse_sidecar` |
 | [`04_orchestrated_workflow.ipynb`](04_orchestrated_workflow.ipynb) | Route, fan out, chain, refine — with observability | `Router` · `Parallel` · `Pipeline` · `RefinementLoop` · `Workbench` · `JSONTracer` |
+| [`05_reasoning.ipynb`](05_reasoning.ipynb) | Let the model think harder — one provider-agnostic knob | `reasoning` · `resolve_reasoning_settings` · `BaseAgent` · `Pipeline` |
+| [`06_optimization_basic.ipynb`](06_optimization_basic.ipynb) | Evolve a research summarizer's prompt against a 15-example gold set | `OptimizationRunner` · `Genome` · `PromptGene` · `Evaluator` · `MetricBundle` · `apply_result` |
+| [`07_optimization_compound.ipynb`](07_optimization_compound.ipynb) | Evolve the planner inside `MetaOrchestrator` and watch the orchestration improve downstream | `OptimizationRunner` · `MetaOrchestrator` · `PlannerAgent` · `apply_result` |
 
 ## Running them
 
