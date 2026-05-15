@@ -6,18 +6,23 @@ resolved from the ToolRegistry by name.
 """
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, Field
 
 
 class ToolSpec(BaseModel):
-    """Description of a tool an agent needs."""
+    """Description of a tool an agent needs.
+
+    The ``name`` is resolved against :class:`ToolRegistry` at spawn time.
+    ``parameters`` is a JSON-Schema-shaped dict carried for the LLM's
+    benefit (it never reaches the registered tool — that contract lives
+    on the tool itself).
+    """
 
     name: str
     description: str
     parameters: dict[str, Any] = Field(default_factory=dict)
-    source: Literal["registry", "dynamic"] = "registry"
 
 
 class AgentSpec(BaseModel):
@@ -33,5 +38,3 @@ class AgentSpec(BaseModel):
     tools: list[ToolSpec] = Field(default_factory=list)
     model: str = "openai:gpt-4.1"
     constraints: list[str] = Field(default_factory=list)
-    token_budget: int | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)

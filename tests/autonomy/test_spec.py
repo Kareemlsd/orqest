@@ -5,14 +5,19 @@ from orqest.autonomy.spec import AgentSpec, ToolSpec
 
 
 class TestToolSpec:
-    def test_defaults_source_registry(self):
+    def test_defaults(self):
         spec = ToolSpec(name="search", description="Search the web")
-        assert spec.source == "registry"
+        assert spec.name == "search"
+        assert spec.description == "Search the web"
         assert spec.parameters == {}
 
-    def test_dynamic_source(self):
-        spec = ToolSpec(name="calc", description="Calculate", source="dynamic")
-        assert spec.source == "dynamic"
+    def test_carries_parameter_schema(self):
+        spec = ToolSpec(
+            name="calc",
+            description="Calculate",
+            parameters={"type": "object", "properties": {"x": {"type": "number"}}},
+        )
+        assert spec.parameters["properties"]["x"]["type"] == "number"
 
 
 class TestAgentSpec:
@@ -26,8 +31,6 @@ class TestAgentSpec:
         assert spec.tools == []
         assert spec.model == "openai:gpt-4.1"
         assert spec.constraints == []
-        assert spec.token_budget is None
-        assert spec.metadata == {}
 
     def test_all_fields_populated(self):
         spec = AgentSpec(
@@ -40,15 +43,11 @@ class TestAgentSpec:
             tools=[ToolSpec(name="search", description="Web search")],
             model="anthropic:claude-sonnet-4-20250514",
             constraints=["No personal data", "Max 500 words"],
-            token_budget=4000,
-            metadata={"domain": "science"},
         )
         assert spec.name == "researcher"
         assert len(spec.tools) == 1
         assert spec.model == "anthropic:claude-sonnet-4-20250514"
         assert len(spec.constraints) == 2
-        assert spec.token_budget == 4000
-        assert spec.metadata["domain"] == "science"
 
     def test_serialization_round_trip(self):
         spec = AgentSpec(

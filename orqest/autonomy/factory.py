@@ -130,11 +130,17 @@ class AgentFactory:
         return type_map.get(json_type, str)
 
     def _resolve_tools(self, tool_specs: list[ToolSpec]) -> list:
-        """Resolve ToolSpecs to pydantic-ai Tool instances from registry."""
+        """Resolve ToolSpecs to pydantic-ai Tool instances from the registry.
+
+        Specs that don't resolve are silently skipped — the LLM may
+        request a tool the consumer hasn't registered yet, and the
+        agent should still spawn with whatever does resolve.
+        """
         tools = []
         for spec in tool_specs:
-            if spec.source == "registry" and self._registry:
-                tool = self._registry.get(spec.name)
-                if tool is not None:
-                    tools.append(tool)
+            if not self._registry:
+                continue
+            tool = self._registry.get(spec.name)
+            if tool is not None:
+                tools.append(tool)
         return tools

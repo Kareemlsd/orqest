@@ -43,7 +43,6 @@ spec = AgentSpec(
     ],
     model="openai:gpt-4.1",
     constraints=["Always cite at least one log entry"],
-    token_budget=8000,
 )
 ```
 
@@ -55,10 +54,8 @@ spec = AgentSpec(
 | `tools` | `list[ToolSpec]` | References to tools by name (resolved via registry) |
 | `model` | `str` | `provider:model_id` (defaults to `"openai:gpt-4.1"`) |
 | `constraints` | `list[str]` | Free-text constraints injected into the system prompt |
-| `token_budget` | `int \| None` | Per-agent token hint (consumer-side enforcement) |
-| `metadata` | `dict` | Free-form passthrough |
 
-`ToolSpec.source` is `"registry"` (default — resolve from `ToolRegistry`) or `"dynamic"` (a future hook for sandboxed code generation).
+`ToolSpec.name` is resolved against the `ToolRegistry` at spawn time. Specs whose name doesn't resolve are silently dropped (the agent still spawns with whatever does resolve) — register the missing tool first or wire `ToolRegistry.get_or_discover` for MCP fallback.
 
 ## AgentFactory — hydration
 
