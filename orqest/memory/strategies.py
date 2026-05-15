@@ -26,6 +26,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any, Protocol, runtime_checkable
 
 import aiosqlite
+from loguru import logger
 
 from orqest.memory.store import MemoryFilter
 
@@ -179,8 +180,14 @@ class SemanticStrategy:
             return []
         try:
             query_vec = await embed_text(embedder, query)
-        except Exception:
-            return []  # best-effort: a failed embedder yields no results
+        except Exception as exc:
+            # Best-effort: yield no results, but surface the failure so
+            # operators can spot the silent-data-loss pattern (entries
+            # were stored *with* embeddings; queries can't reach them
+            # while the embedder is broken). Mirrors the store-time
+            # warning in LocalMemoryStore.store().
+            logger.warning("embedder failed at recall ({e})", e=exc)
+            return []
         scored: list[tuple[float, aiosqlite.Row]] = []
         for row in rows:
             vec = _parse_vec(row["embedding"])
