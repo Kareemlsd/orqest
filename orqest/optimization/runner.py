@@ -56,7 +56,8 @@ def _to_litellm_model_string(model: str | None) -> str | None:
 
 
 # Map an Orqest model-string provider prefix to the env var litellm reads.
-# setdefault is used at apply time, so an explicit pre-set env var wins.
+# Used as a defensive fallback only — the primary api_key path is the
+# explicit-callable mode in `_make_reflection_lm`.
 _PROVIDER_ENV_VAR: dict[str, str] = {
     "openai": "OPENAI_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",
@@ -67,16 +68,13 @@ _PROVIDER_ENV_VAR: dict[str, str] = {
 
 
 def _ensure_litellm_api_key(model: str | None, api_key: str | None) -> None:
-    """Best-effort: surface ``api_key`` to litellm via the right env var.
+    """Defensive env-var setdefault — secondary to :func:`_make_reflection_lm`.
 
-    Orqest uses ``OrqestConfig.llm_api_key`` (one key, configured once);
-    litellm reads provider-specific env vars (``OPENAI_API_KEY``,
-    ``ANTHROPIC_API_KEY``, ...). Without bridging, GEPA's default
-    ``reflection_lm`` path silently fails with auth errors.
-
-    Uses ``os.environ.setdefault`` so an explicit pre-set env var
-    always wins — operators who deliberately split keys for the agent
-    vs the optimizer keep that separation.
+    The primary api_key path is the explicit callable built by
+    :func:`_make_reflection_lm`, which bypasses env vars entirely. This
+    helper still runs as a belt-and-suspenders safety net in case GEPA
+    internals reach for env vars elsewhere; ``setdefault`` ensures we
+    never clobber an explicit user-set key.
     """
     if not api_key or not model:
         return
@@ -84,6 +82,47 @@ def _ensure_litellm_api_key(model: str | None, api_key: str | None) -> None:
     env_var = _PROVIDER_ENV_VAR.get(provider)
     if env_var is not None:
         os.environ.setdefault(env_var, api_key)
+
+
+def _make_reflection_lm(
+    model: str | None, api_key: str | None
+) -> "Any | None":
+    """Build a GEPA ``reflection_lm`` callable that explicitly passes the
+    ``api_key`` to ``litellm.completion`` — no env-var dependency.
+
+    Returns ``None`` when either ``model`` or ``api_key`` is missing, so
+    GEPA falls back to its built-in string-mode wrapper (which reads env
+    vars). The callable signature matches GEPA's ``LanguageModel``
+    protocol: takes a ``str`` (or list of message dicts) and returns the
+    generated ``str`` content.
+
+    The model string is litellm-formatted (slash-style) since this
+    callable lives below the format-translation boundary.
+    """
+    if not model or not api_key:
+        return None
+
+    litellm_model = _to_litellm_model_string(model)
+    if litellm_model is None:
+        return None
+
+    def _lm(prompt: "str | list[dict[str, str]]") -> str:
+        # Late-import litellm so module load doesn't require gepa[full].
+        import litellm  # type: ignore[import-not-found]
+
+        messages = (
+            prompt
+            if isinstance(prompt, list)
+            else [{"role": "user", "content": prompt}]
+        )
+        response = litellm.completion(
+            model=litellm_model,
+            messages=messages,
+            api_key=api_key,
+        )
+        return response.choices[0].message.content or ""
+
+    return _lm
 
 
 @dataclass(frozen=True)
@@ -188,10 +227,20 @@ class OptimizationRunner:
 
         history = self._wire_history_collector()
 
-        # Bridge the orqest api_key into the env var litellm expects, so
-        # GEPA's default reflection_lm path can authenticate. setdefault
-        # honors any pre-existing env var the operator set explicitly.
+        # Belt-and-suspenders env-var setdefault for any internal GEPA
+        # path we don't directly intercept. Primary api_key delivery
+        # happens via the explicit callable below.
         _ensure_litellm_api_key(self._config.reflection_model, self._api_key)
+
+        # Build the reflection LM as an explicit callable when we have an
+        # api_key — bypasses env vars entirely. Falls back to the
+        # litellm-formatted string when no api_key is provided (GEPA then
+        # builds its own internal callable that reads env vars).
+        reflection_lm: Any = _make_reflection_lm(
+            self._config.reflection_model, self._api_key
+        )
+        if reflection_lm is None:
+            reflection_lm = _to_litellm_model_string(self._config.reflection_model)
 
         seed = self._genome.to_seed()
         gepa_result = _gepa_optimize(
@@ -203,7 +252,7 @@ class OptimizationRunner:
             # api.py asserts task_lm is None when an adapter is provided,
             # because the user's agent_factory (inside the adapter's
             # Evaluator) is what actually calls the task model.
-            reflection_lm=_to_litellm_model_string(self._config.reflection_model),
+            reflection_lm=reflection_lm,
             max_metric_calls=self._config.max_metric_calls,
             frontier_type=self._config.frontier_type,
             cache_evaluation=self._config.cache_evaluations,

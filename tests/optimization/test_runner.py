@@ -25,6 +25,7 @@ from orqest.optimization import (
 )
 from orqest.optimization.runner import (
     _ensure_litellm_api_key,
+    _make_reflection_lm,
     _to_litellm_model_string,
 )
 
@@ -175,6 +176,71 @@ def test_runner_rejects_categorical_gene_when_disabled():
     )
     with pytest.raises(NotImplementedError, match="enable_categorical_genes"):
         _make_runner(genome=g)
+
+
+class TestMakeReflectionLM:
+    """The callable that bypasses env-var bridging entirely by passing
+    api_key directly to litellm.completion()."""
+
+    def test_returns_none_when_model_missing(self):
+        assert _make_reflection_lm(None, "sk-x") is None
+
+    def test_returns_none_when_api_key_missing(self):
+        assert _make_reflection_lm("openai:gpt-4.1", None) is None
+
+    def test_returns_callable_when_both_present(self):
+        lm = _make_reflection_lm("openai:gpt-4.1", "sk-x")
+        assert callable(lm)
+
+    def test_callable_passes_api_key_explicitly(self, monkeypatch):
+        """The callable must call litellm.completion with api_key=...
+        regardless of whether the env var is set — this is the whole
+        point of bypassing env-var bridging."""
+        from unittest.mock import MagicMock
+
+        captured: dict[str, Any] = {}
+        fake_response = MagicMock()
+        fake_response.choices = [MagicMock(message=MagicMock(content="evolved"))]
+
+        def fake_completion(**kwargs):
+            captured.update(kwargs)
+            return fake_response
+
+        # Make sure no env var sneaks in
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+        import litellm
+
+        monkeypatch.setattr(litellm, "completion", fake_completion)
+
+        lm = _make_reflection_lm("openai:gpt-4.1", "sk-explicit-key")
+        assert lm is not None
+        result = lm("rewrite this prompt")
+        assert result == "evolved"
+        assert captured["api_key"] == "sk-explicit-key"
+        assert captured["model"] == "openai/gpt-4.1"  # litellm-format
+
+    def test_callable_accepts_message_list(self, monkeypatch):
+        """GEPA may pass a list-of-dicts instead of a bare string."""
+        from unittest.mock import MagicMock
+
+        captured: dict[str, Any] = {}
+        fake = MagicMock()
+        fake.choices = [MagicMock(message=MagicMock(content="ok"))]
+
+        def fake_completion(**kwargs):
+            captured.update(kwargs)
+            return fake
+
+        import litellm
+
+        monkeypatch.setattr(litellm, "completion", fake_completion)
+
+        lm = _make_reflection_lm("openai:gpt-4.1", "sk-x")
+        assert lm is not None
+        msgs = [{"role": "user", "content": "hi"}]
+        lm(msgs)
+        assert captured["messages"] == msgs
 
 
 class TestEnsureLitellmApiKey:
