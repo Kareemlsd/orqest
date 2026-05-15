@@ -89,12 +89,15 @@ class RefinementLoop(Generic[StateT, OutputT]):
             agent_self_eval: Optional :class:`BaseAgent` whose
                 ``run_enriched`` is used to produce the per-iteration
                 score (the agent's *own* confidence). When set,
-                ``confidence_threshold`` is required. Mutually exclusive
-                with using ``evaluator`` for self-rating: when
-                ``agent_self_eval`` is set, the standard ``evaluator`` is
-                bypassed for scoring and a synthetic
-                ``EvalResult(passed=False, score=enriched.confidence)``
-                is produced instead.
+                ``confidence_threshold`` is required. Takes precedence
+                over ``evaluator`` for scoring: ``evaluator`` is still a
+                required positional argument (so callers explicitly
+                acknowledge the loop has a "fail by default" path), but
+                it is *not invoked* while ``agent_self_eval`` is active.
+                A synthetic ``EvalResult(passed=False,
+                score=enriched.confidence)`` is produced each iteration,
+                so the loop only exits early via ``confidence_threshold``
+                — never via the implicit ``passed=True`` short-circuit.
 
         """
         if max_iterations < 1:

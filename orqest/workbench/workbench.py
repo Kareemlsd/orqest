@@ -148,6 +148,17 @@ class Workbench:
         Convenience factory. Lazy-imports :mod:`orqest.healing` so this
         module stays import-light for consumers that don't use healing.
 
+        **Construction alone does not start healing.** The runner only
+        subscribes its watchdogs and starts the poll loop when entered
+        as an async context manager. Forgetting the ``async with``
+        leaves you with a silent no-op — no detections, no recoveries,
+        no error. Always use the form below:
+
+        .. code-block:: python
+
+            async with workbench.with_healing(config) as runner:
+                ...  # agent work happens inside this block
+
         Args:
             config: A :class:`HealingConfig` instance.
             api_key: Single key or per-provider map for the fallback
@@ -155,8 +166,8 @@ class Workbench:
                 is non-empty.
 
         Returns:
-            A :class:`HealingRunner` ready to enter as an async context
-            manager (``async with workbench.with_healing(config) as runner: ...``).
+            An unstarted :class:`HealingRunner`. Enter it via ``async
+            with`` to actually wire the watchdogs.
         """
         from orqest.healing import HealingRunner
 

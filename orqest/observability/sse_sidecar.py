@@ -65,8 +65,15 @@ def sse_sidecar(
             Useful for letting a reconnecting client re-hydrate its view.
         heartbeat_s: Interval in seconds for keep-alive comments. Set
             large or ``float("inf")`` to disable.
-        queue_size: Maximum in-flight events before the subscriber
-            starts dropping the oldest. Protects against slow consumers.
+        queue_size: Bound on the in-flight event queue. The bus producer
+            never blocks: when the queue is full the *oldest* event is
+            evicted to make room for the newest, and if eviction races
+            another producer the new event is dropped silently. This
+            protects the producer at the cost of event loss under
+            sustained backpressure — a *bounded buffer with overflow
+            drop*, not a guaranteed-delivery ring buffer. Size up if
+            your consumer is slow enough that loss matters, or wire a
+            slower-but-reliable transport instead.
 
     Returns:
         SSE-formatted async iterator. Pass directly to an ASGI

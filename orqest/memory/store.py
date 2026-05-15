@@ -102,11 +102,18 @@ class MemoryEntry(BaseModel):
 
     @model_validator(mode="after")
     def _validate_procedural_shape(self) -> MemoryEntry:
-        """Enforce the Skill shape on procedural entries — best-effort.
+        """Enforce the :class:`Skill` shape on procedural entries — strict.
 
-        Only fires when ``memory_type == "procedural"`` AND
-        ``structured_content`` is not None, so legacy callers writing
-        semantic/episodic entries with no structured payload are unaffected.
+        Construction-time validation: if ``memory_type == "procedural"``
+        and ``structured_content`` is set but not Skill-shaped, this
+        raises :class:`pydantic.ValidationError`. Garbage in is rejected
+        at the data-model boundary so the storage layer can stay
+        best-effort about *I/O* failures without papering over malformed
+        payloads.
+
+        Semantic / episodic entries (or procedural entries with no
+        ``structured_content``) skip this check — the legacy plain-text
+        path is unaffected.
         """
         if self.memory_type == "procedural" and self.structured_content is not None:
             Skill.model_validate(self.structured_content)
