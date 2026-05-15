@@ -11,10 +11,19 @@ from orqest.optimization import MetricBundle, MetricWeights
 def test_metric_weights_defaults():
     w = MetricWeights()
     assert w.accuracy == 1.0
-    assert w.confidence == 0.2
-    assert w.cost_usd == -0.1
-    assert w.latency_ms == -0.001
-    assert w.robustness == 0.3
+    assert w.confidence == 0.1
+    assert w.cost_usd == -10.0
+    assert w.latency_ms == -0.00002
+    assert w.robustness == 0.2
+
+
+def test_metric_weights_defaults_keep_accuracy_dominant():
+    """Sanity: a perfect-accuracy candidate at realistic LLM cost / latency
+    must end up with a positive scalar score so the optimizer sees it as
+    a win. Was a real bug pre-tune (latency_ms=-0.001 dwarfed accuracy)."""
+    w = MetricWeights()
+    typical = MetricBundle(accuracy=1.0, cost_usd=0.005, latency_ms=5000.0)
+    assert typical.scalarize(w) > 0.5  # dominated by accuracy, not penalties
 
 
 def test_metric_weights_frozen():

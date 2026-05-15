@@ -46,7 +46,10 @@ notebooks = [
     "nbconvert>=7.0",
 ]
 optimization = [
-    "gepa>=0.1.1",
+    # The [full] extra is required: gepa's runtime deps (litellm for the
+    # default reflection_lm path, datasets for some adapters, tqdm/cloudpickle)
+    # are all gated by it. The bare `gepa` install only ships Protocol classes.
+    "gepa[full]>=0.1.1",
 ]
 
 [tool.ruff]

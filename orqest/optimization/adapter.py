@@ -28,7 +28,7 @@ import contextlib
 from collections.abc import Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, ClassVar
 
 from loguru import logger
 
@@ -62,6 +62,15 @@ class OrqestGEPAAdapter:
     optional-dependency story clean (no GEPA import needed at module
     load time for `from orqest.optimization import OrqestGEPAAdapter`).
     """
+
+    propose_new_texts: ClassVar[None] = None
+    """GEPA's reflective-mutation loop checks ``adapter.propose_new_texts is
+    not None`` to decide whether to use a user-provided text proposer; when
+    ``None`` it falls back to its built-in LLM-driven proposer (which is
+    what we want — GEPA's default uses ``reflection_lm`` to evolve the
+    prompt). Declared as a class attribute so the access site doesn't
+    raise ``AttributeError``; if we ever ship a custom proposer it becomes
+    a method on this class."""
 
     def __init__(
         self,

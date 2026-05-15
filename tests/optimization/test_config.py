@@ -11,7 +11,6 @@ def test_defaults():
     cfg = OptimizationConfig()
     assert cfg.max_metric_calls == 150
     assert cfg.reflection_model is None
-    assert cfg.task_model is None
     assert cfg.minibatch_size == 3
     assert cfg.valset_fraction == 0.3
     assert isinstance(cfg.weights, MetricWeights)

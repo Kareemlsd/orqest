@@ -25,6 +25,7 @@ The runner enforces three Orqest-side invariants on top of GEPA's API:
 
 from __future__ import annotations
 
+import os
 import random
 from dataclasses import dataclass, field
 from typing import Any
@@ -35,6 +36,54 @@ from orqest.optimization.adapter import OrqestGEPAAdapter
 from orqest.optimization.config import OptimizationConfig
 from orqest.optimization.evaluator import Evaluator, GoldExample
 from orqest.optimization.genome import Genome
+
+
+def _to_litellm_model_string(model: str | None) -> str | None:
+    """Translate Orqest's ``provider:model`` to litellm's ``provider/model``.
+
+    Orqest follows pydantic-ai's convention (``"openai:gpt-4.1"``) but
+    GEPA's default ``reflection_lm`` path imports litellm, which insists on
+    ``"openai/gpt-4.1"`` (or a bare model name it can auto-detect). The
+    transform is a single ``:`` -> ``/`` replacement on the first
+    occurrence; bare model names and already-slashed strings pass through.
+
+    Returns ``None`` for ``None`` so the GEPA default kicks in.
+    """
+    if model is None or ":" not in model:
+        return model
+    provider, _, rest = model.partition(":")
+    return f"{provider}/{rest}"
+
+
+# Map an Orqest model-string provider prefix to the env var litellm reads.
+# setdefault is used at apply time, so an explicit pre-set env var wins.
+_PROVIDER_ENV_VAR: dict[str, str] = {
+    "openai": "OPENAI_API_KEY",
+    "anthropic": "ANTHROPIC_API_KEY",
+    "google": "GEMINI_API_KEY",
+    "gemini": "GEMINI_API_KEY",
+    "openrouter": "OPENROUTER_API_KEY",
+}
+
+
+def _ensure_litellm_api_key(model: str | None, api_key: str | None) -> None:
+    """Best-effort: surface ``api_key`` to litellm via the right env var.
+
+    Orqest uses ``OrqestConfig.llm_api_key`` (one key, configured once);
+    litellm reads provider-specific env vars (``OPENAI_API_KEY``,
+    ``ANTHROPIC_API_KEY``, ...). Without bridging, GEPA's default
+    ``reflection_lm`` path silently fails with auth errors.
+
+    Uses ``os.environ.setdefault`` so an explicit pre-set env var
+    always wins — operators who deliberately split keys for the agent
+    vs the optimizer keep that separation.
+    """
+    if not api_key or not model:
+        return
+    provider = model.split(":", 1)[0].split("/", 1)[0].split("-", 1)[0]
+    env_var = _PROVIDER_ENV_VAR.get(provider)
+    if env_var is not None:
+        os.environ.setdefault(env_var, api_key)
 
 
 @dataclass(frozen=True)
@@ -74,11 +123,30 @@ class OptimizationRunner:
         genome: Genome,
         evaluator: Evaluator[Any, Any],
         bus: EventBus | None = None,
+        api_key: str | None = None,
     ) -> None:
+        """Wire the optimizer.
+
+        Args:
+            config: Frozen :class:`OptimizationConfig` (rollout budget,
+                reflection model, weights, etc.).
+            genome: The mutable surface — list of typed genes.
+            evaluator: Wraps the user's ``agent_factory`` + ``score_fn``
+                and produces :class:`MetricBundle`s per example.
+            bus: Optional :class:`EventBus` for ``optimization.iteration_completed``
+                events; when set, history is collected into the result.
+            api_key: Optional API key for the *reflection* model. Bridged
+                to litellm's expected provider env var (``OPENAI_API_KEY``,
+                ``ANTHROPIC_API_KEY``, ...) via ``os.environ.setdefault``
+                — pre-existing env vars always win. Required when GEPA's
+                default reflection path is used and no env var is set;
+                ignored when irrelevant.
+        """
         self._config = config
         self._genome = genome
         self._evaluator = evaluator
         self._bus = bus
+        self._api_key = api_key
         self._validate_genome()
 
     def _validate_genome(self) -> None:
@@ -120,14 +188,22 @@ class OptimizationRunner:
 
         history = self._wire_history_collector()
 
+        # Bridge the orqest api_key into the env var litellm expects, so
+        # GEPA's default reflection_lm path can authenticate. setdefault
+        # honors any pre-existing env var the operator set explicitly.
+        _ensure_litellm_api_key(self._config.reflection_model, self._api_key)
+
         seed = self._genome.to_seed()
         gepa_result = _gepa_optimize(
             seed_candidate=seed,
             trainset=trainset,
             valset=valset,
             adapter=adapter,
-            task_lm=self._config.task_model,
-            reflection_lm=self._config.reflection_model,
+            # No task_lm / evaluator here: the adapter owns both. GEPA's
+            # api.py asserts task_lm is None when an adapter is provided,
+            # because the user's agent_factory (inside the adapter's
+            # Evaluator) is what actually calls the task model.
+            reflection_lm=_to_litellm_model_string(self._config.reflection_model),
             max_metric_calls=self._config.max_metric_calls,
             frontier_type=self._config.frontier_type,
             cache_evaluation=self._config.cache_evaluations,

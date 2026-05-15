@@ -29,17 +29,30 @@ class MetricWeights(BaseModel):
     """Weights for :meth:`MetricBundle.scalarize`.
 
     Negative weights penalize (cost, latency); positive weights reward
-    (accuracy, confidence, robustness). Defaults are calibrated for "accuracy
-    is king, but don't ignore cost / latency / calibration."
+    (accuracy, confidence, robustness). Defaults are calibrated for
+    "accuracy is king, but don't ignore cost / latency / calibration"
+    against realistic LLM call latencies (1–10 seconds = 1k–10k ms) and
+    realistic per-call costs ($0.0001 – $0.05).
+
+    Magnitude rationale: a perfect-accuracy candidate at ~5 s / $0.005
+    scores ``≈ 1.0 + 0 + 0 - 0.05 - 0.05 = 0.9``. Latency and cost act
+    as soft tiebreakers; accuracy stays the dominant axis. If you care
+    more about cost, override; production users will tune these per app.
     """
 
     model_config = ConfigDict(frozen=True)
 
     accuracy: float = 1.0
-    confidence: float = 0.2
-    cost_usd: float = -0.1
-    latency_ms: float = -0.001
-    robustness: float = 0.3
+    confidence: float = 0.1
+    cost_usd: float = -10.0
+    """``-10.0`` per USD: a $0.001 call is ``-0.01``, $0.01 is ``-0.10``,
+    $0.10 is ``-1.0``. Calibrated so per-call cost is a soft tiebreaker
+    against accuracy (range 0–1), not a dominant signal."""
+    latency_ms: float = -0.00002
+    """``-0.00002`` per ms: a 1 s call is ``-0.02``, a 5 s call is
+    ``-0.10``, a 30 s call is ``-0.60``. Same logic as ``cost_usd`` —
+    soft tiebreaker, not dominant."""
+    robustness: float = 0.2
 
 
 class MetricBundle(BaseModel):

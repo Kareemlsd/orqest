@@ -23,6 +23,10 @@ from orqest.optimization import (
     PromptGene,
     ScalarGene,
 )
+from orqest.optimization.runner import (
+    _ensure_litellm_api_key,
+    _to_litellm_model_string,
+)
 
 
 class _Out(BaseModel):
@@ -171,6 +175,79 @@ def test_runner_rejects_categorical_gene_when_disabled():
     )
     with pytest.raises(NotImplementedError, match="enable_categorical_genes"):
         _make_runner(genome=g)
+
+
+class TestEnsureLitellmApiKey:
+    """The bridge that surfaces orqest's api_key to the env var litellm reads."""
+
+    def test_sets_openai_key(self, monkeypatch):
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        _ensure_litellm_api_key("openai:gpt-4.1", "sk-test-123")
+        import os
+        assert os.environ["OPENAI_API_KEY"] == "sk-test-123"
+
+    def test_sets_anthropic_key(self, monkeypatch):
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        _ensure_litellm_api_key("anthropic:claude-sonnet-4-6", "sk-ant-test")
+        import os
+        assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-test"
+
+    def test_setdefault_does_not_clobber_explicit_env(self, monkeypatch):
+        """An operator who sets OPENAI_API_KEY explicitly keeps that value."""
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-original")
+        _ensure_litellm_api_key("openai:gpt-4.1", "sk-different")
+        import os
+        assert os.environ["OPENAI_API_KEY"] == "sk-original"
+
+    def test_no_op_when_api_key_is_none(self, monkeypatch):
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        _ensure_litellm_api_key("openai:gpt-4.1", None)
+        import os
+        assert "OPENAI_API_KEY" not in os.environ
+
+    def test_no_op_for_unknown_provider(self, monkeypatch):
+        # Don't blow up on novel provider strings; just no-op silently
+        _ensure_litellm_api_key("unknown:foo", "sk-x")  # must not raise
+
+
+class TestLitellmModelStringTranslator:
+    """Sanity checks for the colon->slash translator that bridges
+    Orqest's pydantic-ai-style model strings to litellm's expected format
+    (GEPA's default reflection_lm path goes through litellm)."""
+
+    def test_translates_colon_to_slash(self):
+        assert _to_litellm_model_string("openai:gpt-4.1") == "openai/gpt-4.1"
+
+    def test_passes_through_already_slashed(self):
+        assert _to_litellm_model_string("openai/gpt-4.1") == "openai/gpt-4.1"
+
+    def test_passes_through_bare_model_name(self):
+        # litellm auto-detects bare names; don't mangle them
+        assert _to_litellm_model_string("gpt-4.1-mini") == "gpt-4.1-mini"
+
+    def test_passes_through_none(self):
+        assert _to_litellm_model_string(None) is None
+
+    def test_only_partitions_first_colon(self):
+        # openrouter passes through nested provider strings
+        assert (
+            _to_litellm_model_string("openrouter:openai/gpt-4o")
+            == "openrouter/openai/gpt-4o"
+        )
+
+
+@pytest.mark.asyncio
+async def test_runner_translates_reflection_model_to_litellm(mock_gepa_optimize):
+    """End-to-end: configured reflection_model in pydantic-ai colon syntax
+    reaches GEPA in litellm slash syntax."""
+    runner = _make_runner(
+        OptimizationConfig(
+            max_metric_calls=10, reflection_model="openai:gpt-4.1"
+        )
+    )
+    await runner.optimize(_examples(8))
+    kwargs = mock_gepa_optimize.captured  # type: ignore[attr-defined]
+    assert kwargs["reflection_lm"] == "openai/gpt-4.1"
 
 
 @pytest.mark.asyncio

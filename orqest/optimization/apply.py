@@ -64,19 +64,32 @@ def _build_diff(name: str, before: Any, after: Any) -> OptimizationDiff:
     )
 
 
+def _resolve_attr_name(name: str) -> str:
+    """Strip a gene name's logical prefix to get an attribute name.
+
+    Genes are typically named structurally (``"researcher.system_prompt"``,
+    ``"planner.system_prompt"``) so multiple agents can coexist in one
+    genome. When the target is a single object (not a dict-of-agents), we
+    resolve to the rightmost segment — ``getattr(target, "system_prompt")``.
+
+    For names without a dot, this is a no-op.
+    """
+    return name.rsplit(".", 1)[-1] if "." in name else name
+
+
 def _read_current(target: Any, name: str) -> Any:
     """Resolve the *current* value for a gene name on the target.
 
     Conventions, in order:
 
-    * ``dict``: ``target[name]`` (KeyError → empty string fallback).
-    * ``BaseAgent``: ``name == "system_prompt"`` reads ``target.system_prompt``;
-      any other name falls back to ``getattr(target, name, "")``.
-    * Otherwise: ``getattr(target, name, "")``.
+    * ``dict``: ``target[name]`` (full gene name; KeyError → ``""``).
+    * Other (typically :class:`BaseAgent`): ``getattr(target,
+      _resolve_attr_name(name), "")`` — strips the dotted prefix, since
+      a single agent carries the attribute under its own short name.
     """
     if isinstance(target, dict):
         return target.get(name, "")
-    return getattr(target, name, "")
+    return getattr(target, _resolve_attr_name(name), "")
 
 
 def _write_value(target: Any, name: str, value: Any) -> None:
@@ -85,7 +98,7 @@ def _write_value(target: Any, name: str, value: Any) -> None:
         target[name] = value
         return
 
-    setattr(target, name, value)
+    setattr(target, _resolve_attr_name(name), value)
     # Critical: when the target is a BaseAgent (or anything that lazily
     # constructs a pydantic_ai.Agent and caches it on `_agent`), the cache
     # must be invalidated or the new prompt is silently ignored at runtime.

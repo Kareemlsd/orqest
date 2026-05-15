@@ -47,13 +47,13 @@ class OptimizationConfig:
     """``provider:model_id`` for the LLM that proposes prompt mutations.
     ``None`` falls back to :attr:`OrqestConfig.llm_model`. **Use the strongest
     model you can afford here** — this is the optimizer's brain. The task
-    model can stay cheap; the reflection model should not."""
+    model (whatever the user's ``agent_factory`` constructs the agent with)
+    can stay cheap; the reflection model should not.
 
-    task_model: str | None = None
-    """``provider:model_id`` for the LLM that *runs* candidate prompts during
-    evaluation. ``None`` falls back to :attr:`OrqestConfig.llm_model`. Pick
-    whatever model the production agent uses; this is the model GEPA is
-    optimizing prompts *for*."""
+    Note: there is no ``task_model`` field. The model the candidate prompt
+    runs against is whatever the user's ``agent_factory`` wires into the
+    :class:`BaseAgent`; GEPA's adapter API explicitly forbids passing a
+    ``task_lm`` when an adapter is supplied (the adapter owns it)."""
 
     minibatch_size: int = 3
     """Examples sampled per acceptance test. GEPA uses ``sum(scores)`` over
