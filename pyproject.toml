@@ -45,6 +45,9 @@ notebooks = [
     "ipykernel>=6.0",
     "nbconvert>=7.0",
 ]
+optimization = [
+    "gepa>=0.1.1",
+]
 
 [tool.ruff]
 lint.select = [
