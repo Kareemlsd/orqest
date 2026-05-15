@@ -238,5 +238,6 @@ hook = DiscoveryHook(
 
 - [Hooks & Lifecycle](hooks-and-lifecycle.md) — `HookDecision` discriminated union, `HookRunner` aggregation
 - [Metacognition](metacognition.md) — confidence events that feed `RegressionDetector`
+- [Optimization](optimization.md) — closes the loop by evolving the prompts driving the signals healing detectors observe (a stable agent is one whose prompts don't trigger watchdogs)
 - [Observability](observability.md) — `EventBus` underlying everything
 - [Workbench](workbench.md) — `with_healing(...)` convenience factory

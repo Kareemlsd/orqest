@@ -201,5 +201,6 @@ config = MetacognitionConfig(
 - [Agents](agents.md) — `BaseAgent` and the `run_enriched` extension point
 - [Orchestration](orchestration.md) — `RefinementLoop` integration
 - [Healing](healing.md) — `RegressionDetector` consuming `metacognition.confidence`
+- [Optimization](optimization.md) — `MetricBundle.confidence` is filled from `EnrichedOutput.confidence`; the optimizer evolves prompts that improve calibration as much as accuracy
 - [Observability](observability.md) — events on the bus
 - [Hooks & Lifecycle](hooks-and-lifecycle.md) — `MetacognitionHook` + `HookRunner`

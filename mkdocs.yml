@@ -76,6 +76,7 @@ nav:
   - Memory & Cognition:
       - Memory: concepts/memory.md
       - Metacognition: concepts/metacognition.md
+      - Optimization: concepts/optimization.md
       - Web Tools: concepts/web-tools.md
   - Production:
       - Workbench: concepts/workbench.md
@@ -93,6 +94,7 @@ nav:
       - Autonomy: api/autonomy.md
       - MCP: api/mcp.md
       - Metacognition: api/metacognition.md
+      - Optimization: api/optimization.md
       - Healing: api/healing.md
       - Generative UI: api/ui.md
       - Workbench: api/workbench.md
