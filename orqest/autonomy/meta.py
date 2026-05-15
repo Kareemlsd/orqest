@@ -55,6 +55,11 @@ class SubTaskResult(BaseModel):
     error: str | None = None
     agent_used: str
     was_spawned: bool
+    """``True`` when the agent was newly created this turn (planner emitted
+    a fresh ``AgentSpec`` and the factory hydrated it). ``False`` when the
+    agent was already in the per-run cache or rehydrated from a memory
+    hit — telemetry/UI use this to distinguish "we built something new"
+    from "we reused what we had"."""
     duration_ms: float
 
 
@@ -403,6 +408,11 @@ class MetaOrchestrator:
     ) -> tuple[BaseAgent, bool]:
         """Find an existing agent or spawn a new one for the subtask.
 
+        Returns ``(agent, was_spawned)`` where ``was_spawned`` is ``True``
+        only when the agent was newly hydrated by the factory this turn.
+        Cache hits and memory rehydrations both return ``False`` — the
+        agent (or its spec) already existed.
+
         Memory-recall path is procedural-first: a stored ``Skill`` whose
         ``trigger`` matches ``subtask.name`` is used preferentially.
         Falls back to the legacy episodic recall on miss. Stores into
@@ -435,7 +445,7 @@ class MetaOrchestrator:
                         spec = AgentSpec.model_validate(spec_payload)
                         agent = self._factory.spawn(spec)
                         self._spawned_agents[subtask.name] = agent
-                        return agent, True
+                        return agent, False
             except Exception:
                 logger.debug("No usable procedural skill in memory")
 
@@ -452,7 +462,7 @@ class MetaOrchestrator:
                     spec = AgentSpec.model_validate_json(memories[0].content)
                     agent = self._factory.spawn(spec)
                     self._spawned_agents[subtask.name] = agent
-                    return agent, True
+                    return agent, False
             except Exception:
                 logger.debug("No usable agent spec found in memory")
 
