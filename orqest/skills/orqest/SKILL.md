@@ -234,4 +234,4 @@ from orqest.sandbox import SubprocessSandbox, InProcessSandbox, Sandbox
 - **Canonical concept docs (full API + edge cases):** `docs/concepts/<name>.md` — every reference links back here for depth. Use these when the reference says "for full reference, read…".
 - `CLAUDE.md` — agent-instructions ground truth (file layout, conventions, public API)
 - `notebooks/` — 12-notebook tour: cognitive substrate → meta-orchestrator → generative UI → orchestrated workflow → reasoning → optimization → topology search → runtime topology → dynamic tools → autonomous-coder combo
-- `examples/01_…/` through `09_…/` — runnable per-primitive references
+- `docs/concepts/*.md` — one page per primitive with a runnable snippet (canonical "in isolation" reference)
