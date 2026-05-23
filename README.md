@@ -1,29 +1,152 @@
 # Orqest
 
-A Python library for building **agentic harnesses** on top of [pydantic-ai](https://ai.pydantic.dev). Not an agent framework with a runtime, server, or UI of its own — Orqest ships the plumbing you import to build those: typed agents, composition primitives, lifecycle hooks, memory typology, runtime agent design, metacognition, self-healing, and generative UI. All opt-in.
+**Typed agent primitives and orchestration on top of [pydantic-ai](https://ai.pydantic.dev)** — memory, autonomy, self-healing, metacognition, generative UI, MCP, and reflective optimization. All opt-in.
 
-> **Status:** v0.8.0. The five novel cognitive-substrate features shipped in `[0.2.0]` (2026-04-25): runtime agent design, cognitive memory typology, metacognition primitives, self-healing primitives, generative UI. `[0.3.0]`–`[0.4.0]` were the reconcile + advance passes that brought preview-tier capabilities into Tier 1. `[0.8.0]` adds the `orqest.optimization` battery (GEPA-powered prompt + topology evolution), the Tier-2 Docker sandbox with per-user persisted MCP tool library, runtime topology design, dynamic tool spawning, and a provider-agnostic `reasoning` knob. Test count: 1117.
+[![PyPI](https://img.shields.io/pypi/v/orqest.svg)](https://pypi.org/project/orqest/)
+[![Python](https://img.shields.io/pypi/pyversions/orqest.svg)](https://pypi.org/project/orqest/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## Install
-
-Requires **Python 3.12+**.
+Orqest is not a framework with its own runtime, server, or UI. It's the plumbing you import to build one — composable batteries you pick à-la-carte. The agent loop stays yours.
 
 ```bash
 pip install orqest
-# or
-uv pip install orqest
 ```
 
-Create a `.env` file (or set the equivalent env vars):
+Requires **Python 3.12+**. Set `LLM_MODEL` and `LLM_API_KEY` (or pass them explicitly).
 
-```bash
-LLM_API_KEY=your_key_here
-LLM_MODEL=openai:gpt-4.1
+---
+
+## Why Orqest
+
+### Agents that know what they don't know
+
+Every agent can return confidence, what it's uncertain about, and whether the task is outside its capability. Pluggable protocols — free (structured output), +1 call (self-rating), or +k calls (ensemble).
+
+```python
+from orqest.metacognition import StructuredOutputProtocol
+
+enriched = await agent.run_enriched(state, confidence_protocol=StructuredOutputProtocol())
+print(enriched.confidence, enriched.uncertainty_targets, enriched.capability_boundary)
+# 0.42  ["population_figure"]  False
 ```
 
-## Quickstart
+`RefinementLoop(confidence_threshold=0.85)` exits when the agent says it's confident. `MetaOrchestrator` re-decomposes subtasks when confidence drops below a threshold.
 
-The smallest working agent — 10 lines of useful code:
+### Self-healing built in
+
+Watchdogs observe; the policy decides; the hook layer enforces. Stalls, tool-call loops, and confidence regressions become typed `Detection` events. Models fail over transparently.
+
+```python
+from orqest.healing import HealingConfig, FallbackModel
+from orqest.workbench import Workbench
+
+workbench = Workbench()
+async with workbench.with_healing(HealingConfig(stall_timeout_s=30)):
+    model = FallbackModel(["openai:gpt-4.1", "anthropic:claude-sonnet-4-6"])
+    # transient errors advance the chain; runaway tool loops abort cleanly
+```
+
+### Reflective optimization (GEPA)
+
+Evolve prompts — and entire agent topologies — from a gold set. Search-time only; no runtime cost.
+
+```python
+from orqest.optimization import OptimizationRunner, OptimizationConfig, GoldExample
+
+runner = OptimizationRunner(
+    agent=agent,
+    evaluator=my_metric,
+    config=OptimizationConfig(generations=10),
+)
+result = await runner.run(gold=[GoldExample(input=..., expected=...) for ...])
+runner.apply(result)  # dry-run by default; shows diff before mutating
+```
+
+Topology evolution uses the same machinery to evolve *which agents call which* — see [notebook 09](notebooks/09_topology_with_gepa.ipynb).
+
+### Agents that spawn agents — and author their own tools
+
+LLM emits an `AgentSpec` or a `GeneratedToolSpec`; the factory builds the agent, the sandbox compiles the tool. Generated tools are persisted per-user across sessions.
+
+```python
+from orqest.autonomy import AgentFactory, MetaOrchestrator, ToolRegistry
+
+meta = MetaOrchestrator(planner_agent, ToolRegistry(), default_model="openai:gpt-4.1")
+result = await meta.solve("Find the top 3 AI papers this week and summarize each.")
+# Planner decomposes; specialist agents spawn; results aggregate.
+```
+
+Three sandbox tiers: in-process (opt-in unsafe), subprocess (default, RLIMIT-bounded), Docker (per-session container with an in-container FastMCP server).
+
+### Cognitive memory typology
+
+Semantic, episodic, procedural — each with its own retrieval strategy. Skills are versioned; reliability decays on failure; TTL prunes stale entries.
+
+```python
+from orqest.memory import LocalMemoryStore, MemoryEntry, MemoryFilter, Skill
+
+store = LocalMemoryStore(path="memory.db")
+await store.store(MemoryEntry(
+    memory_type="procedural",
+    structured_content=Skill(trigger="refund a customer", steps=[...]),
+))
+hits = await store.recall(MemoryFilter(query="how do I issue a refund?", memory_type="procedural"))
+```
+
+Pluggable `MemoryStore` Protocol — swap in pgvector or your own backend.
+
+### Composition primitives
+
+```python
+from orqest import Pipeline, Parallel, Router, RefinementLoop
+
+triage_then_solve = Pipeline([triage_agent, solver_agent])
+broadcast        = Parallel([researcher, critic, summarizer])
+specialist       = Router(routes=[...], classifier=classifier_agent, fallback=generalist)
+refine_until_ok  = RefinementLoop(agent=writer, evaluator=critic, confidence_threshold=0.85)
+```
+
+Each primitive accepts agents, callables, or other primitives — they compose.
+
+### Generative UI
+
+Agents emit typed component specs; the frontend resolves. 17 first-party components across three layers (primitives, declarative grammars, sandboxed HTML).
+
+```python
+from orqest.ui import UIEmitter, ChartComponent
+
+emitter = UIEmitter(workbench.event_bus)
+emitter.init(ChartComponent(component_id="sales", data={"rows": []}))
+emitter.delta("sales", op="append", path="data.rows", value={"q": "Q1", "v": 42})
+```
+
+### MCP — client, server, and auto-discovery
+
+```python
+from orqest.mcp import MCPServerManager, create_orqest_server
+
+# Consume any MCP server — get pydantic-ai Tools out
+async with MCPServerManager(config) as mgr:
+    tools = mgr.get_all_tools()
+
+# Or expose your agents as MCP tools to anyone else
+server = create_orqest_server(factory, registry, meta, default_model, api_key)
+```
+
+Auto-discovery (`get_or_discover` + `DiscoveryHook`) is gated by `PermissionGate` — defaults to deny-all.
+
+### Observability
+
+```python
+from orqest.observability import EventBus, JSONTracer, sse_sidecar
+
+# Wire once; every tool emits tool.before / tool.after / tool.error
+# sse_sidecar yields SSE strings with ring-buffered replay + heartbeat
+```
+
+---
+
+## The smallest working agent
 
 ```python
 import asyncio
@@ -43,13 +166,13 @@ class QAAgent(BaseAgent[GlobalState, Answer]):
 
 
 async def main():
-    config = load_config()
+    cfg = load_config()
     agent = QAAgent(
         agent_name="qa",
         system_prompt="Answer concisely.",
         output_type=Answer,
-        model=config.llm_model,
-        api_key=config.llm_api_key,
+        model=cfg.llm_model,
+        api_key=cfg.llm_api_key,
     )
     state = GlobalState()
     state.add_message("user", "What is the capital of France?")
@@ -59,50 +182,33 @@ async def main():
 asyncio.run(main())
 ```
 
-## What Orqest gives you
+---
 
-Eight composable batteries — **opt-in**, picked à-la-carte per application:
+## Supported providers
 
-- **Composition** — `Pipeline`, `Parallel`, `Router`, `RefinementLoop`. Sequence agents, fan out + merge, route by classifier, iterate until "good enough."
-- **Memory** — `LocalMemoryStore` (SQLite + FTS5, or embedding-cosine recall via a pluggable embedder) with typed `semantic` / `episodic` / `procedural` retrieval. Per-kind policy: reliability decay, TTL retention, skill versioning. Pluggable `MemoryStore` Protocol for production backends.
-- **Autonomy** — `AgentSpec` + `AgentFactory` + `ToolRegistry` + `MetaOrchestrator`. Agents that decompose goals and spawn specialists at runtime.
-- **Metacognition** — `EnrichedOutput[OutputT]` carrying `confidence`, `uncertainty_targets`, `capability_boundary`. Three pluggable `ConfidenceProtocol` strategies (free / +1 call / +k calls). Agents that know what they don't know.
-- **Self-healing** — `Watchdog` Protocol + `StallDetector` / `LoopDetector` / `RegressionDetector`. `RecoveryAction` discriminated union → `HookDecision` flow. `FallbackModel` for transparent provider failover.
-- **Generative UI** — `UIComponentSpec[T]` typed components — 17 across 3 layers: compositional primitives (Plan, Chart, Table, Form, TakeoverDialog, Layout, Text, Markdown, Image, Badge, Button, Input), declarative grammars (Vega, Mermaid, Latex, JsonViewer), and a sandboxed HTML escape hatch. Agents emit; frontend resolves.
-- **Observability** — `EventBus`, `JSONTracer`, `sse_sidecar` (with replay + heartbeat + ring buffer). Wire once, every tool emits.
-- **MCP** — client (`MCPServerManager`) + server (`create_orqest_server`) + auto-discovery (`get_or_discover` + `DiscoveryHook` + `PermissionGate`).
+`provider:model_id` format routes to the right SDK.
 
-## Building an application
+| Provider   | Example                              |
+|------------|--------------------------------------|
+| OpenAI     | `openai:gpt-4.1`                     |
+| Anthropic  | `anthropic:claude-sonnet-4-6`        |
+| Google     | `google:gemini-2.5-pro`              |
+| OpenRouter | `openrouter:anthropic/claude-3.5-sonnet` |
 
-**Read [`SKILLS.md`](SKILLS.md) first.** It's the playbook for integrating Orqest into an existing codebase: discovery questions to ask the developer, codebase-walk patterns to identify the existing stack, minimal-surface selection rules, eight pattern recipes, and an end-to-end FastAPI walkthrough. Designed for LLM coding assistants (Claude Code, Cursor) and human developers alike.
+## Learn
 
-The flagship reference consumer is [`demo/polymath/`](demo/polymath/) — every Orqest battery lit up end-to-end (chat + dockview workspace + sub-agent roster + memory typology + cognitive gutter + healing toasts + generative UI tabs).
+- **[Notebooks](notebooks/)** — *start here.* A 12-notebook tour from the cognitive substrate → meta-orchestrator → generative UI → orchestration → reasoning → optimization → topology evolution → runtime topology → dynamic tools → autonomous-coder combo.
+- **[Concepts](https://kareemlsd.github.io/orqest/concepts/agents/)** — one doc per battery (24 in total).
+- **[API Reference](https://kareemlsd.github.io/orqest/api/agents/)** — auto-generated from source.
+- **[Benchmarks](benchmarks/)** — reproducible head-to-heads. Current: test-driven refinement loop beats single-shot by +17pp pass@1 (3-trial average).
+- **[Examples](examples/)** — runnable per-primitive references.
+- **[SKILLS.md](SKILLS.md)** — playbook for integrating Orqest into an existing codebase. Designed for LLM coding assistants and humans alike.
 
-## Supported model providers
-
-`provider:model_id` format routes to the right SDK. The full `pydantic-ai` dependency bundles every provider SDK; the lazy import is defensive.
-
-| Provider | Format | Example |
-|----------|--------|---------|
-| OpenAI | `openai:model_id` | `openai:gpt-4.1` |
-| Anthropic | `anthropic:model_id` | `anthropic:claude-sonnet-4-6` |
-| Google | `google:model_id` | `google:gemini-2.5-pro` |
-| OpenRouter | `openrouter:model_id` | `openrouter:anthropic/claude-3.5-sonnet` |
-
-## Documentation
-
-- **[SKILLS.md](SKILLS.md)** — how to build with Orqest (discovery → codebase walk → minimal surface → recipes)
-- **[Notebooks](notebooks/)** — *start here if you're evaluating Orqest*: a 12-notebook tour from the cognitive substrate → meta-orchestrator → generative UI → orchestrated workflow → reasoning → optimization (basic + compound) → topology search (basic + GEPA) → runtime topology → dynamic tools → autonomous-coder combo
-- **[Benchmarks](benchmarks/)** — reproducible head-to-heads measuring what each battery delivers over a baseline. Current: [`coding/`](benchmarks/coding/) — test-driven refinement loop beats single-shot by +17pp pass@1 (3-trial average)
-- **[Concepts](https://kareemlsd.github.io/orqest/concepts/agents/)** — agents, state, composition, memory, metacognition, healing, generative UI
-- **[API Reference](https://kareemlsd.github.io/orqest/api/agents/)** — auto-generated from source
-- **[Examples](examples/)** — runnable per-primitive references (basic agent → streaming → pipeline → refinement → memory → observability)
-- **[CLAUDE.md](CLAUDE.md)** — agent-instructions ground truth
-- **[Changelog](CHANGELOG.md)**
+The flagship reference consumer is [`demo/polymath/`](demo/polymath/) — every battery wired end-to-end.
 
 ## Contributing
 
-Contributions welcome. Open an issue or PR; new subsystems land as tracer-bullet tests-first slices.
+Issues and PRs welcome. New subsystems land as tracer-bullet, tests-first slices.
 
 ## License
 
