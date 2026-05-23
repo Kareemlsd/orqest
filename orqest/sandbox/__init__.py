@@ -14,7 +14,7 @@ Two backends ship today:
 
 Third parties can ship :class:`E2BSandbox` / :class:`DockerSandbox` /
 :class:`WasmSandbox` / :class:`FirecrackerSandbox` against the same
-:class:`Sandbox` Protocol — see ``.claude/ARCHITECTURE.md`` §2.8.
+:class:`Sandbox` Protocol.
 
 The matching consumer is :class:`orqest.autonomy.tool_factory.DynamicToolFactory`,
 which turns a :class:`GeneratedToolSpec` (carrying an ``implementation`` string)

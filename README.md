@@ -98,13 +98,11 @@ The flagship reference consumer is [`demo/polymath/`](demo/polymath/) — every 
 - **[API Reference](https://kareemlsd.github.io/orqest/api/agents/)** — auto-generated from source
 - **[Examples](examples/)** — runnable per-primitive references (basic agent → streaming → pipeline → refinement → memory → observability)
 - **[CLAUDE.md](CLAUDE.md)** — agent-instructions ground truth
-- **[ARCHITECTURE.md](.claude/ARCHITECTURE.md)** — extensibility playbook for contributors
-- **[VISION.md](.claude/VISION.md)** — strategic frame for the cognitive-substrate goal
 - **[Changelog](CHANGELOG.md)**
 
 ## Contributing
 
-Contributions welcome. Read [`.claude/PRINCIPLES.md`](.claude/PRINCIPLES.md) (Pragmatic Programmer rules — canonical for this codebase) and [`.claude/ARCHITECTURE.md`](.claude/ARCHITECTURE.md) (each subsystem documents how to extend it). Open an issue or PR; new subsystems land as tracer-bullet tests-first slices.
+Contributions welcome. Open an issue or PR; new subsystems land as tracer-bullet tests-first slices.
 
 ## License
 

@@ -279,7 +279,7 @@ A pattern that looks attractive but reliably misfires on imperfect models: have 
 
 Failure mode: the test-designer LLM hallucinates *wrong expected values* for its proposed tests. Whatever the test designer's confidence, on weaker models (gpt-4o-mini-tier) ~10–20% of generated tests have an incorrect expected output. The downstream fixer agent — which can't tell hallucinated tests from real ones — then "fixes" code that was actually correct, rewriting it to pass the wrong tests. The aggregate accuracy regresses.
 
-This is the **Unsupervised Evaluation Paradox** (named in `.claude/designs/04-goal-driven-optimization.md`) applied to a runtime evaluator: if the LLM is competent enough to generate reliable test labels, it's competent enough to solve the task one-shot — so the test generation adds noise without adding signal. If the LLM isn't competent enough to solve the task one-shot, then any test labels it generates are equally unreliable, and using them as ground truth poisons the loop.
+This is the **Unsupervised Evaluation Paradox** applied to a runtime evaluator: if the LLM is competent enough to generate reliable test labels, it's competent enough to solve the task one-shot — so the test generation adds noise without adding signal. If the LLM isn't competent enough to solve the task one-shot, then any test labels it generates are equally unreliable, and using them as ground truth poisons the loop.
 
 Where LLM-generated tests *can* work:
 

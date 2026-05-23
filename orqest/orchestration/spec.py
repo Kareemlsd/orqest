@@ -1,9 +1,8 @@
 """Serializable IR for Orqest's orchestration primitives.
 
-Closes the audit-named gap (`.claude/AUDIT_2026-04-25.md` §96): an LLM cannot
-emit a composition topology at runtime because Pipeline / Parallel / Router /
-RefinementLoop accept Python callables (conditions, merges, state-updaters) that
-have no JSON representation.
+Closes the gap that an LLM cannot emit a composition topology at runtime because
+Pipeline / Parallel / Router / RefinementLoop accept Python callables (conditions,
+merges, state-updaters) that have no JSON representation.
 
 This module provides Pydantic v2 models that round-trip cleanly to JSON and
 hydrate back to live runtime objects via :mod:`orqest.orchestration.hydrate`.

@@ -8,7 +8,7 @@ Orqest is a Python framework for building autonomous agentic AI systems on top o
 
 **Domain-agnostic litmus test:** "Can a developer building a headless coding assistant use this feature without knowing what Polymath is?" If no, it belongs in the consumer, not Orqest.
 
-**Current version:** `0.8.0` (`pyproject.toml`). **All five novel vision features shipped (2026-04-25)** — runtime agent design, cognitive memory typology (semantic / episodic / procedural), metacognition primitives, self-healing primitives, generative UI. See `.claude/VISION.md` for the strategic frame and `.claude/IMPLEMENTATION_2026-04-25.md` for the three-wave ship plan. **Phase 13 (2026-05-16)** added the Tier-2 Docker sandbox (`DockerSandbox`) + per-user persisted MCP tool library — the published `orqest/agent-runtime` image runs an in-container FastMCP server with HMAC-JWT auth, per-agent `uv` venvs, and SQLite-backed cross-session tool persistence per user.
+**Current version:** `0.8.0` (`pyproject.toml`). **All five novel vision features shipped (2026-04-25)** — runtime agent design, cognitive memory typology (semantic / episodic / procedural), metacognition primitives, self-healing primitives, generative UI. **Phase 13 (2026-05-16)** added the Tier-2 Docker sandbox (`DockerSandbox`) + per-user persisted MCP tool library — the published `orqest/agent-runtime` image runs an in-container FastMCP server with HMAC-JWT auth, per-agent `uv` venvs, and SQLite-backed cross-session tool persistence per user.
 
 ## Project Structure
 
@@ -331,29 +331,20 @@ python -m build
 | 7. Metacognition primitives (`EnrichedOutput`, `ConfidenceProtocol`, `MetacognitionHook`, integrations) | ✅ shipped (2026-04-25) | |
 | 8. Generative UI (`UIComponentSpec[T]`, `ComponentRegistry`, `UIEmitter`, 17 first-party components across 3 layers) | ✅ shipped (2026-04-25) | |
 
-**All five novel vision features ship.** See `.claude/VISION.md` for the strategic frame, `.claude/IMPLEMENTATION_2026-04-25.md` for the wave-by-wave ship plan, and `.claude/AUDIT_2026-04-25.md` for the audit that drove the implementation. Per-track designs live in `.claude/designs/`.
+**All five novel vision features ship.**
 
 Outstanding consumer-side work (out of Orqest core):
 - **Polymath consolidation** — ✅ shipped 2026-04-25 (`demo/polymath/.claude/CONSOLIDATION_COMPLETE_2026-04-25.md`). The dedicated `ChartsTab` / `ReportTab` were absorbed into the dynamic dockview tab manifest, healing wired into `Workbench`, and sub-agent roster migrated to procedural memory.
 - **Polymath cognitive surfacing** — ✅ shipped 2026-04-26. Confidence per turn, healing toasts, Memory tab (galaxy + 3-kind browser), Agents tab (roster table). See addendums in the same consolidation doc.
 - **Polymath editorial redesign** — ✅ shipped 2026-04-26 from a claude.ai/design handoff. Warm-neutral oklch + amber accent + Newsreader serif + Inter Tight grotesk + the **Cognitive Gutter** (24px left rail per assistant turn — replaces the per-message confidence pill). See `demo/polymath/CLAUDE.md` for the current-state summary.
 - **Concept docs** — ✅ `docs/concepts/{metacognition,healing,generative_ui,autonomy,mcp}.md` shipped 2026-05-02; mkdocs nav wires all 24 concept docs under three groups (Composition / Memory & Cognition / Production).
-- **Orqest skill folder** — ✅ shipped 2026-05-02 at `.claude/skills/orqest/` (and packaged as `.skill`). The canonical playbook for Claude Code consumers; symlinked at `~/.claude/skills/orqest` for global availability.
 - **Production memory backend** — Supabase pgvector (known gap; purely additive — `MemoryStore` Protocol and `MemoryConfig` already accommodate it).
 - **`ToolSandbox`** — generated-tool-code safety surface (Phase 3's deferred safety item; relevant for agents that author + run their own tools).
 - **PyPI release pipeline** — `0.1.0` and `0.2.0` are cut in CHANGELOG; not yet published to PyPI.
 
-## Building With Orqest (For Claude Code)
-
-When a developer asks to add agent capabilities to an existing application, **use the bundled skill** at `.claude/skills/orqest/` (also available globally via `~/.claude/skills/orqest`). The skill enforces a discovery-first integration loop: interview the developer → walk the existing codebase → pick the minimal Orqest surface that fits → integration plan → tracer-bullet build → produce `AGENT_HARNESS.md`. The skill folder bundles eight pattern recipes, the Vercel AI SDK + Orqest integration recipe (Polymath pattern), Python module templates, React frontend hooks (extracted from Polymath, generic-ified), and a `scaffold_agent.py` CLI.
-
-For top-level discoverability, [`SKILLS.md`](SKILLS.md) at the repo root points at the skill folder.
-
 ## Known Doc Gaps (to fix when touched)
 
-- `.claude/ROADMAP.md` exists; treat this CLAUDE.md as ground truth if they ever drift.
-- `.claude/ARCHITECTURE.md` is an extensibility playbook (10 named extension patterns).
-- `README.md` carries the current elevator pitch + pointer to SKILLS.md.
+- `README.md` carries the current elevator pitch.
 - `mkdocs.yml` nav wires all 24 concept docs under three groups; `mkdocs build --strict` is clean.
 - `examples/05_refinement_loop/` ships `main.py` + `README.md` demonstrating `confidence_threshold` + `agent_self_eval` (Wave 1.3 metacognition integration).
 - `CHANGELOG.md` cut into `[0.0.1] - 2025-07-21`, `[0.1.0] - 2026-04-24` (Phases 2–5), `[0.2.0] - 2026-04-25` (Waves 1–3), `[0.3.0] - 2026-05-14` (the reconcile pass), `[0.4.0] - 2026-05-14` (the advance pass — preview tier finished into Tier 1), and `[0.8.0] - 2026-05-23` (`orqest.optimization` battery + Tier-2 Docker sandbox + per-user persisted MCP tool library + runtime topology design + dynamic tool spawning + reasoning); fresh `[Unreleased]` for the next ship.
@@ -396,8 +387,6 @@ The **gstack** meta-skill (browse, qa, ship, investigate, checkpoint, codex, rev
 
 ## References
 
-- `.claude/PRINCIPLES.md` — Pragmatic Programmer rules for this codebase (treat as canonical).
-- `.claude/ARCHITECTURE.md` — module dependency map + design decisions (some sections are stale; see "Known Doc Gaps").
-- `.claude/ROADMAP.md` — long-form phase plan (status tracking is stale — this CLAUDE.md is ground truth).
+- `/principles` skill (`.claude/skills/principles/SKILL.md`) — Pragmatic Programmer rules for this codebase (canonical). Invoke when writing, reviewing, or refactoring orqest code.
 - `docs/` — MkDocs site: concept docs + API reference. Every new battery must add a `docs/concepts/<name>.md` with a runnable snippet.
-- `CHANGELOG.md` — Keep-a-Changelog format. `Unreleased` is currently thick.
+- `CHANGELOG.md` — Keep-a-Changelog format.
