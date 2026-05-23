@@ -54,7 +54,32 @@ class TestConstruction:
         mw = SessionAuthMiddleware.from_env()
         assert mw._expected_user_id == "bob"
         assert mw._expected_session_id == "session-xyz"
+        # ORQEST_ALLOWED_ORIGINS unset → secure default (localhost only).
+        assert mw._allowed_origins == {"http://127.0.0.1", "http://localhost"}
+
+    def test_from_env_explicit_empty_disables_origin_check(self, monkeypatch):
+        """Operators who genuinely don't want an Origin check can still
+        disable by setting the env var to an empty string."""
+        monkeypatch.setenv("ORQEST_HMAC_SECRET", SECRET)
+        monkeypatch.setenv("ORQEST_USER_ID", "bob")
+        monkeypatch.setenv("ORQEST_SESSION_ID", "session-xyz")
+        monkeypatch.setenv("ORQEST_ALLOWED_ORIGINS", "")
+        mw = SessionAuthMiddleware.from_env()
         assert mw._allowed_origins == set()
+
+    def test_from_env_explicit_origins_override_default(self, monkeypatch):
+        monkeypatch.setenv("ORQEST_HMAC_SECRET", SECRET)
+        monkeypatch.setenv("ORQEST_USER_ID", "bob")
+        monkeypatch.setenv("ORQEST_SESSION_ID", "session-xyz")
+        monkeypatch.setenv(
+            "ORQEST_ALLOWED_ORIGINS",
+            "https://example.com,https://api.example.com",
+        )
+        mw = SessionAuthMiddleware.from_env()
+        assert mw._allowed_origins == {
+            "https://example.com",
+            "https://api.example.com",
+        }
 
 
 # --- _validate_request — the actual auth logic ----------------------------

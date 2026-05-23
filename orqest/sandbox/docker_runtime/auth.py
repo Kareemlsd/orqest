@@ -39,6 +39,21 @@ from orqest.sandbox.jwt import (
 
 _BEARER_PREFIX = "Bearer "
 
+# DNS-rebinding defense — applied when ``ORQEST_ALLOWED_ORIGINS`` is unset.
+# The host orchestrator publishes the container's port via
+# ``-p 127.0.0.1:<host>:8000``, so the host-side MCP client always presents
+# an Origin under one of these. Operators on non-default deployments
+# (custom hostnames, Tier-3 future bridge networks) set the env var
+# explicitly to override.
+#
+# An *explicit* empty value (``ORQEST_ALLOWED_ORIGINS=""``) still disables
+# the check — that's the documented escape hatch for environments that
+# can't supply an Origin header.
+DEFAULT_ALLOWED_ORIGINS: frozenset[str] = frozenset({
+    "http://127.0.0.1",
+    "http://localhost",
+})
+
 
 class SessionAuthError(PermissionError):
     """Raised when a request fails session-auth validation.
@@ -84,12 +99,23 @@ class SessionAuthMiddleware(Middleware):
 
     @classmethod
     def from_env(cls) -> SessionAuthMiddleware:
-        """Construct from the standard env vars used by the runtime image."""
+        """Construct from the standard env vars used by the runtime image.
+
+        ``ORQEST_ALLOWED_ORIGINS`` defaults to :data:`DEFAULT_ALLOWED_ORIGINS`
+        when *unset* — DNS-rebinding defense is on by default per the MCP
+        spec. Set the env var explicitly (incl. ``""`` for "no check") to
+        override.
+        """
         secret = os.environ.get("ORQEST_HMAC_SECRET", "")
         user_id = os.environ.get("ORQEST_USER_ID", "")
         session_id = os.environ.get("ORQEST_SESSION_ID", "")
-        origins_raw = os.environ.get("ORQEST_ALLOWED_ORIGINS", "")
-        origins = {o.strip() for o in origins_raw.split(",") if o.strip()}
+        # Distinguish "unset" from "explicitly empty": missing → secure default;
+        # explicit empty → operator opted out (documented escape hatch).
+        origins_raw = os.environ.get("ORQEST_ALLOWED_ORIGINS")
+        if origins_raw is None:
+            origins: set[str] = set(DEFAULT_ALLOWED_ORIGINS)
+        else:
+            origins = {o.strip() for o in origins_raw.split(",") if o.strip()}
         return cls(
             secret=secret,
             expected_user_id=user_id,
