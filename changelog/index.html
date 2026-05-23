@@ -6,8 +6,10 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A Python framework for building autonomous agentic AI systems on top of pydantic-ai">
+        <meta name="description" content="Typed agent primitives and orchestration on top of pydantic-ai — memory, autonomy, healing, metacognition, generative UI, MCP, and reflective optimization.">
       
+      
+        <meta name="author" content="Kareem El Sayed">
       
       
         <link rel="canonical" href="https://kareemlsd.github.io/orqest/changelog/">
@@ -53,6 +55,8 @@
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../css/timeago.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -92,12 +96,12 @@
 
   
 
-<header class="md-header md-header--shadow" data-md-component="header">
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="Orqest" class="md-header__button md-logo" aria-label="Orqest" data-md-component="logo">
       
   
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.5 17c-.14 0-.26 0-.39.04L17.5 13.8c.45-.45.75-1.09.75-1.8a2.5 2.5 0 0 0-2.5-2.5c-.14 0-.25 0-.4.04L13.74 6.3c.47-.46.76-1.09.76-1.8a2.5 2.5 0 0 0-5 0c0 .7.29 1.34.76 1.79L8.65 9.54c-.15-.04-.26-.04-.4-.04a2.5 2.5 0 0 0-2.5 2.5c0 .71.29 1.34.75 1.79l-1.61 3.25C4.76 17 4.64 17 4.5 17a2.5 2.5 0 0 0 0 5A2.5 2.5 0 0 0 7 19.5c0-.7-.29-1.34-.76-1.79l1.62-3.25c.14.04.26.04.39.04s.25 0 .38-.04l1.63 3.25c-.47.45-.76 1.09-.76 1.79a2.5 2.5 0 0 0 5 0A2.5 2.5 0 0 0 12 17c-.13 0-.26 0-.39.04L10 13.8c.45-.45.75-1.09.75-1.8 0-.7-.29-1.33-.75-1.79l1.61-3.25c.13.04.26.04.39.04s.26 0 .39-.04L14 10.21a2.5 2.5 0 0 0 1.75 4.29c.13 0 .25 0 .38-.04l1.63 3.25c-.47.45-.76 1.09-.76 1.79a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0-2.5-2.5m-15 3.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m8.5-1c0 .55-.45 1-1 1s-1-.45-1-1 .45-1 1-1 1 .45 1 1M7.25 12c0-.55.45-1 1-1s1 .45 1 1-.45 1-1 1-1-.45-1-1M11 4.5c0-.55.45-1 1-1s1 .45 1 1-.45 1-1 1-1-.45-1-1m3.75 7.5c0-.55.45-1 1-1s1 .45 1 1-.45 1-1 1-1-.45-1-1m4.75 8.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -199,7 +203,7 @@
         <a href="https://github.com/Kareemlsd/orqest" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
   </div>
   <div class="md-source__repository">
     Kareemlsd/orqest
@@ -209,13 +213,229 @@
     
   </nav>
   
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../notebooks/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Notebooks
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../concepts/skills/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Skills
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../concepts/agents/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Composition
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../concepts/autonomy/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Autonomy
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../concepts/memory/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Memory & Cognition
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../concepts/workbench/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Production
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/config/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
 </header>
     
     <div class="md-container" data-md-component="container">
       
       
-        
-          
         
       
       <main class="md-main" data-md-component="main">
@@ -229,13 +449,15 @@
                     
 
 
+  
 
-<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
     <a href=".." title="Orqest" class="md-nav__button md-logo" aria-label="Orqest" data-md-component="logo">
       
   
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.5 17c-.14 0-.26 0-.39.04L17.5 13.8c.45-.45.75-1.09.75-1.8a2.5 2.5 0 0 0-2.5-2.5c-.14 0-.25 0-.4.04L13.74 6.3c.47-.46.76-1.09.76-1.8a2.5 2.5 0 0 0-5 0c0 .7.29 1.34.76 1.79L8.65 9.54c-.15-.04-.26-.04-.4-.04a2.5 2.5 0 0 0-2.5 2.5c0 .71.29 1.34.75 1.79l-1.61 3.25C4.76 17 4.64 17 4.5 17a2.5 2.5 0 0 0 0 5A2.5 2.5 0 0 0 7 19.5c0-.7-.29-1.34-.76-1.79l1.62-3.25c.14.04.26.04.39.04s.25 0 .38-.04l1.63 3.25c-.47.45-.76 1.09-.76 1.79a2.5 2.5 0 0 0 5 0A2.5 2.5 0 0 0 12 17c-.13 0-.26 0-.39.04L10 13.8c.45-.45.75-1.09.75-1.8 0-.7-.29-1.33-.75-1.79l1.61-3.25c.13.04.26.04.39.04s.26 0 .39-.04L14 10.21a2.5 2.5 0 0 0 1.75 4.29c.13 0 .25 0 .38-.04l1.63 3.25c-.47.45-.76 1.09-.76 1.79a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0-2.5-2.5m-15 3.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m8.5-1c0 .55-.45 1-1 1s-1-.45-1-1 .45-1 1-1 1 .45 1 1M7.25 12c0-.55.45-1 1-1s1 .45 1 1-.45 1-1 1-1-.45-1-1M11 4.5c0-.55.45-1 1-1s1 .45 1 1-.45 1-1 1-1-.45-1-1m3.75 7.5c0-.55.45-1 1-1s1 .45 1 1-.45 1-1 1-1-.45-1-1m4.75 8.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1"/></svg>
 
     </a>
     Orqest
@@ -245,7 +467,7 @@
       <a href="https://github.com/Kareemlsd/orqest" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
   </div>
   <div class="md-source__repository">
     Kareemlsd/orqest
@@ -342,24 +564,73 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../concepts/skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
+  
+    Skills
+  
+
     
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
       
         
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -377,8 +648,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -683,22 +954,28 @@
   
     
     
+      
+        
+      
+        
+      
+    
     
     
       
-        
+      
         
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
@@ -716,8 +993,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -798,22 +1075,36 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
-        
+      
         
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -831,8 +1122,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -885,6 +1176,34 @@
     
   
     Metacognition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/reasoning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reasoning
   
 
     
@@ -997,22 +1316,38 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
-        
+      
         
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
             
   
   
@@ -1030,8 +1365,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1252,22 +1587,64 @@
   
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
     
       
-        
+      
         
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
         
           
-          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
             
   
   
@@ -1285,8 +1662,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1938,7 +2315,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[Unreleased]">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#080-2026-05-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.8.0] - 2026-05-23
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.8.0] - 2026-05-23">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1946,6 +2334,61 @@
     <span class="md-ellipsis">
       
         Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#breaking-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breaking Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependencies
       
     </span>
   </a>
@@ -1970,7 +2413,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_1" class="md-nav__link">
+  <a href="#added_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -1981,7 +2424,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed" class="md-nav__link">
+  <a href="#changed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -2020,7 +2463,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#breaking-changes" class="md-nav__link">
+  <a href="#breaking-changes_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Breaking Changes
@@ -2081,7 +2524,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_2" class="md-nav__link">
+  <a href="#added_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -2109,7 +2552,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_3" class="md-nav__link">
+  <a href="#added_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -2120,7 +2563,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_1" class="md-nav__link">
+  <a href="#changed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -2148,7 +2591,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_4" class="md-nav__link">
+  <a href="#added_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -2206,7 +2649,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[Unreleased]">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#080-2026-05-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.8.0] - 2026-05-23
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.8.0] - 2026-05-23">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2214,6 +2668,61 @@
     <span class="md-ellipsis">
       
         Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#breaking-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breaking Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependencies
       
     </span>
   </a>
@@ -2238,7 +2747,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_1" class="md-nav__link">
+  <a href="#added_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -2249,7 +2758,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed" class="md-nav__link">
+  <a href="#changed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -2288,7 +2797,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#breaking-changes" class="md-nav__link">
+  <a href="#breaking-changes_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Breaking Changes
@@ -2349,7 +2858,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_2" class="md-nav__link">
+  <a href="#added_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -2377,7 +2886,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_3" class="md-nav__link">
+  <a href="#added_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -2388,7 +2897,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_1" class="md-nav__link">
+  <a href="#changed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -2416,7 +2925,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_4" class="md-nav__link">
+  <a href="#added_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         Added
@@ -2448,28 +2957,138 @@
 
 
   
+    <a href="https://github.com/Kareemlsd/orqest/edit/main/docs/changelog.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
   
 
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
-<p>All notable changes to Orqest are documented here.</p>
-<p>Format based on <a href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a>,
-and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
+<p>All notable changes to Orqest are documented here. The format follows
+<a href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a> and the project
+follows <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h2 id="080-2026-05-23">[0.8.0] - 2026-05-23<a class="headerlink" href="#080-2026-05-23" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong>Bundled <code>orqest</code> skill</strong> for Claude Code / Cursor / Aider / other agentic IDEs — ships at <code>orqest/skills/orqest/</code> as package data. <code>SKILL.md</code> (orientation + decision tree + 5 wire-up patterns + pitfalls) plus 9 compressed judgment-layer references covering every battery: <code>references/{orchestration,memory,autonomy,healing,metacognition,mcp,optimization,generative-ui,sandbox}.md</code>. References point back at <code>docs/concepts/*.md</code> for full depth — single source of truth for API surface stays in concept docs. Install into a project's skills directory with <code>python -m orqest.skills install [target=.claude/skills]</code>. Drift-checked by <code>tests/skills/test_skill_drift.py</code> — every <code>from orqest…</code> import in the skill resolves against the real package on each run.</p>
+</li>
+<li>
+<p><strong><code>openai-responses:</code> provider prefix</strong> in <code>orqest.utils.resolve_model</code> — routes to <code>pydantic_ai.models.openai.OpenAIResponsesModel</code> so <code>LLM_MODEL=openai-responses:gpt-5.4</code> (etc.) goes through the OpenAI Responses API instead of <code>/v1/chat/completions</code>. Required for gpt-5.x with function tools + reasoning_effort (chat/completions rejects that combo with a 400). Uses the same <code>OPENAI_API_KEY</code>. Discovered while building Polymath's Koopman research session — gpt-5.4 + tools + reasoning silently desynchronised the message stream on chat/completions; switching to the Responses path resolved it.</p>
+</li>
+<li>
+<p><strong><code>_repair_orphan_tool_returns</code> history processor</strong> auto-appended to every <code>BaseAgent</code>'s history-processor chain. Walks the post-compaction window, tracks the set of visible <code>ToolCallPart.tool_call_id</code>s, and strips any <code>ToolReturnPart</code> whose id was sliced away by an earlier processor (<code>keep_recent_messages</code> boundary cut, <code>ContextManager._summarize_old_turns</code> summarisation of the matching call's <code>ModelResponse</code>, or any custom processor). Both OpenAI chat/completions and the Responses transport reject orphan tool returns with a 400 (<code>"messages with role 'tool' must be a response to a preceeding message with 'tool_calls'"</code> / <code>"No tool call found for function call output with call_id ..."</code>) — these blew up mid-run on Polymath's first long Koopman session. Belt-and-suspenders: also applied inside <code>ContextManager.compact()</code>'s own output. 0 backwards-compat hazards: stripping invalid parts only removes data that would have crashed the request anyway. Adjusted the 3 <code>_history_processors</code>-length assertions in <code>tests/agents/test_base_agent.py</code>, <code>tests/test_budget_tool_results.py</code>, and <code>tests/test_context_manager.py</code> to account for the +1 processor; the test_emergency_preserves_min_tokens assertion shifted from min-recent-tokens to min-recent-turns since the repair sweep can trim orphan ToolReturnParts out of the recent window.</p>
+</li>
+<li>
+<p><strong><code>MetricBundle.aggregate(list[MetricBundle])</code> classmethod + <code>n_trials</code> / <code>stdev</code> fields</strong> — collapse N independent observations of the same candidate × example pair into one representative bundle with mean metrics + per-dimension standard deviation. New optional fields <code>n_trials: int = 1</code> and <code>stdev: dict[str, float] | None = None</code> are backward-compatible — existing single-observation bundles serialize and behave identically. Aggregate handles optional dimensions (<code>confidence</code>, <code>robustness</code>) gracefully: present-only mean, <code>stdev</code> only when ≥2 trials supplied the dimension. Discovered while building the coding benchmark: single-trial LLM numbers swung ±10pp; multi-trial averaging is what stabilises an evaluator pipeline on weaker models. 10 new tests in <code>tests/optimization/test_bundle.py</code>.</p>
+</li>
+<li>
+<p><strong><code>Evaluator(n_trials_per_example: int = 1)</code> parameter</strong> — when <code>&gt; 1</code>, runs the agent N times per gold example and aggregates via <code>MetricBundle.aggregate</code>. Each trial gets a fresh agent via <code>agent_factory(decoded)</code> so trials are independent. Default <code>1</code> preserves the legacy single-shot behavior at no extra cost. When every trial of an example fails, the aggregate keeps the failure info (not a misleadingly-averaged 0.0 accuracy). Cost scales linearly with <code>n_trials_per_example</code>; useful for weaker models where evaluator variance is the dominant noise source. 6 new tests in <code>tests/optimization/test_evaluator.py</code>.</p>
+</li>
+<li>
+<p><strong><code>benchmarks/</code> directory + first benchmark (<code>benchmarks/coding/</code>)</strong> — establishes the convention that every battery (or composition of batteries) ships with a reproducible head-to-head proving its value over a baseline. <code>benchmarks/coding/run.py</code> is the entry point for the 10-problem coding benchmark behind <code>notebooks/12_combo_autonomous_coder.ipynb</code>'s +17pp pass@1 / +14pp test_pass_rate claim: one command reproduces the multi-trial average. <code>benchmarks/README.md</code> documents the convention for adding new benchmarks (require a baseline, default to multi-trial averaging, honest cost + variance disclosures); <code>benchmarks/coding/README.md</code> documents what's tested, how to reproduce, and the honest caveats (LLM variance, stronger-model headroom, latency cost). Promoted from <code>scratch/combo/</code> after the iteration sprint surfaced that the numbers were buried where consumers couldn't find them. 4 new data-integrity tests in <code>tests/benchmarks/test_coding_fixture.py</code> pin the fixture's 10-problem / 92-hidden-test shape so silent drift breaks CI.</p>
+</li>
+<li>
+<p><strong><code>orqest.sandbox.run_in_sandbox(...)</code> helper</strong> + non-raising <code>run_in_sandbox_safe(...)</code> sibling — collapse the canonical "run candidate Python in a sandbox, get the return value back" pattern from ~30 lines (build <code>GeneratedToolSpec</code> → <code>DynamicToolFactory.spawn()</code> → invoke → unwrap <code>ExecutionResult</code>) into one async call. <code>return_expression</code> parameter handles the common case of appending <code>return func(args)</code> to a candidate function body. New <code>SandboxRunError(stage, code_snippet, underlying)</code> exception captures validation vs execution failures with structured diagnostic context. <code>run_in_sandbox_safe</code> returns <code>(success, output, error_msg)</code> for callers that prefer inline failure handling over try/except. The lower-level <code>Sandbox.execute()</code> + <code>GeneratedToolSpec</code> + <code>DynamicToolFactory</code> path stays the right choice when an agent itself needs to <em>call</em> a tool via pydantic-ai's tool-use mechanism; these helpers are for <em>direct</em> sandbox invocation from framework code. 13 new tests in <code>tests/sandbox/test_helpers.py</code>. Discovered while building <code>notebooks/12_combo_autonomous_coder.ipynb</code> where the evaluator wrapped this pattern ~30 lines per call.</p>
+</li>
+<li>
+<p><strong><code>AgentSpec</code> accepts <code>output_type: type[BaseModel]</code> as an ergonomic alternative to <code>output_schema: dict</code></strong> — declaring an agent's output shape with a Pydantic class is terser (and statically typed) compared to authoring a JSON Schema dict by hand. Both paths remain supported: a new <code>@model_validator</code> enforces exactly-one-of so the two can't drift. The JSON Schema path stays the wire-format option (LLM-emittable specs, persistence); the Pydantic-class path is the in-process / code-side path. <code>AgentFactory.spawn()</code> dispatches on which is set with zero behavior change for existing callers. 6 new tests in <code>tests/autonomy/test_factory.py::TestAgentSpecOutputType</code>. Discovered while building <code>notebooks/12_combo_autonomous_coder.ipynb</code> where the JSON Schema dicts for two agents were ~16 lines vs ~4 lines per Pydantic class.</p>
+</li>
+<li>
+<p><strong><code>BaseAgent</code> validates <code>output_type</code> at construction</strong> — top-level <code>Any</code>-typed Pydantic fields now raise <code>BaseAgentSchemaError</code> immediately at agent construction, with a message naming the offending field and concrete remediations (narrow the type, use a container of <code>Any</code>, or use a JSON-string field). Previously this slipped through to first inference where OpenAI's structured-output endpoint surfaced an opaque <code>Invalid schema for function 'final_result'</code> 400 error with no breadcrumb. Containers holding <code>Any</code> (<code>list[Any]</code>, <code>dict[str, Any]</code>) and scalar output types (<code>str</code>, <code>int</code>, etc.) are still accepted — only top-level <code>Any</code> fields trigger rejection. Discovered while building <code>notebooks/12_combo_autonomous_coder.ipynb</code> where this cost ~20 min of debugging on two separate occasions. 6 new tests in <code>tests/agents/test_base_agent.py::TestOutputTypeSchemaValidation</code>. New exception class <code>orqest.agents.base_agent.BaseAgentSchemaError(ValueError)</code>.</p>
+</li>
+</ul>
+<h3 id="docs">Docs<a class="headerlink" href="#docs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p><strong><code>docs/concepts/sandbox.md</code></strong> — new "Recipe: test-driven loops over LLM-generated code" section. Documents the per-spec pattern for safely running LLM-generated candidate functions: bake source into a fresh <code>GeneratedToolSpec</code> per (iteration × test), pass through the sandbox's static validator + RLIMIT-bounded subprocess, never <code>exec()</code> strings against the parent namespace. Names what the pattern protects against and what it doesn't (kernel isolation, network egress, filesystem reads). Discovered while building <code>notebooks/12_combo_autonomous_coder.ipynb</code> where the instinct was an exec-based test runner — which the validator rightly rejects.</p>
+</li>
+<li>
+<p><strong><code>docs/concepts/topology_optimization.md</code></strong> — two new sections. (1) "Caveat: LLM-generated tests as evaluator feedback" — documents the Unsupervised Evaluation Paradox at the runtime layer: letting an LLM generate test labels for another LLM's code makes the loop <em>worse</em> on imperfect models, because hallucinated tests poison the fixer's signal (V2 of the coding benchmark regressed ~50pp from this exact pattern). Names what works instead (visible-test-only with keep-best). (2) "When NOT to use <code>RuntimeTopologyDesigner</code> — just hand-write a Pipeline" — honest framing on when the runtime designer's per-request LLM cost is worth paying vs. just instantiating known agents in known shapes. Three concrete tests for "should I reach for this primitive."</p>
+</li>
+<li>
+<p><strong><code>docs/concepts/autonomy.md</code></strong> — new "When NOT to use <code>MetaOrchestrator</code> — just write the agents and a Pipeline" section, the parallel framing for the autonomy layer: the planner LLM call is the most expensive single invocation in the chain; only worth paying when the decomposition itself is the hard part. Cross-links to the topology version of the same principle.</p>
+</li>
+<li>
+<p><strong><code>CLAUDE.md</code></strong> — new convention added to "Key Conventions": <em>"Every battery ships with a benchmark."</em> Names <code>benchmarks/coding/</code> as the canonical reference layout. Future batteries must ship with a reproducible head-to-head + README documenting expected numbers, variance, and cost.</p>
+</li>
+</ul>
+<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><code>RefinementLoop</code> now defaults to <code>keep_best=True</code></strong> — tracks the iteration with the highest <code>EvalResult.score</code> and returns <em>that</em> iteration's output if the final iteration regressed. Protects self-improving loops (test-driven coding, evaluator-feedback refinement) from "fixer breaks code that already worked" failure modes on imperfect models. The <code>passed=True</code> early exit still returns the passing iteration's output (passing is the explicit success bar). When the evaluator never returns a numeric score, keep-best is a no-op and the legacy "return latest" behavior holds — so callers using boolean-only evaluators see zero behavior change. <code>LoopResult</code> gains <code>best_iteration: int | None</code> and <code>best_score: float | None</code> (informational; populated regardless of the flag). <strong>Migration:</strong> set <code>RefinementLoop(..., keep_best=False)</code> to restore strict last-iteration semantics. Discovered while building <code>notebooks/12_combo_autonomous_coder.ipynb</code>, where we hand-rolled this safety property and saw it lift combo <code>pass@1</code> measurably on <code>gpt-4o-mini</code>. 6 new tests in <code>tests/orchestration/test_loop.py</code> (full suite 1051 → 1057).</li>
+</ul>
+<h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Tier-2 Docker sandbox + per-user persisted MCP tool library</strong> — closes the deferred W3.M item from <code>[0.3.0]</code>. The host-side <code>orqest.sandbox.docker.DockerSandbox</code> orchestrates per-session containers built from the new <code>orqest/agent-runtime</code> image (<code>Dockerfile</code> at repo root). The container ships its own <code>orqest.sandbox.docker_runtime</code> package — a FastMCP server exposing four tools (<code>execute_python</code>, <code>promote_tool</code>, <code>list_persisted_tools</code>, <code>forget_tool</code>), <code>SessionAuthMiddleware</code> (HMAC-signed JWT with <code>{sub: user_id, sid: session_id, exp}</code> claims), per-agent <code>uv venv</code>s under <code>/workspace/&lt;session&gt;/&lt;agent_id&gt;/venv</code> (created in ~50 ms; cached per agent), and a SQLite <code>ToolStore</code> mounted as the per-user named volume <code>orqest-user-&lt;user_id&gt;</code>. Promotion is threshold-based by default (N=3 successful invocations of the same <code>(name, code_hash)</code> auto-promote and fire <code>notifications/tools/list_changed</code>); <code>eager</code> and <code>operator_approval</code> modes also wired. Cross-session reuse: same user's NEXT session sees the persisted tools immediately on <code>tools/list</code>; cross-user isolation is enforced by per-user named volumes. Hardened defaults: <code>--cap-drop=ALL --read-only --user 1000:1000 --pids-limit --memory --cpus</code>, <code>tini</code> as PID 1, non-root user. Honest threat model: shared-kernel, protects against accidental damage and most prompt-injection scenarios; not adversarial-multi-tenant grade — Tier 3 (microvm) is the documented seam for that.</li>
+<li><code>orqest.sandbox.docker_runtime/</code> — the in-container runtime package: <code>server.build_server[_from_env]</code>, <code>auth.SessionAuthMiddleware</code>, <code>executor.Executor</code> (per-agent venv + <code>uv pip install</code> gated by <code>ORQEST_ALLOWED_PACKAGES</code> allowlist + AST validator + RLIMIT-bounded subprocess), <code>store.ToolStore</code> (per-user SQLite, <code>(name, version)</code> PK, deduplication by <code>implementation_hash</code>).</li>
+<li><code>orqest.sandbox.docker.DockerSandbox</code> (host-side) — Sandbox-Protocol-conformant; lifecycle is an async context manager (<code>__aenter__</code> → <code>docker run</code> + MCP boot-wait + JWT-auth open; <code>__aexit__</code> → <code>docker rm -f</code>, named volume persists). Required <code>user_id</code> + <code>session_id</code> ctor args (framework-issued; the LLM never sees them). Mints a fresh HMAC secret per construction by default; passes it to the container via <code>ORQEST_HMAC_SECRET</code>.</li>
+<li><code>orqest.sandbox.jwt</code> — minimal HS256 JWT (encode/decode/verify), constant-time signature compare, <code>alg=none</code> confusion attack defended. Avoids pulling in <code>pyjwt</code> for this single internal use.</li>
+<li><code>orqest.sandbox._compat</code> — soft-import boundary for the optional <code>docker</code> SDK; friendly <code>ImportError</code> with the install hint at first call to <code>docker_from_env()</code> rather than at module load.</li>
+<li><code>orqest.workbench.Workbench(user_id=..., session_id=...)</code> — required ctor args (BREAKING — see below). New <code>with_docker_sandbox(*, user_id, session_id, image, allowed_packages, ...)</code> factory mirrors <code>with_healing(...)</code>; lazy-imports <code>orqest.sandbox.docker</code> so the workbench stays import-light.</li>
+<li><code>orqest.autonomy.GeneratedToolSpec.dependencies: list[str]</code> — additive; LLM can declare pip dependencies that the container's executor will install into the agent's venv (gated by <code>allowed_packages</code>).</li>
+<li><code>orqest.autonomy.tool_factory.spawn(spec, *, agent_id=None)</code> and <code>AgentFactory._resolve_tools(..., *, agent_id=None)</code> — <code>agent_id</code> propagates through the factory chain to <code>Sandbox.execute(..., agent_id=...)</code>. Tier-0/1 sandboxes accept-and-ignore for backward compat; Tier-2 routes to per-agent venvs.</li>
+<li><code>orqest.sandbox.protocol.Sandbox.execute(...)</code> — additive <code>agent_id: str | None = None</code> and <code>dependencies: list[str] | None = None</code> kwargs.</li>
+<li><code>orqest.mcp.MCPServerConfig.headers: dict[str, str]</code> and <code>transport: Literal["stdio","sse","streamable-http"]</code> — additive. <code>MCPConnection._open_transport</code> learns a <code>streamable-http</code> branch via <code>mcp.client.streamable_http.streamablehttp_client</code>, forwarding <code>config.headers</code> for the <code>Authorization: Bearer ...</code> workflow.</li>
+<li><code>orqest.memory.MemoryEntry.memory_type = Literal["semantic","episodic","procedural","tool"]</code> (extension); <code>MemoryFilter</code> mirrored. <code>orqest.memory.strategies.ToolStrategy</code> (exact-name match with FTS5 fallback). <code>orqest.memory.MemoryConfig.tool: PerKindConfig</code> (versioning enabled; no TTL by default).</li>
+<li>~74 new tests across <code>tests/sandbox/</code> (<code>test_jwt.py</code>, <code>test_docker_compat.py</code>, <code>test_docker.py</code> marked <code>docker</code>), <code>tests/sandbox/docker_runtime/</code> (<code>test_store.py</code>, <code>test_executor.py</code>, <code>test_auth.py</code>, <code>test_server.py</code>), <code>tests/mcp/test_streamable_http_transport.py</code>, <code>tests/memory/test_tool_memory_type.py</code>, <code>tests/autonomy/test_generated_tool_spec_dependencies.py</code>, <code>tests/workbench/test_user_session.py</code>. Full suite: <strong>1051 passing</strong> (no daemon) + 13 marked <code>docker</code> (require <code>docker</code> daemon AND the <code>orqest/agent-runtime</code> image — green when both available). New pytest marker <code>docker</code> registered in <code>[tool.pytest.ini_options]</code>.</li>
+<li>New optional dependency group <code>[dependency-groups] docker = ["docker&gt;=7.0", "httpx&gt;=0.27"]</code>. Mirrors the <code>optimization</code> pattern. Soft-imported via <code>orqest.sandbox._compat</code>.</li>
 <li><code>BaseAgent(reasoning=...)</code> — a provider-agnostic reasoning/thinking knob (<code>"minimal"</code> | <code>"low"</code> | <code>"medium"</code> | <code>"high"</code>). pydantic-ai exposes thinking through a different <code>ModelSettings</code> key per provider (<code>anthropic_thinking</code> / <code>openai_reasoning_effort</code> / <code>google_thinking_config</code> / <code>openrouter_reasoning</code>); <code>reasoning</code> collapses that into one effort level, translated and merged into <code>model_settings</code> — explicit <code>model_settings</code> keys win on conflict. For budget-based providers (Anthropic, Google) a sensible <code>max_tokens</code> is filled when unset so reasoning works out of the box. New <code>orqest.utils.reasoning</code> module (<code>ReasoningEffort</code>, <code>resolve_reasoning_settings</code>); <code>ReasoningEffort</code> is re-exported from <code>orqest.agents</code>.</li>
+<li><strong>New battery <code>orqest.optimization</code></strong> — reflective prompt evolution via <a href="https://github.com/gepa-ai/gepa">GEPA</a> (Genetic-Pareto, Agrawal et al., ICLR 2026 Oral). Three-layer split mirroring <code>healing/</code>: encoding (<code>Genome</code> + <code>PromptGene</code> / <code>ScalarGene</code> / <code>CategoricalGene</code>), evaluation (<code>Evaluator</code> + <code>GoldExample</code> + <code>MetricBundle</code> / <code>MetricWeights</code> aggregating accuracy / confidence / cost / latency / robustness), adaptation (<code>OrqestGEPAAdapter</code> + <code>OrqestEvalBatch</code> + <code>OptimizationRunner</code> + <code>OptimizationResult</code> + <code>apply_result</code> / <code>OptimizationDiff</code>). The adapter feeds GEPA both per-example scalar <code>scores</code> and per-objective <code>objective_scores</code> so the native <code>frontier_type="hybrid"</code> Pareto frontier discovers tradeoffs across both axes. <code>apply_result(dry_run=True)</code> is the default; commit invalidates the cached <code>pydantic_ai.Agent</code> so the new prompt actually takes effect. Async-bridge handles both fresh-process (<code>asyncio.run</code>) and Jupyter (worker thread). 62 new tests (62/62 green; full suite 689 → 751). Optional dependency — <code>uv sync --group optimization</code>. Concept doc at <code>docs/concepts/optimization.md</code>; demo notebooks <code>notebooks/06_optimization_basic.ipynb</code> (research summarizer) and <code>notebooks/07_optimization_compound.ipynb</code> (planner inside <code>MetaOrchestrator</code>). Scalar/categorical gene evolution gated by <code>OptimizationConfig.enable_scalar_genes</code> / <code>enable_categorical_genes</code> until the upstream W1.1 wiring lands.</li>
+<li><strong>Topology evolution under <code>orqest.optimization</code></strong> (W3) — ADAS-style structural search over a typed <code>TopologySpec</code> IR. Two new sub-batteries:<ul>
+<li><strong>Orchestration spec layer</strong> (<code>orqest/orchestration/spec.py</code> + <code>hydrate.py</code>) — Pydantic models for <code>PipelineSpec</code> / <code>ParallelSpec</code> / <code>RouterSpec</code> / <code>RefinementLoopSpec</code> / <code>AgentStepSpec</code> / <code>FunctionStepSpec</code> plus the top-level <code>TopologySpec</code> and <code>OperationSpec</code> discriminated unions. <code>topology_from_spec()</code> hydrates a spec into a live runtime via an explicit <code>CallableRegistry</code> + agent factory map — no <code>eval</code>, no <code>exec</code>, no name forgery. Closes the audit-named gap (LLM cannot emit composition topology at runtime). Independently useful regardless of search.</li>
+<li><strong>Topology search engine</strong> (<code>orqest/optimization/topology.py</code> + <code>meta_agent.py</code>) — <code>TopologyGene</code> (Pydantic gene whose value is a serialized <code>TopologySpec</code>), <code>TopologyEvaluator</code> (subclass of <code>Evaluator</code>; adds <code>n_agents</code> / <code>depth</code> to <code>MetricBundle.raw</code>), and <code>MetaAgentSearch</code> (the ADAS-style design → reflexion → evaluate → archive loop). The meta agent emits typed JSON, not raw Python — sidestepping ADAS's <code>exec()</code>-in-process gap and the entire sandbox problem. Pluggable archive strategies (<code>top_k</code> default, <code>cumulative</code> ADAS-faithful, <code>parallel</code> per the <a href="https://arxiv.org/abs/2510.06711">2510.06711 critique</a>). Pydantic ValidationError + hydration KeyError feed back to the meta agent as debug-retry feedback (analogue of ADAS's traceback retry, but type-safe). Returns an <code>OptimizationResult</code> shaped identically to the GEPA path so <code>apply_result</code> and downstream consumers work without dispatch. <strong>Two-phase composition with GEPA is the recommended path</strong> (ADAS first with fixed strong prompts, GEPA on the winner) — never nest, the multiplicative cost is fatal. Concept doc at <code>docs/concepts/topology_optimization.md</code>; demo notebooks <code>notebooks/08_topology_search_basic.ipynb</code> and <code>notebooks/09_topology_with_gepa.ipynb</code>. 95 new tests (44 spec/hydrate + 20 topology + 25 meta_agent + 6 topology-apply; full suite 768 → 863).</li>
+</ul>
+</li>
+<li><code>MetaAgentConfig</code> re-exported from <code>orqest</code> root (matches <code>HealingConfig</code> / <code>MetacognitionConfig</code> / <code>OptimizationConfig</code> pattern).</li>
+<li><code>apply_result</code> diff renderer now JSON pretty-prints Pydantic-model gene values (typed <code>TopologySpec</code> slots get readable line-by-line diffs).</li>
+<li><strong>Runtime topology design</strong> — the runtime planner sibling to <code>MetaOrchestrator</code>. <strong>Both new modules live under <code>orqest.autonomy/</code></strong> (not <code>orqest.optimization/</code>) because they are runtime planners, not optimizers — there's no loss function, no per-request scoring, no Pareto archive. They share the <code>TopologySpec</code> IR with <code>MetaAgentSearch</code> because the IR is provenance-agnostic, but the relationship is shared infrastructure, not shared algorithm:<ul>
+<li><strong><code>orqest.autonomy.runtime</code></strong> — <code>RuntimeTopologyDesigner</code> (per-request <code>TopologySpec</code> synthesis via a user-provided <code>BaseAgent[GlobalState, TopologyDesign]</code>), plus the <code>TopologyCache</code> Protocol with three implementations: <code>NoCache</code> (default, zero state), <code>InMemoryLRU</code> (exact-match goal string), and <code>MemoryStoreCache</code> (backed by <code>LocalMemoryStore</code> with semantic recall + reliability decay on execution failure). The cache uses <code>memory_type="semantic"</code> with a namespaced <code>source_agent="topology_cache"</code> slot; reliability decay reuses the existing <code>PerKindConfig.decay_on_failure</code> machinery. <code>verify_on_hit=True</code> by default catches stale agent / callable references after registry changes; optional <code>fallback_spec</code> returns a safe minimal topology when design fails. Seed-library bootstrap accepts a list of validated topologies (typically the Pareto front from an offline <code>MetaAgentSearch</code> run) and biases the designer toward known-good shapes. <strong>Honest framing:</strong> the cache decays only on <code>topology.run</code> exceptions, not on bad-quality outputs — that's W3.E (deferred).</li>
+<li><strong><code>orqest.autonomy.topology_orchestrator</code></strong> — <code>TopologyOrchestrator</code> is the topology-shaped sibling to <code>MetaOrchestrator</code>. Per-request loop: design (cache or fresh) → hydrate → run → record outcome. Returns a typed <code>TopologyExecutionResult</code> with structural metrics (<code>n_agents</code>, <code>depth</code>), timing breakdown (<code>design_ms</code>, <code>execution_ms</code>, <code>total_ms</code>), and <code>cache_hit</code> signal. Bus events: <code>topology.execution_completed</code> / <code>topology.execution_failed</code> / <code>topology.cache_hit</code> / <code>topology.cache_miss</code> / <code>topology.designed</code> / <code>topology.design_failed</code> / <code>topology.fallback_used</code>.</li>
+<li><strong>Import paths</strong> — both modules are imported via the explicit submodule path:<ul>
+<li><code>from orqest.autonomy.runtime import RuntimeTopologyDesigner, MemoryStoreCache, NoCache, InMemoryLRU, TopologyCache</code></li>
+<li><code>from orqest.autonomy.topology_orchestrator import TopologyOrchestrator, TopologyExecutionResult</code>
+  Not re-exported from <code>orqest.autonomy.__init__</code> to avoid a circular import (eagerly loading them at autonomy package init triggers loading <code>optimization.meta_agent</code> mid-init via <code>topology</code> → <code>autonomy.factory</code>). Matches the pattern used by other heavy batteries (e.g., <code>from orqest.compound import SubAgentTool</code>).</li>
+</ul>
+</li>
+<li>35 new tests (25 runtime + 10 orchestrator; full suite 863 → 898). Concept doc section "Runtime topology design" appended to <code>docs/concepts/topology_optimization.md</code>. Demo notebook <code>notebooks/10_runtime_topology.ipynb</code> walks through cold design, cache reuse, full orchestrator loop, seed-library bootstrap, and online-learning failure decay end-to-end.</li>
+</ul>
+</li>
+<li><code>unpack_topology_output</code> promoted from private <code>_unpack_topology_output</code> in <code>orqest.optimization.topology</code> — used by both <code>TopologyEvaluator</code> and <code>TopologyOrchestrator</code> to extract the meaningful payload (<code>ParallelResult.merged</code> / <code>LoopResult.output</code>) from a topology's <code>.run()</code> result.</li>
+<li><strong><code>orqest.sandbox</code></strong> subpackage — safe execution surface for LLM-generated Python (closes the Phase-3 deferred <code>ToolSandbox</code> item). Two-stage Protocol: <code>validate(code, allowed_imports)</code> (static AST checks; raises <code>ValidationError</code> on disallowed import / forbidden call / dunder access / syntax error) and <code>execute(code, args, allowed_imports, timeout_s, memory_mb)</code> (always returns <code>ExecutionResult</code>; never raises for user-code failures). Two backends ship: <code>InProcessSandbox(unsafe=True)</code> (Tier 0 — <code>exec()</code> in a restricted namespace; refuses to construct without <code>unsafe=True</code> because there is no real isolation) and <code>SubprocessSandbox</code> (Tier 1, production default — fresh <code>python -c</code> subprocess per call with <code>RLIMIT_AS</code> + <code>RLIMIT_CPU</code> (POSIX) + outer <code>asyncio.wait_for</code> timeout; JSON args/result via stdin/stdout). Default-deny imports — empty <code>allowed_imports</code> rejects any <code>import</code> statement. Defense-in-depth — the subprocess re-validates internally before execution. Concept doc at <code>docs/concepts/sandbox.md</code>. <strong>No new dependencies</strong> (subprocess / resource / ast / json are stdlib).</li>
+<li><strong>Dynamic tool spawning</strong> — closes the autonomy ladder's missing rung. <code>AgentSpec.tools</code> previously dropped any <code>ToolSpec</code> whose name wasn't pre-registered; now an LLM-emitted <code>GeneratedToolSpec</code> (carrying <code>implementation: str</code> + <code>allowed_imports: set[str]</code> + <code>timeout_s</code> + <code>memory_mb</code>) is materialized at runtime via <code>DynamicToolFactory(sandbox=...)</code>. Three new pieces:<ul>
+<li><strong><code>orqest.autonomy.spec.GeneratedToolSpec</code></strong> — Pydantic model carrying the implementation. <code>AgentSpec.tools</code> widened to <code>list[ToolSpec | GeneratedToolSpec]</code>; Pydantic v2 smart-union dispatches by structure (the <code>implementation</code> field is the disambiguator). Backward-compatible — existing <code>ToolSpec(name=...)</code> construction unchanged.</li>
+<li><strong><code>orqest.autonomy.tool_factory.DynamicToolFactory</code></strong> — wraps a <code>Sandbox</code> to produce runnable <code>pydantic_ai.Tool</code> objects from <code>GeneratedToolSpec</code>. Bus events: <code>tool.spawned</code> / <code>tool.spawn_failed</code> / <code>sandbox.validation_rejected</code> / <code>tool.invocation_completed</code> / <code>tool.invocation_failed</code>. The spawned <code>Tool</code> returns a structured error dict on sandbox failure (not a Python exception) so the agent loop sees it as a tool result.</li>
+<li><strong><code>orqest.autonomy.AgentFactory(tool_factory=...)</code></strong> — <code>_resolve_tools</code> learns to dispatch on <code>isinstance</code>: <code>ToolSpec</code> → registry lookup (existing path), <code>GeneratedToolSpec</code> → <code>tool_factory.spawn(spec)</code>. When <code>tool_factory is None</code> and a <code>GeneratedToolSpec</code> appears, log + skip (matches the existing graceful-skip behavior for unknown registry names). Internal <code>_spawn_generated</code> async-bridges via <code>asyncio.run</code> (no loop) or worker thread (loop already running) — same pattern as <code>OrqestGEPAAdapter._run_async</code>.</li>
+<li><strong><code>BaseAgent.add_tool(tool)</code></strong> — appends to <code>self.tools</code> and invalidates the cached <code>pydantic_ai.Agent</code> so the next access rebuilds with the new tool list. Idempotent for tools sharing a <code>name</code> (last-write-wins). Closes the "agent encounters a capability gap mid-run; orchestrator hands it the missing tool" path.</li>
+<li><strong><code>orqest.autonomy.__init__</code></strong> re-exports <code>GeneratedToolSpec</code> + <code>DynamicToolFactory</code>.</li>
+<li>61 new tests (34 sandbox + 14 tool_factory + 7 factory-with-generated-tools + 6 add_tool; full suite 898 → 959). Concept docs: new <code>docs/concepts/sandbox.md</code>; appended "Dynamic tool spawning" section to <code>docs/concepts/autonomy.md</code>. Demo notebook <code>notebooks/11_dynamic_tools.ipynb</code> walks through sandbox standalone, factory spawn, mixed-tools dispatch, runtime add_tool, and an end-to-end real-LLM run where the agent uses a tool that didn't exist at agent-construction time.</li>
+<li><strong>Future seams (deferred):</strong> W3.J — procedural-memory persistence for spawned tools (<code>Skill</code> shape); W3.K — <code>SubprocessPoolSandbox</code> for amortizing startup cost; W3.L — <code>E2BSandbox</code> (hosted micro-VM, optional dep); W3.M — <code>DockerSandbox</code> / <code>FirecrackerSandbox</code> (real network/filesystem isolation); W3.C revisited — ADAS sandboxed codegen now unblocked.</li>
+</ul>
+</li>
+</ul>
+<h3 id="breaking-changes">Breaking Changes<a class="headerlink" href="#breaking-changes" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>Workbench(...)</code> now requires <code>user_id: str</code> and <code>session_id: str</code> keyword args. Existing in-tree consumers (notebooks, examples, tests) updated. The args are framework-issued — never derived from LLM-visible context — and become the strict isolation key for the Docker tier's per-user persisted tool library. The previous <code>Workbench()</code> no-arg form was used by ~20 in-tree call sites; all migrated. No external consumers exist (orqest is unpublished as of <code>0.7.0</code>).</li>
+</ul>
+<h3 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h3>
+<ul>
+<li>New optional dependency group <code>[dependency-groups] optimization = ["gepa&gt;=0.1.1"]</code>. Not in core; pulls litellm + datasets + tiktoken transitively (~50–80 MB). Soft-imported via <code>orqest.optimization._compat</code> with a friendly <code>ImportError</code> when absent.</li>
+<li>New optional dependency group <code>[dependency-groups] docker = ["docker&gt;=7.0", "httpx&gt;=0.27"]</code>. Tier-2 host-side only; the <code>orqest/agent-runtime</code> container ships the rest. Soft-imported via <code>orqest.sandbox._compat</code>.</li>
+<li>Topology evolution adds <strong>no new dependencies</strong> — uses the existing pydantic-ai meta-agent + the orchestration primitives already in core.</li>
 </ul>
 <h2 id="040-2026-05-14">[0.4.0] - 2026-05-14<a class="headerlink" href="#040-2026-05-14" title="Permanent link">&para;</a></h2>
 <p>The advance pass — "complete &amp; honest." Finishes the <code>[0.3.0]</code> preview tier into Tier 1: every capability that was a designed-but-unwired seam is now wired and test-covered. Test suite: 664 → 670.</p>
-<h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
+<h3 id="added_2">Added<a class="headerlink" href="#added_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>PerKindConfig.ttl_days</code> + <code>LocalMemoryStore.prune_expired()</code> — per-kind retention windows; a best-effort maintenance call deletes entries past their TTL and returns the count. A kind with <code>ttl_days=None</code> is never pruned.</li>
 <li><code>PerKindConfig.version_on_edit</code> — when enabled, re-storing a procedural skill by name bumps its <code>version</code> one past the highest stored version and keeps the prior rows as an audit trail.</li>
 <li><code>LocalMemoryStore(embedder=...)</code> — a pluggable sync-or-async embedder. When set, <code>store()</code> embeds entry content and <code>SemanticStrategy</code> ranks recall by cosine similarity over stored vectors; FTS5 / LIKE otherwise. New <code>default_strategy_table(embedder=...)</code> parameter and <code>embed_text</code> / <code>_cosine</code> helpers in <code>orqest.memory.strategies</code>.</li>
 <li><code>MCPDiscovery(well_known_urls=...)</code> — <code>search()</code> probes the configured base URLs for <code>/.well-known/mcp.json</code> (highest intent, tried first), then queries the registry endpoints, deduplicating by name. The documented well-known-manifest discovery source is now real.</li>
 </ul>
-<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>The <code>RecoveryAction</code> union stays lean (<code>AbortRun</code> | <code>EscalateToUser</code>) by design — model-level recovery is <code>FallbackModel</code>, tool-level recovery is <code>DiscoveryHook</code>. The advance pass evaluated re-introducing <code>RetryDifferentModel</code> / <code>DiscoverAndRetry</code> / <code>RetrySameTool</code> and concluded they duplicated those dedicated, composable mechanisms.</li>
 </ul>
@@ -2481,7 +3100,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 </ul>
 <h2 id="030-2026-05-14">[0.3.0] - 2026-05-14<a class="headerlink" href="#030-2026-05-14" title="Permanent link">&para;</a></h2>
 <p>The reconcile pass. A contradiction audit found ~27 places where the code and the docs disagreed — most often an "intent layer" (configs, types, hooks) built ahead of the "effect layer" that consumes it. This release wires the cheap gaps, deletes the dead ones, and corrects every stale claim. Tiered honesty contract: each subsystem's primary path is functional end-to-end; specific advanced capabilities are explicitly labelled <strong>Preview</strong>. Test suite: 655 → 664.</p>
-<h3 id="breaking-changes">Breaking Changes<a class="headerlink" href="#breaking-changes" title="Permanent link">&para;</a></h3>
+<h3 id="breaking-changes_1">Breaking Changes<a class="headerlink" href="#breaking-changes_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>compound.sub_agent_tool.EvalResult</code> renamed to <code>SubAgentEvalResult</code> — it collided by name with <code>orchestration.loop.EvalResult</code> (a different shape).</li>
 <li><code>RecoveryAction</code> union reduced to <code>EscalateToUser | AbortRun</code>. <code>RetrySameTool</code> / <code>RetryDifferentModel</code> / <code>DiscoverAndRetry</code> are removed — they produced payloads no compound flow consumed.</li>
@@ -2517,7 +3136,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 </ul>
 <h2 id="020-2026-04-25">[0.2.0] - 2026-04-25<a class="headerlink" href="#020-2026-04-25" title="Permanent link">&para;</a></h2>
 <p>The cognitive-substrate completion. Three implementation waves landed in sequence on the same day (Wave 1: HookDecision + procedural memory + metacognition; Wave 2: healing + MCP auto-wire; Wave 3: generative UI). Test suite: 360 → 612 (+252).</p>
-<h3 id="added_2">Added<a class="headerlink" href="#added_2" title="Permanent link">&para;</a></h3>
+<h3 id="added_3">Added<a class="headerlink" href="#added_3" title="Permanent link">&para;</a></h3>
 <p><strong><code>orqest.metacognition</code> (Wave 1.3 — vision feature #3 "Metacognition primitives"):</strong>
 - <code>EnrichedOutput[OutputT]</code> — Pydantic generic pairing an output with <code>confidence</code> (<code>float | None</code> in <code>[0, 1]</code>), <code>uncertainty_targets: list[str]</code>, <code>capability_boundary: bool</code>, <code>protocol_name</code>, and free-form <code>metadata</code>
 - <code>ConfidenceProtocol</code> Protocol + three concrete strategies: <code>StructuredOutputProtocol</code> (zero-cost; lifts <code>self_confidence</code>/<code>uncertain_about</code>/<code>outside_my_capability</code> off the agent's own <code>OutputT</code>), <code>LLMSelfRatingProtocol</code> (+1 LLM call; rater agent emits JSON, markdown-fence-tolerant parser), <code>EnsembleProtocol(k=N)</code> (+k–1 parallel calls; pairwise-agreement confidence)
@@ -2574,7 +3193,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <p><strong>Test suite:</strong> 360 → 612 at wave-3 ship (+252 across the three waves; 360 pre-existing tests stayed green at every wave boundary). Subsequent consumer-side polish (2026-04-26) brought the suite to 655.</p>
 <h2 id="010-2026-04-24">[0.1.0] - 2026-04-24<a class="headerlink" href="#010-2026-04-24" title="Permanent link">&para;</a></h2>
 <p>Phases 2–5 of the original Orqest roadmap stabilized: Memory, Autonomy, Observability, and MCP. The substrate that the Wave 1–3 cognitive features in 0.2.0 build on.</p>
-<h3 id="added_3">Added<a class="headerlink" href="#added_3" title="Permanent link">&para;</a></h3>
+<h3 id="added_4">Added<a class="headerlink" href="#added_4" title="Permanent link">&para;</a></h3>
 <p><strong><code>orqest.memory</code> (Phase 2):</strong>
 - <code>MemoryStore</code> Protocol — <code>store</code>, <code>recall</code>, <code>forget</code>, <code>update_reliability</code>, <code>count</code>
 - <code>MemoryEntry</code> — content + <code>memory_type</code> (initially <code>"semantic" | "episodic"</code>) + source agent + confidence + reliability score + metadata + access tracking
@@ -2624,12 +3243,12 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 - <code>run_with_retry()</code> — exception-based retry with default enrichment
 - <code>ContextManager</code> — token-aware three-tier compaction (tool-result snip → turn summarization at 60% → emergency truncation at 85%)
 - Documentation site (MkDocs Material) with concept docs + auto-generated API reference</p>
-<h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Permanent link">&para;</a></h3>
+<h3 id="changed_2">Changed<a class="headerlink" href="#changed_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>GlobalState.message_history</code> typed as <code>list[ModelMessage]</code> instead of <code>list[Any]</code></li>
 </ul>
 <h2 id="001-2025-07-21">[0.0.1] - 2025-07-21<a class="headerlink" href="#001-2025-07-21" title="Permanent link">&para;</a></h2>
-<h3 id="added_4">Added<a class="headerlink" href="#added_4" title="Permanent link">&para;</a></h3>
+<h3 id="added_5">Added<a class="headerlink" href="#added_5" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>BaseAgent[StateT, OutputT]</code> — generic, async-first abstract base class for agents</li>
 <li><code>GlobalState</code> — conversation state with app-level messages and pydantic-ai message history</li>
@@ -2650,6 +3269,38 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 
 
 
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="May 23, 2026 16:36:45 UTC"><span class="timeago" datetime="2026-05-23T16:36:45+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="May 23, 2026 16:36:45 UTC">2026-05-23</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Created">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="February 21, 2026 11:54:50 UTC"><span class="timeago" datetime="2026-02-21T11:54:50+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="February 21, 2026 11:54:50 UTC">2026-02-21</span>
+  </span>
+
+    
+    
+    
+  </aside>
 
 
 
@@ -2677,10 +3328,35 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
   
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 Kareem El Sayed
+    </div>
+  
   
     Made with
     <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
       Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Kareemlsd/orqest" target="_blank" rel="noopener" title="Orqest on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/orqest/" target="_blank" rel="noopener" title="Orqest on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
     </a>
   
 </div>
@@ -2698,10 +3374,14 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.code.annotate", "navigation.sections", "navigation.top", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.code.annotate", "content.tooltips", "content.action.edit", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "search.highlight", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../js/timeago.min.js"></script>
+      
+        <script src="../js/timeago_mkdocs_material.js"></script>
       
     
   </body>
