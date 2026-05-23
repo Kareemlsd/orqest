@@ -37,6 +37,7 @@ from typing import Any
 
 from orqest.sandbox import _safe_builtins as _safe_builtins_mod
 from orqest.sandbox import _static as _static_mod
+from orqest.sandbox._identifiers import check_identifier
 from orqest.sandbox._static import collect_issues, format_issues
 from orqest.sandbox.protocol import ExecutionResult
 
@@ -311,6 +312,19 @@ class Executor:
         memory_mb: int = 128,
     ) -> ExecutionResult:
         """Validate, ensure venv, install deps, run, return ExecutionResult."""
+        # Identifier validation — ``agent_id`` is LLM-controlled at the
+        # MCP tool boundary and feeds directly into ``agent_workspace``
+        # paths + ``uv venv`` directory names. Reject anything outside
+        # the strict allowlist before any filesystem operation runs.
+        try:
+            check_identifier(agent_id, kind="agent_id")
+        except ValueError as exc:
+            return ExecutionResult(
+                success=False,
+                error=str(exc),
+                duration_ms=0.0,
+            )
+
         # Static AST validation
         issues = collect_issues(code, allowed_imports=allowed_imports)
         if issues:

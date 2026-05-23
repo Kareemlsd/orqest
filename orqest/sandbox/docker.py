@@ -40,6 +40,7 @@ from typing import Any
 from loguru import logger
 
 from orqest.sandbox._compat import DOCKER_AVAILABLE, docker_errors, docker_from_env
+from orqest.sandbox._identifiers import check_identifier
 from orqest.sandbox._static import collect_issues, format_issues
 from orqest.sandbox.jwt import encode as jwt_encode
 from orqest.sandbox.protocol import ExecutionResult, ValidationError
@@ -74,6 +75,12 @@ class DockerSandbox:
             raise ValueError("user_id is required and must be a non-empty string")
         if not session_id:
             raise ValueError("session_id is required and must be a non-empty string")
+        # Both identifiers feed into Docker volume names + tmpfs paths; reject
+        # anything outside the strict identifier grammar to stop path-traversal
+        # at the host boundary (defence-in-depth — the in-container executor
+        # validates too).
+        check_identifier(user_id, kind="user_id")
+        check_identifier(session_id, kind="session_id")
         if promotion_policy not in {"threshold", "eager", "operator_approval"}:
             raise ValueError(
                 f"promotion_policy must be one of "
