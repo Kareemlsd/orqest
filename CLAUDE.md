@@ -388,5 +388,6 @@ The **gstack** meta-skill (browse, qa, ship, investigate, checkpoint, codex, rev
 ## References
 
 - `/principles` skill (`.claude/skills/principles/SKILL.md`) — Pragmatic Programmer rules for this codebase (canonical). Invoke when writing, reviewing, or refactoring orqest code.
+- `/orqest` skill (`orqest/skills/orqest/SKILL.md`, symlinked into `.claude/skills/orqest/`) — bundled usage skill shipped with the package. Decision tree + 5 wire-up patterns + 9 battery-specific references under `references/`. Distributed via `python -m orqest.skills install`. Drift-checked by `tests/skills/test_skill_drift.py` — every `from orqest…` import resolves on each run.
 - `docs/` — MkDocs site: concept docs + API reference. Every new battery must add a `docs/concepts/<name>.md` with a runnable snippet.
 - `CHANGELOG.md` — Keep-a-Changelog format.

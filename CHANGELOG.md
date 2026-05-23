@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Bundled `orqest` skill** for Claude Code / Cursor / Aider / other agentic IDEs — ships at `orqest/skills/orqest/` as package data. `SKILL.md` (orientation + decision tree + 5 wire-up patterns + pitfalls) plus 9 compressed judgment-layer references covering every battery: `references/{orchestration,memory,autonomy,healing,metacognition,mcp,optimization,generative-ui,sandbox}.md`. References point back at `docs/concepts/*.md` for full depth — single source of truth for API surface stays in concept docs. Install into a project's skills directory with `python -m orqest.skills install [target=.claude/skills]`. Drift-checked by `tests/skills/test_skill_drift.py` — every `from orqest…` import in the skill resolves against the real package on each run.
+
 ## [0.8.0] - 2026-05-23
 
 ### Added
