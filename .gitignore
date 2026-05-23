@@ -65,6 +65,8 @@ data/
 # Claude Code transient state
 .claude/scheduled_tasks.lock
 .claude/plans/
+.claude/settings.local.json
+.claude/skills/gstack
 
 # -------------------------------
 # Recovered files (PhotoRec etc.)

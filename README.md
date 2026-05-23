@@ -202,9 +202,7 @@ asyncio.run(main())
 - **[API Reference](https://kareemlsd.github.io/orqest/api/agents/)** — auto-generated from source.
 - **[Benchmarks](benchmarks/)** — reproducible head-to-heads. Current: test-driven refinement loop beats single-shot by +17pp pass@1 (3-trial average).
 - **[Examples](examples/)** — runnable per-primitive references.
-- **[SKILLS.md](SKILLS.md)** — playbook for integrating Orqest into an existing codebase. Designed for LLM coding assistants and humans alike.
-
-The flagship reference consumer is [`demo/polymath/`](demo/polymath/) — every battery wired end-to-end.
+- **[Bundled skill](orqest/skills/orqest/SKILL.md)** — install into an agentic IDE with `python -m orqest.skills install`. See [Skills](https://kareemlsd.github.io/orqest/concepts/skills/) on the docs site.
 
 ## Contributing
 

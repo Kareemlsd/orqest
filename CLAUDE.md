@@ -6,7 +6,7 @@ Orqest is a Python framework for building autonomous agentic AI systems on top o
 
 **Design principle:** *"Core Orqest manages the shape and flow of intelligence; Extensions manage the matter and action of the domain."*
 
-**Domain-agnostic litmus test:** "Can a developer building a headless coding assistant use this feature without knowing what Polymath is?" If no, it belongs in the consumer, not Orqest.
+**Domain-agnostic litmus test:** "Can a developer building a headless coding assistant use this feature without knowing what any particular consuming app does?" If no, the feature belongs in the consumer, not in Orqest.
 
 **Current version:** `0.8.0` (`pyproject.toml`). **All five novel vision features shipped (2026-04-25)** — runtime agent design, cognitive memory typology (semantic / episodic / procedural), metacognition primitives, self-healing primitives, generative UI. **Phase 13 (2026-05-16)** added the Tier-2 Docker sandbox (`DockerSandbox`) + per-user persisted MCP tool library — the published `orqest/agent-runtime` image runs an in-container FastMCP server with HMAC-JWT auth, per-agent `uv` venvs, and SQLite-backed cross-session tool persistence per user.
 
@@ -333,11 +333,8 @@ python -m build
 
 **All five novel vision features ship.**
 
-Outstanding consumer-side work (out of Orqest core):
-- **Polymath consolidation** — ✅ shipped 2026-04-25 (`demo/polymath/.claude/CONSOLIDATION_COMPLETE_2026-04-25.md`). The dedicated `ChartsTab` / `ReportTab` were absorbed into the dynamic dockview tab manifest, healing wired into `Workbench`, and sub-agent roster migrated to procedural memory.
-- **Polymath cognitive surfacing** — ✅ shipped 2026-04-26. Confidence per turn, healing toasts, Memory tab (galaxy + 3-kind browser), Agents tab (roster table). See addendums in the same consolidation doc.
-- **Polymath editorial redesign** — ✅ shipped 2026-04-26 from a claude.ai/design handoff. Warm-neutral oklch + amber accent + Newsreader serif + Inter Tight grotesk + the **Cognitive Gutter** (24px left rail per assistant turn — replaces the per-message confidence pill). See `demo/polymath/CLAUDE.md` for the current-state summary.
-- **Concept docs** — ✅ `docs/concepts/{metacognition,healing,generative_ui,autonomy,mcp}.md` shipped 2026-05-02; mkdocs nav wires all 24 concept docs under three groups (Composition / Memory & Cognition / Production).
+Outstanding work:
+- **Concept docs** — ✅ shipped 2026-05-02; mkdocs nav wires all 24 concept docs under three groups (Composition / Memory & Cognition / Production) plus the new `reasoning` and `skills` concept pages.
 - **Production memory backend** — Supabase pgvector (known gap; purely additive — `MemoryStore` Protocol and `MemoryConfig` already accommodate it).
 - **`ToolSandbox`** — generated-tool-code safety surface (Phase 3's deferred safety item; relevant for agents that author + run their own tools).
 - **PyPI release pipeline** — `0.1.0` and `0.2.0` are cut in CHANGELOG; not yet published to PyPI.

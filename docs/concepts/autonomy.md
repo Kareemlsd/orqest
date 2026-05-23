@@ -254,7 +254,6 @@ The MetaOrchestrator's value shows up sharply when the decomposition is *itself*
 - **Constrain via the spec, not by editing the system prompt.** `AgentSpec.constraints` are appended in a separate block (`Constraints (you MUST follow these):`) so they survive prompt iteration.
 - **Use `max_spawn_depth` defensively.** A planner that spawns sub-planners that spawn sub-sub-planners blows up cost without the depth cap.
 - **Wire metacognition + memory together.** Confidence-driven re-decomposition + procedural persistence is the substrate's flagship loop; both are opt-in but compose cleanly.
-- **Polymath uses every part.** See `~/repos/orqest/demo/polymath/` for an end-to-end deployment of the autonomy layer with a persistent sub-agent roster, healing, generative UI, and a frontend that visualizes the roster.
 
 ## Pitfalls
 
