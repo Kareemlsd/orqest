@@ -152,9 +152,9 @@ Other subsystems are imported via their submodules (`from orqest.memory import L
 
 Mirrors source layout under `tests/`. As of latest collect: **1117 tests** — 1104 in the default suite + 13 marked `docker` (require a Docker daemon AND the `orqest/agent-runtime` image, skipped by default). The Phase-13 wave added ~74 tests across the new `tests/sandbox/test_jwt.py`, `tests/sandbox/test_docker_compat.py`, `tests/sandbox/test_docker.py`, `tests/sandbox/docker_runtime/`, `tests/mcp/test_streamable_http_transport.py`, `tests/memory/test_tool_memory_type.py`, `tests/autonomy/test_generated_tool_spec_dependencies.py`, `tests/workbench/test_user_session.py`. History: 655 baseline → 664 (`[0.3.0]`) → 670 (`[0.4.0]`) → 689 (reasoning) → 768 (GEPA `optimization`) → 863 (W3 topology evolution) → 898 (runtime topology) → 959 (Phase 12 sandbox + dynamic tool spawning) → 1064 (Phase 13 Docker tier + per-user persisted MCP tool library) → **1117 (post-Phase-13 hardening: orphan-tool-return repair, schema-validation guard, benchmarks fixture, sandbox helpers, multi-trial evaluation)**. Coverage spans agents, orchestration (incl. spec/hydrate IR), memory, mcp, autonomy, observability, workbench, compound, plan, tools, utils, io_utils, **metacognition, healing, ui, optimization (incl. topology + meta_agent), sandbox (incl. docker_runtime)**, plus root-level tests for config, hooks, hook_decision, budget_tool_results, context_manager.
 
-### Examples
+### Notebooks + concept docs are the entry surface
 
-`examples/01_basic_agent`, `02_agent_as_tool`, `03_streaming`, `04_pipeline`, `05_refinement_loop`, `06_parallel_and_router`, `07_hooks_and_session`, `08_memory`, `09_observability` — all tested with real LLMs. `05_refinement_loop/` demonstrates `confidence_threshold` + `agent_self_eval` (Wave 1.3 metacognition integration).
+The `notebooks/` tour (12 narrative notebooks) is the empirical dogfooding pass — each composes multiple primitives end-to-end against a real LLM. The `docs/concepts/*.md` pages are the one-primitive-at-a-time reference, each with a runnable snippet. There is no separate `examples/` folder; that level of detail lives in the concept docs.
 
 ## Key Conventions
 
@@ -345,7 +345,6 @@ Outstanding work:
 
 - `README.md` carries the current elevator pitch.
 - `mkdocs.yml` nav wires all 24 concept docs under three groups; `mkdocs build --strict` is clean.
-- `examples/05_refinement_loop/` ships `main.py` + `README.md` demonstrating `confidence_threshold` + `agent_self_eval` (Wave 1.3 metacognition integration).
 - `CHANGELOG.md` cut into `[0.0.1] - 2025-07-21`, `[0.1.0] - 2026-04-24` (Phases 2–5), `[0.2.0] - 2026-04-25` (Waves 1–3), `[0.3.0] - 2026-05-14` (the reconcile pass), `[0.4.0] - 2026-05-14` (the advance pass — preview tier finished into Tier 1), and `[0.8.0] - 2026-05-23` (`orqest.optimization` battery + Tier-2 Docker sandbox + per-user persisted MCP tool library + runtime topology design + dynamic tool spawning + reasoning); fresh `[Unreleased]` for the next ship.
 
 ## Operating Mode

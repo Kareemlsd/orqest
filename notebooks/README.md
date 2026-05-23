@@ -1,9 +1,11 @@
 # Notebooks
 
 Thematic, narrative notebooks that show Orqest primitives **composed** into
-something whole. Where [`examples/`](../examples/) has one notebook per
-primitive (basic agent, streaming, pipeline, …), these weave several
-primitives together to tell an end-to-end story.
+something whole — `Pipeline` + `Router` + `RefinementLoop` woven together,
+or `AgentFactory` + `DynamicToolFactory` + `Sandbox` end-to-end on a real
+benchmark. Each notebook tells a story; the concept docs at
+[orqest/concepts/](https://kareemlsd.github.io/orqest/concepts/agents/) are
+the one-primitive-at-a-time reference.
 
 They are **real-LLM** notebooks — they call your configured model. Running
 them is also the project's empirical dogfooding pass: a notebook that won't

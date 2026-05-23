@@ -201,7 +201,6 @@ asyncio.run(main())
 - **[Concepts](https://kareemlsd.github.io/orqest/concepts/agents/)** — one doc per battery (24 in total).
 - **[API Reference](https://kareemlsd.github.io/orqest/api/agents/)** — auto-generated from source.
 - **[Benchmarks](benchmarks/)** — reproducible head-to-heads. Current: test-driven refinement loop beats single-shot by +17pp pass@1 (3-trial average).
-- **[Examples](examples/)** — runnable per-primitive references.
 - **[Bundled skill](orqest/skills/orqest/SKILL.md)** — install into an agentic IDE with `python -m orqest.skills install`. See [Skills](https://kareemlsd.github.io/orqest/concepts/skills/) on the docs site.
 
 ## Contributing

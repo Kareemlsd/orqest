@@ -47,6 +47,5 @@ that's the measured win in one table.
 
 For one-primitive-at-a-time references (basic agent, streaming, pipeline,
 parallel, router, memory, observability), see the
-[`examples/`](https://github.com/Kareemlsd/orqest/tree/main/examples)
-directory. Each example demonstrates one building block in isolation,
+[concept docs](concepts/agents.md). Each page is a runnable snippet
 matching one of the pieces the narrative notebooks compose.
