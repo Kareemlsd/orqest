@@ -7,13 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- **Bundled `orqest` skill** for Claude Code / Cursor / Aider / other agentic IDEs — ships at `orqest/skills/orqest/` as package data. `SKILL.md` (orientation + decision tree + 5 wire-up patterns + pitfalls) plus 9 compressed judgment-layer references covering every battery: `references/{orchestration,memory,autonomy,healing,metacognition,mcp,optimization,generative-ui,sandbox}.md`. References point back at `docs/concepts/*.md` for full depth — single source of truth for API surface stays in concept docs. Install into a project's skills directory with `python -m orqest.skills install [target=.claude/skills]`. Drift-checked by `tests/skills/test_skill_drift.py` — every `from orqest…` import in the skill resolves against the real package on each run.
-
 ## [0.8.0] - 2026-05-23
 
 ### Added
+
+- **Bundled `orqest` skill** for Claude Code / Cursor / Aider / other agentic IDEs — ships at `orqest/skills/orqest/` as package data. `SKILL.md` (orientation + decision tree + 5 wire-up patterns + pitfalls) plus 9 compressed judgment-layer references covering every battery: `references/{orchestration,memory,autonomy,healing,metacognition,mcp,optimization,generative-ui,sandbox}.md`. References point back at `docs/concepts/*.md` for full depth — single source of truth for API surface stays in concept docs. Install into a project's skills directory with `python -m orqest.skills install [target=.claude/skills]`. Drift-checked by `tests/skills/test_skill_drift.py` — every `from orqest…` import in the skill resolves against the real package on each run.
 
 - **`openai-responses:` provider prefix** in `orqest.utils.resolve_model` — routes to `pydantic_ai.models.openai.OpenAIResponsesModel` so `LLM_MODEL=openai-responses:gpt-5.4` (etc.) goes through the OpenAI Responses API instead of `/v1/chat/completions`. Required for gpt-5.x with function tools + reasoning_effort (chat/completions rejects that combo with a 400). Uses the same `OPENAI_API_KEY`. Discovered while building Polymath's Koopman research session — gpt-5.4 + tools + reasoning silently desynchronised the message stream on chat/completions; switching to the Responses path resolved it.
 

@@ -1,12 +1,40 @@
 [project]
 name = "orqest"
 version = "0.8.0"
-description = "Building framework for scalable advanced agentic system using OOP"
+description = "Typed agent primitives and orchestration on top of pydantic-ai — memory, autonomy, healing, metacognition, generative UI, MCP, optimization."
 authors = [
   { name="Kareem El Sayed", email="k.elsayed@outlook.com" }
 ]
 readme = "README.md"
 requires-python = ">=3.12"
+license = { text = "MIT" }
+keywords = [
+  "agents",
+  "agentic",
+  "pydantic-ai",
+  "llm",
+  "orchestration",
+  "mcp",
+  "memory",
+  "metacognition",
+  "self-healing",
+  "generative-ui",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Framework :: AsyncIO",
+  "Framework :: Pydantic",
+  "Framework :: Pydantic :: 2",
+  "Typing :: Typed",
+]
 dependencies = [
   "loguru>=0.7.3",
   "pydantic>=2.11.7",
@@ -18,6 +46,13 @@ dependencies = [
   "fastapi>=0.136.0",
   "uvicorn>=0.35.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Kareemlsd/orqest"
+Documentation = "https://kareemlsd.github.io/orqest/"
+Repository = "https://github.com/Kareemlsd/orqest"
+Changelog = "https://github.com/Kareemlsd/orqest/blob/main/CHANGELOG.md"
+Issues = "https://github.com/Kareemlsd/orqest/issues"
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
