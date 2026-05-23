@@ -207,6 +207,22 @@ class Executor:
 
     def __init__(self, config: ExecutorConfig) -> None:
         self._config = config
+        # Per-agent locks serialise ``ensure_venv`` + ``install_deps`` so
+        # concurrent ``execute_python`` calls for the same agent_id don't
+        # race on ``uv venv`` / ``uv pip install``. Without this, the first
+        # call wins the directory creation and the rest fail (the
+        # promotion-race regression caught it in CI but not locally —
+        # timing sensitivity, exactly the kind of bug a lock fixes).
+        self._agent_locks: dict[str, asyncio.Lock] = {}
+
+    def _agent_lock(self, agent_id: str) -> asyncio.Lock:
+        """Return (lazily create) the lock for *agent_id*.
+
+        ``dict.setdefault`` is atomic across coroutines because the event
+        loop only yields at ``await`` points — the lookup-and-insert
+        happens within a single tick.
+        """
+        return self._agent_locks.setdefault(agent_id, asyncio.Lock())
 
     @property
     def config(self) -> ExecutorConfig:
@@ -336,24 +352,28 @@ class Executor:
 
         t0 = monotonic()
 
-        # Ensure venv + install deps
+        # Ensure venv + install deps. The per-agent lock serialises the
+        # ``uv venv`` + ``uv pip install`` block so concurrent execute calls
+        # don't race on directory creation / venv setup. The execution
+        # subprocess itself runs outside the lock — that's the part where
+        # we actually want concurrency.
         try:
-            await self.ensure_venv(agent_id)
+            async with self._agent_lock(agent_id):
+                await self.ensure_venv(agent_id)
+                if dependencies:
+                    ok, err = await self.install_deps(agent_id, dependencies)
+                    if not ok:
+                        return ExecutionResult(
+                            success=False,
+                            error=err or "dependency install failed",
+                            duration_ms=(monotonic() - t0) * 1000.0,
+                        )
         except Exception as exc:  # noqa: BLE001
             return ExecutionResult(
                 success=False,
                 error=f"venv setup failed: {exc}",
                 duration_ms=(monotonic() - t0) * 1000.0,
             )
-
-        if dependencies:
-            ok, err = await self.install_deps(agent_id, dependencies)
-            if not ok:
-                return ExecutionResult(
-                    success=False,
-                    error=err or "dependency install failed",
-                    duration_ms=(monotonic() - t0) * 1000.0,
-                )
 
         # Run the implementation. ``allowed_imports`` is threaded into the
         # spec so the wrapper builds the curated ``__builtins__`` matching
