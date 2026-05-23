@@ -202,5 +202,10 @@ config = MetacognitionConfig(
 - [Orchestration](orchestration.md) — `RefinementLoop` integration
 - [Healing](healing.md) — `RegressionDetector` consuming `metacognition.confidence`
 - [Optimization](optimization.md) — `MetricBundle.confidence` is filled from `EnrichedOutput.confidence`; the optimizer evolves prompts that improve calibration as much as accuracy
+- [Topology Optimization](topology_optimization.md) — the structural analogue: evolves Pipeline / Parallel / Router compositions instead of prompts
 - [Observability](observability.md) — events on the bus
 - [Hooks & Lifecycle](hooks-and-lifecycle.md) — `MetacognitionHook` + `HookRunner`
+
+## Runnable demo
+
+[`notebooks/01_cognitive_substrate.ipynb`](https://github.com/Kareemlsd/orqest/blob/main/notebooks/01_cognitive_substrate.ipynb) — `run_enriched` + `StructuredOutputProtocol` + `MetacognitionHook` end-to-end, with healing on top.

@@ -11,7 +11,7 @@ from .hooks import (
 )
 from .healing import HealingConfig
 from .metacognition import EnrichedOutput, MetacognitionConfig
-from .optimization import OptimizationConfig
+from .optimization import MetaAgentConfig, OptimizationConfig
 from .orchestration import (
     Parallel,
     Pipeline,
@@ -30,6 +30,7 @@ __all__ = [
     "HookAbortError",
     "HookDecision",
     "HookRunner",
+    "MetaAgentConfig",
     "MetacognitionConfig",
     "OptimizationConfig",
     "OrqestConfig",

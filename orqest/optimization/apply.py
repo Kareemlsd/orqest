@@ -24,6 +24,8 @@ import difflib
 from dataclasses import dataclass
 from typing import Any
 
+from pydantic import BaseModel
+
 from orqest.optimization.runner import OptimizationResult
 
 
@@ -44,7 +46,17 @@ class OptimizationDiff:
 
 
 def _stringify(value: Any) -> str:
-    return value if isinstance(value, str) else repr(value)
+    """Render a gene value as text for the diff.
+
+    Pydantic models (typed gene values like :data:`TopologySpec`) get JSON
+    pretty-printed so the diff is human-readable line-by-line; everything
+    else falls back to ``repr``.
+    """
+    if isinstance(value, str):
+        return value
+    if isinstance(value, BaseModel):
+        return value.model_dump_json(indent=2)
+    return repr(value)
 
 
 def _build_diff(name: str, before: Any, after: Any) -> OptimizationDiff:

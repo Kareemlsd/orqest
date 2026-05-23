@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from pydantic import BaseModel
 from pydantic_ai import ImageUrl, DocumentUrl, BinaryContent
@@ -170,8 +172,8 @@ class TestBaseAgentConstruction:
             model=test_model,
             history_processors=[custom],
         )
-        # budget_tool_results prepended + custom = 2
-        assert len(agent._history_processors) == 2
+        # budget_tool_results prepended + custom + _repair_orphan_tool_returns appended = 3
+        assert len(agent._history_processors) == 3
         assert agent._history_processors[1] is custom
 
     def test_custom_history_processors_no_budget(self, test_model):
@@ -184,7 +186,9 @@ class TestBaseAgentConstruction:
             history_processors=[custom],
             result_budget=None,
         )
-        assert agent._history_processors == [custom]
+        # custom + _repair_orphan_tool_returns appended = 2
+        assert len(agent._history_processors) == 2
+        assert agent._history_processors[0] is custom
 
     def test_default_history_processor(self, test_model):
         agent = ConcreteAgent(
@@ -194,8 +198,8 @@ class TestBaseAgentConstruction:
             model=test_model,
             truncated_history=50,
         )
-        # budget_tool_results + keep_recent_messages = 2
-        assert len(agent._history_processors) == 2
+        # budget_tool_results + keep_recent_messages + _repair_orphan_tool_returns = 3
+        assert len(agent._history_processors) == 3
 
 
 # --- BaseAgent.run() tests ---
@@ -728,3 +732,181 @@ class TestModelSettings:
         assert agent.model_settings is settings
         # pydantic-ai's Agent stores settings on the instance; check it round-tripped
         assert agent.agent.model_settings == settings
+
+
+class TestReasoning:
+    """reasoning kwarg translates to provider-specific model_settings."""
+
+    def test_default_is_none(self, test_model):
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        assert agent.reasoning is None
+        assert agent.model_settings is None
+
+    def test_string_model_merges_provider_key(self):
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model="anthropic:claude-sonnet-4-6",
+            api_key="k",
+            reasoning="high",
+        )
+        assert agent.reasoning == "high"
+        assert agent.model_settings["anthropic_thinking"]["type"] == "enabled"
+        assert agent.agent.model_settings["anthropic_thinking"]["type"] == "enabled"
+
+    def test_model_instance_uses_system_for_provider(self):
+        from orqest.utils.llm_model import resolve_model
+
+        model = resolve_model("google:gemini-2.5-pro", api_key="k")
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=model,
+            reasoning="low",
+        )
+        assert "google_thinking_config" in agent.model_settings
+
+    def test_explicit_model_settings_win_on_conflict(self):
+        from pydantic_ai.settings import ModelSettings
+
+        agent = ConcreteAgent(
+            agent_name="test",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model="openai:gpt-5.2",
+            api_key="k",
+            reasoning="medium",
+            model_settings=ModelSettings(temperature=0.2),
+        )
+        # Both the reasoning key and the explicit setting survive the merge.
+        assert agent.model_settings["openai_reasoning_effort"] == "medium"
+        assert agent.model_settings["temperature"] == 0.2
+
+    def test_unknown_provider_raises_at_construction(self, test_model):
+        # TestModel.system == "test" — not a provider orqest can resolve.
+        with pytest.raises(ValueError, match="not supported for provider"):
+            ConcreteAgent(
+                agent_name="test",
+                system_prompt="prompt",
+                output_type=SimpleOutput,
+                model=test_model,
+                reasoning="high",
+            )
+
+
+# --- output_type schema validation tests ---
+
+
+class _OutputWithAnyField(BaseModel):
+    """An output type that should be REJECTED at agent construction."""
+
+    text: str
+    payload: Any  # top-level Any — OpenAI rejects this at first inference
+
+
+class _OutputWithMultipleAnyFields(BaseModel):
+    foo: Any
+    bar: Any
+    name: str
+
+
+class _OutputWithAnyInsideContainer(BaseModel):
+    """Containers holding Any are FINE — they serialize to typed arrays/objects."""
+
+    text: str
+    extras: list[Any]
+    metadata: dict[str, Any]
+
+
+class TestOutputTypeSchemaValidation:
+    """Reject top-level Any-typed fields in output_type at construction.
+
+    These tests pin the BaseAgentSchemaError contract so the next OpenAI
+    user doesn't lose 20 minutes diagnosing an opaque ModelHTTPError.
+    """
+
+    def test_rejects_top_level_any_field(self, test_model):
+        from orqest.agents.base_agent import BaseAgentSchemaError
+
+        with pytest.raises(BaseAgentSchemaError, match="'payload'"):
+            ConcreteAgent(
+                agent_name="test",
+                system_prompt="prompt",
+                output_type=_OutputWithAnyField,
+                model=test_model,
+            )
+
+    def test_error_message_names_offending_field(self, test_model):
+        from orqest.agents.base_agent import BaseAgentSchemaError
+
+        with pytest.raises(BaseAgentSchemaError) as excinfo:
+            ConcreteAgent(
+                agent_name="my_agent",
+                system_prompt="prompt",
+                output_type=_OutputWithAnyField,
+                model=test_model,
+            )
+        msg = str(excinfo.value)
+        assert "my_agent" in msg
+        assert "_OutputWithAnyField" in msg
+        assert "'payload'" in msg
+        assert "Any" in msg
+        # Helpful hint with concrete remediation
+        assert "Narrow" in msg or "container" in msg
+
+    def test_lists_multiple_offending_fields(self, test_model):
+        from orqest.agents.base_agent import BaseAgentSchemaError
+
+        with pytest.raises(BaseAgentSchemaError) as excinfo:
+            ConcreteAgent(
+                agent_name="multi",
+                system_prompt="prompt",
+                output_type=_OutputWithMultipleAnyFields,
+                model=test_model,
+            )
+        msg = str(excinfo.value)
+        assert "'foo'" in msg and "'bar'" in msg
+
+    def test_accepts_concrete_output_types(self, test_model):
+        # SimpleOutput has only `text: str` — should construct cleanly.
+        agent = ConcreteAgent(
+            agent_name="ok",
+            system_prompt="prompt",
+            output_type=SimpleOutput,
+            model=test_model,
+        )
+        assert agent.output_type is SimpleOutput
+
+    def test_accepts_any_inside_containers(self, test_model):
+        # list[Any] and dict[str, Any] serialize to typed arrays/objects —
+        # providers accept these. Only top-level Any is the killer.
+        agent = ConcreteAgent(
+            agent_name="containers",
+            system_prompt="prompt",
+            output_type=_OutputWithAnyInsideContainer,
+            model=test_model,
+        )
+        assert agent.output_type is _OutputWithAnyInsideContainer
+
+    def test_skips_validation_for_non_basemodel_output_type(self, test_model):
+        # str/int/bool scalar output types skip the check (there's no
+        # model_fields to inspect, and providers accept scalar outputs).
+        class StringAgent(BaseAgent["GlobalState", str]):
+            async def _run_implementation(self, state, **kwargs):
+                result = await self.call_model("x", state)
+                return result.output
+
+        agent = StringAgent(
+            agent_name="scalar",
+            system_prompt="prompt",
+            output_type=str,  # type: ignore[arg-type]
+            model=test_model,
+        )
+        assert agent.output_type is str

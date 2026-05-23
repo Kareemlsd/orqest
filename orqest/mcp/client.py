@@ -34,13 +34,18 @@ class MCPConnection:
 
         Branches on ``config.transport``: ``"stdio"`` launches the server
         process via ``stdio_client``; ``"sse"`` connects to ``config.url``
-        via ``sse_client``. Both transports yield a ``(read, write)`` pair
-        that drives an identical ``ClientSession`` lifecycle.
+        via ``sse_client``; ``"streamable-http"`` connects via
+        ``streamablehttp_client`` with ``config.headers`` (the canonical
+        transport for Tier-2 :class:`DockerSandbox`). The Streamable HTTP
+        transport yields a ``(read, write, _session_id_callback)`` triple;
+        the rest yield ``(read, write)``. We normalize on the first two.
         """
         from mcp import ClientSession
 
         self._client_ctx = self._open_transport()
-        read, write = await self._client_ctx.__aenter__()
+        transport_streams = await self._client_ctx.__aenter__()
+        # Streamable HTTP returns (read, write, get_session_id); others (read, write)
+        read, write = transport_streams[0], transport_streams[1]
 
         self._session_ctx = ClientSession(read, write)
         self._session = await self._session_ctx.__aenter__()
@@ -68,12 +73,17 @@ class MCPConnection:
     def _open_transport(self) -> Any:
         """Build the transport context manager for this server's config.
 
-        ``stdio`` launches the configured command; ``sse`` connects to
-        ``config.url``. Both return an async context manager yielding a
-        ``(read, write)`` stream pair.
+        Three transports supported:
+
+        * ``"stdio"`` — launches the configured command as a subprocess.
+        * ``"sse"`` — connects to ``config.url`` via the deprecated
+          2024-11-05 SSE transport (kept for legacy MCP servers).
+        * ``"streamable-http"`` — connects to ``config.url`` via the
+          modern 2025-03-26+ Streamable HTTP transport. ``config.headers``
+          are forwarded — used to carry session/auth tokens.
 
         Raises:
-            ValueError: Unknown transport, or an ``sse`` config with no url.
+            ValueError: Unknown transport, or an HTTP-style config with no url.
 
         """
         transport = self.config.transport
@@ -96,9 +106,21 @@ class MCPConnection:
             from mcp.client.sse import sse_client
 
             return sse_client(self.config.url)
+        if transport == "streamable-http":
+            if not self.config.url:
+                raise ValueError(
+                    f"MCP server '{self.name}' uses streamable-http transport "
+                    "but has no url"
+                )
+            from mcp.client.streamable_http import streamablehttp_client
+
+            return streamablehttp_client(
+                self.config.url,
+                headers=dict(self.config.headers) or None,
+            )
         raise ValueError(
             f"MCP server '{self.name}' has unknown transport {transport!r} "
-            "(expected 'stdio' or 'sse')"
+            "(expected 'stdio', 'sse', or 'streamable-http')"
         )
 
     async def disconnect(self) -> None:

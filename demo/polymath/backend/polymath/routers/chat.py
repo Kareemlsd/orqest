@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from datetime import UTC, datetime
 from typing import Any
@@ -410,8 +411,20 @@ async def chat_stream(sid: UUID, request: Request) -> Response:
         await _emit_turn_completed(sid, result, assistant_text, duration_ms)
         logger.info("polymath: chat run complete for session %s", sid)
 
+    # Bump pydantic-ai's default request_limit (50) — research turns easily
+    # do 80+ tool calls between arxiv, pdf_extract, citation_graph, and
+    # python.run_snippet. Default cap killed the first Koopman dogfood run
+    # mid-synthesis (2026-05-16). Override via POLYMATH_REQUEST_LIMIT env.
+    from pydantic_ai.usage import UsageLimits
+    request_limit = int(os.getenv("POLYMATH_REQUEST_LIMIT", "200"))
+    usage_limits = UsageLimits(request_limit=request_limit)
+
     return await VercelAIAdapter.dispatch_request(
-        request, agent=polymath_agent.agent, deps=deps, on_complete=on_complete
+        request,
+        agent=polymath_agent.agent,
+        deps=deps,
+        on_complete=on_complete,
+        usage_limits=usage_limits,
     )
 
 

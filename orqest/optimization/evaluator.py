@@ -92,6 +92,7 @@ class Evaluator(Generic[InputT, OutputT]):
         confidence_protocol: ConfidenceProtocol | None = None,
         cost_estimator: Callable[[Any], float] | None = None,
         timer: Callable[[], float] = time.monotonic,
+        n_trials_per_example: int = 1,
     ) -> None:
         """Wire the per-evaluation building blocks.
 
@@ -109,13 +110,27 @@ class Evaluator(Generic[InputT, OutputT]):
                 stays 0 (token counts still surface via :attr:`MetricBundle.raw`).
             timer: Monotonic clock for latency measurement. Override only
                 in tests.
+            n_trials_per_example: When ``> 1``, evaluate each example that many
+                times and aggregate via :meth:`MetricBundle.aggregate` to wash
+                out LLM run-to-run variance. The returned bundle carries
+                ``n_trials`` and per-dimension ``stdev``. ``1`` (default)
+                preserves the legacy single-shot behavior at no extra cost.
+                Each trial gets a fresh agent (``agent_factory(decoded)``
+                called per trial) so trials are independent. Cost scales
+                linearly; useful for weaker models where single trials swing
+                ±10pp.
 
         """
+        if n_trials_per_example < 1:
+            raise ValueError(
+                f"n_trials_per_example must be >= 1, got {n_trials_per_example}"
+            )
         self._agent_factory = agent_factory
         self._score_fn = score_fn
         self._confidence_protocol = confidence_protocol
         self._cost_estimator = cost_estimator or _default_cost_estimator
         self._timer = timer
+        self._n_trials_per_example = n_trials_per_example
 
     async def evaluate_one(
         self,
@@ -129,7 +144,46 @@ class Evaluator(Generic[InputT, OutputT]):
         :attr:`MetricBundle.raw["error"]`. GEPA's adapter Protocol explicitly
         requires evaluators to **never raise** for individual example failures
         — see :class:`gepa.core.adapter.GEPAAdapter` docstring.
+
+        When ``n_trials_per_example > 1`` (configured at construction), this
+        method runs ``_evaluate_single_trial`` N times and aggregates via
+        :meth:`MetricBundle.aggregate`. Failed trials are folded into the
+        average (counted as zero-accuracy). When every trial fails, the
+        aggregate is the first failure's error bundle plus an
+        ``aggregation_note`` in ``raw``.
         """
+        if self._n_trials_per_example == 1:
+            return await self._evaluate_single_trial(decoded, example)
+
+        trials: list[MetricBundle] = []
+        for _ in range(self._n_trials_per_example):
+            trials.append(await self._evaluate_single_trial(decoded, example))
+
+        # If literally every trial failed, the user almost certainly wants to
+        # see the first failure's error, not a misleadingly-averaged 0.0
+        # accuracy. Pass through but annotate as multi-trial.
+        if all(t.raw.get("error") for t in trials):
+            head = trials[0]
+            return head.model_copy(
+                update={
+                    "raw": {
+                        **head.raw,
+                        "aggregation_note": (
+                            f"all {len(trials)} trials failed; representative "
+                            f"error from trial 1"
+                        ),
+                        "n_trials_attempted": len(trials),
+                    }
+                }
+            )
+        return MetricBundle.aggregate(trials)
+
+    async def _evaluate_single_trial(
+        self,
+        decoded: dict[str, Any],
+        example: GoldExample[InputT, OutputT],
+    ) -> MetricBundle:
+        """Run one trial of one example. Internal helper for :meth:`evaluate_one`."""
         start = self._timer()
 
         try:

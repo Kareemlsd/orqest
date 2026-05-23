@@ -33,6 +33,18 @@ def _build_registry() -> dict[str, tuple[type, type]]:
         logger.debug("OpenAI provider unavailable, skipping")
 
     try:
+        from pydantic_ai.models.openai import OpenAIResponsesModel
+        from pydantic_ai.providers.openai import OpenAIProvider
+
+        # OpenAI Responses API path — required for gpt-5* + function tools +
+        # reasoning_effort. The chat/completions path rejects that combo and
+        # also tends to desynchronize tool_call/tool message pairs after a
+        # ContextManager-driven summarization (observed in Polymath 2026-05-16).
+        registry["openai-responses"] = (OpenAIResponsesModel, OpenAIProvider)
+    except ImportError:
+        logger.debug("OpenAI Responses provider unavailable, skipping")
+
+    try:
         from pydantic_ai.models.anthropic import AnthropicModel
         from pydantic_ai.providers.anthropic import AnthropicProvider
 

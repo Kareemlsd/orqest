@@ -19,6 +19,8 @@
 | `toolsets` | `list[Any] \| None` | `None` | Toolset objects providing collections of tools |
 | `truncated_history` | `int` | `100` | Max recent messages for the default history processor |
 | `history_processors` | `list \| None` | `None` | Custom processors; defaults to `keep_recent_messages` |
+| `model_settings` | `ModelSettings \| None` | `None` | pydantic-ai `ModelSettings` applied to every model call |
+| `reasoning` | `ReasoningEffort \| None` | `None` | Provider-agnostic reasoning/thinking effort — see below |
 
 The `model` parameter can be provided in two ways:
 
@@ -31,6 +33,73 @@ from orqest.utils.llm_model import resolve_model
 model = resolve_model("openai:gpt-4.1", api_key="sk-...")
 agent = MyAgent(..., model=model)
 ```
+
+## Output type constraints
+
+`output_type` must be a Pydantic `BaseModel` subclass (or a scalar like `str`/`int`). At agent construction, `BaseAgent` inspects the model's fields and rejects any field annotated as top-level `Any` — most LLM providers (OpenAI in particular) reject such schemas at first inference with the opaque `Invalid schema for function 'final_result'` 400 error and no breadcrumb. Catching it eagerly saves debugging time.
+
+```python
+from typing import Any
+from pydantic import BaseModel
+from orqest.agents import BaseAgent
+
+class BadOutput(BaseModel):
+    text: str
+    payload: Any  # ← top-level Any, will be rejected
+
+agent = MyAgent(output_type=BadOutput, ...)
+# raises BaseAgentSchemaError naming 'payload' as the offending field
+```
+
+What's accepted:
+
+- Concrete types: `str`, `int`, `bool`, `float`, lists/dicts of concrete types, Pydantic models, discriminated unions, `Literal[...]`.
+- **Containers** holding `Any`: `list[Any]`, `dict[str, Any]` — these serialize to typed arrays/objects and are accepted by providers. Only top-level `Any` is the killer.
+- Scalar output types: `output_type=str` etc. — skips the check entirely.
+
+If you genuinely need a free-form payload, the standard pattern is `field: str` carrying a JSON blob you parse downstream — keeps the schema concrete for the provider while preserving flexibility.
+
+## Reasoning / thinking
+
+Modern LLMs can spend extra tokens "thinking" before they answer. Each provider exposes
+this differently — Anthropic uses a thinking-token budget, OpenAI uses a categorical
+reasoning effort, Google uses a thinking config, OpenRouter uses a reasoning object. The
+`reasoning` parameter collapses all of that into one provider-agnostic knob:
+
+```python
+agent = MyAgent(
+    ...,
+    model="anthropic:claude-sonnet-4-6",
+    api_key="sk-...",
+    reasoning="high",
+)
+```
+
+`reasoning` accepts one of `"minimal"`, `"low"`, `"medium"`, `"high"`. Orqest translates it
+to the right provider-specific `ModelSettings` key — keyed off the same `provider:` prefix
+`resolve_model()` uses — and merges it into `model_settings`:
+
+| Provider | Translated to |
+|----------|---------------|
+| `openai` | `openai_reasoning_effort` (categorical, passed through) |
+| `anthropic` | `anthropic_thinking` with a `budget_tokens` derived from the effort |
+| `google` | `google_thinking_config` with a `thinking_budget` derived from the effort |
+| `openrouter` | `openrouter_reasoning` (`"minimal"` collapses to `"low"`) |
+
+For the budget-based providers (Anthropic, Google), orqest also fills a sensible `max_tokens`
+when you haven't set one — Anthropic *requires* `max_tokens` to exceed the thinking budget,
+so reasoning works out of the box. If you pass `model_settings` with explicit keys, those win
+on conflict; `reasoning` only fills what you left unset.
+
+!!! note "The model must support reasoning"
+    `reasoning` translates the setting — it does not check that your chosen model is a
+    reasoning-capable one. Pair it with a model that actually supports thinking (e.g. a
+    Claude Sonnet/Opus, an OpenAI o-series or GPT-5 model, a Gemini 2.5 model). The model's
+    provider must be one orqest can resolve, or construction raises `ValueError`.
+    Effort-value support also varies *by model* — the `"minimal"` … `"high"` vocabulary is
+    the union across providers, and not every model accepts every level (OpenAI's `gpt-5.2`,
+    for instance, accepts `"low"` / `"medium"` / `"high"` but rejects `"minimal"`). An
+    unsupported value surfaces as a provider error at call time, not at construction.
 
 ## Implementing `_run_implementation()`
 

@@ -345,6 +345,62 @@ class ProceduralStrategy:
         return [candidates[i] for i in chosen_idx if 0 <= i < len(candidates)][:k]
 
 
+class ToolStrategy:
+    """Lookup-by-name retrieval for runtime-authored tool implementations.
+
+    Tools (``memory_type="tool"``) are looked up by exact name, not by
+    semantic similarity. The query is matched against
+    ``structured_content -> '$.name'`` (case-insensitive), and falls back
+    to FTS5 over ``content`` (the tool description) when the name doesn't
+    match. Ordered by ``last_accessed DESC`` so most-recently-used tools
+    win on ties.
+
+    The host-side LocalMemoryStore mirrors the in-container SQLite tool
+    library; this strategy lets consumers query the mirror without
+    going through the container's MCP server.
+    """
+
+    name = "tool"
+
+    async def recall(
+        self,
+        db: aiosqlite.Connection,
+        query: str,
+        *,
+        k: int,
+        filters: MemoryFilter | None,
+        fts_available: bool,
+    ) -> list[aiosqlite.Row]:
+        conditions, params = _apply_common_filters(filters)
+        if filters is None or filters.memory_type is None:
+            conditions.append("m.memory_type = 'tool'")
+        conditions.append("m.structured_content IS NOT NULL")
+
+        # Primary match: exact name match (case-insensitive)
+        q_lower = query.lower()
+        conditions.append(
+            "("
+            "lower(json_extract(m.structured_content, '$.name')) = ? "
+            "OR lower(json_extract(m.structured_content, '$.name')) LIKE ? "
+            "OR lower(m.content) LIKE ?"
+            ")"
+        )
+        params.append(q_lower)
+        params.append(f"%{q_lower}%")
+        params.append(f"%{q_lower}%")
+
+        where = " AND ".join(conditions) if conditions else "1=1"
+        sql = f"""
+            SELECT * FROM memories m
+            WHERE {where}
+            ORDER BY m.last_accessed DESC
+            LIMIT ?
+        """  # noqa: S608
+        params.append(k)
+        cursor = await db.execute(sql, params)
+        return list(await cursor.fetchall())
+
+
 def default_strategy_table(
     embedder: EmbedderT | None = None,
 ) -> dict[str, RetrievalStrategy]:
@@ -357,4 +413,5 @@ def default_strategy_table(
         "semantic": SemanticStrategy(embedder=embedder),
         "episodic": EpisodicStrategy(),
         "procedural": ProceduralStrategy(),
+        "tool": ToolStrategy(),
     }

@@ -58,6 +58,15 @@ site/
 *.db
 
 # -------------------------------
+# Benchmark datasets (large, fetched on demand)
+data/
+
+# -------------------------------
+# Claude Code transient state
+.claude/scheduled_tasks.lock
+.claude/plans/
+
+# -------------------------------
 # Recovered files (PhotoRec etc.)
 recup_dir.*
 .gstack/

@@ -174,3 +174,8 @@ yourself; it is not auto-run).
 - [Agents](agents.md) -- agents that use memory for context
 - [Session Persistence](session-persistence.md) -- persisting conversation state (complementary to memory)
 - [Observability](observability.md) -- tracing memory operations
+
+## Runnable demos
+
+- [`notebooks/02_meta_orchestrator.ipynb`](https://github.com/Kareemlsd/orqest/blob/main/notebooks/02_meta_orchestrator.ipynb) — `LocalMemoryStore` persisting spawned `AgentSpec`s across turns
+- [`notebooks/10_runtime_topology.ipynb`](https://github.com/Kareemlsd/orqest/blob/main/notebooks/10_runtime_topology.ipynb) — `MemoryStoreCache` reusing designed topologies via semantic similarity

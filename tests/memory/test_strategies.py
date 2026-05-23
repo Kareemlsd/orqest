@@ -16,12 +16,15 @@ from orqest.memory.strategies import (
 )
 
 
-def test_default_strategy_table_has_three_kinds():
+def test_default_strategy_table_has_four_kinds():
+    from orqest.memory.strategies import ToolStrategy
+
     table = default_strategy_table()
-    assert set(table.keys()) == {"semantic", "episodic", "procedural"}
+    assert set(table.keys()) == {"semantic", "episodic", "procedural", "tool"}
     assert isinstance(table["semantic"], SemanticStrategy)
     assert isinstance(table["episodic"], EpisodicStrategy)
     assert isinstance(table["procedural"], ProceduralStrategy)
+    assert isinstance(table["tool"], ToolStrategy)
 
 
 def test_strategies_satisfy_protocol():

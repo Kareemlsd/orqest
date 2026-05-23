@@ -19,6 +19,10 @@ dependencies = [
   "httpx>=0.27",
   "python-multipart>=0.0.9",
   "alembic>=1.13",
+  # Research-mode tools (slice 1 of the Polymath research engine)
+  "arxiv>=2.1",            # arxiv API client; MIT
+  "semanticscholar>=0.8",  # Semantic Scholar citation graph; Apache-2.0
+  "pypdf>=4.0",            # PDF text extraction; BSD-style
 ]
 # orqest is installed OUT-OF-BAND by the Dockerfile's entrypoint (from the
 # runtime-mounted volume at /orqest). That mount only exists at `docker run`

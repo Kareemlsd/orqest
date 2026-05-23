@@ -14,8 +14,18 @@ class MCPServerConfig:
         command: Executable to launch (e.g., "python", "node", "npx").
         args: Command-line arguments (e.g., ["-m", "my_mcp_server"]).
         env: Environment variables passed to the server process.
-        transport: Connection transport — "stdio" or "sse".
-        url: Server URL for SSE transport. Ignored for stdio.
+        transport: Connection transport — ``"stdio"``, ``"sse"``, or
+            ``"streamable-http"``. ``"streamable-http"`` is the canonical
+            transport for host↔container deployments (used by Tier-2
+            :class:`DockerSandbox`); ``"sse"`` is the deprecated 2024-11-05
+            transport (still supported for legacy MCP servers); ``"stdio"``
+            launches the server as a subprocess.
+        url: Server URL for ``"sse"`` and ``"streamable-http"`` transports.
+            Ignored for stdio. For ``"streamable-http"`` should be the
+            ``/mcp`` endpoint (e.g. ``http://127.0.0.1:8000/mcp``).
+        headers: HTTP headers attached to every request. Used to carry
+            session/auth tokens (e.g.
+            ``{"Authorization": "Bearer <jwt>"}``). Empty for stdio.
 
     """
 
@@ -25,6 +35,7 @@ class MCPServerConfig:
     env: dict[str, str] = field(default_factory=dict)
     transport: str = "stdio"
     url: str | None = None
+    headers: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

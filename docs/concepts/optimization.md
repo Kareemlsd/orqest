@@ -184,11 +184,17 @@ These are wired-in extension points, not work that's done. They live in the arch
 - **W1.5 — Model-as-gene.** Mutating `BaseAgent.model` mid-optimization is gated until we've measured single-model variance and have a Pareto-comparison story across providers.
 - **W2 — Synthetic gold (`synthetic_gold.py`).** Bootstrap a 10–20-example eval set from a strong model. The single biggest adoption blocker for any optimizer is "I don't have a labeled eval set." This module solves it.
 - **W2 — Scalar/categorical gene activation.** Flip `enable_scalar_genes` / `enable_categorical_genes` defaults; wire scalar/categorical decode into the runner. The types ship in W1; the wiring is what's deferred.
-- **W3 — Topology IR.** A `TopologySpec` for round-trip serialization of `Pipeline`/`Router`/`Parallel` topologies plus an ADAS-style meta-agent that proposes structural mutations. Same `MetricBundle` Pareto contract, different mutation engine. Research-grade; only worth building if W1+W2 prove that users actually run optimizers.
+- **W3 — Topology evolution.** ✅ Shipped — see [Topology Optimization](topology_optimization.md). The orchestration IR (`PipelineSpec` / `RouterSpec` / `ParallelSpec` / `RefinementLoopSpec`) plus an ADAS-style `MetaAgentSearch` loop. Same `MetricBundle` Pareto contract, different mutation engine.
 
 ## Related Concepts
 
+- [Topology Optimization](topology_optimization.md) — evolves the *topology* (Pipeline / Parallel / Router compositions) rather than the prompts. Two-phase composition with this battery is the recommended way to evolve both axes.
 - [Metacognition](metacognition.md) — `EnrichedOutput.confidence` is the primary signal that fills `MetricBundle.confidence`.
 - [Self-Healing](healing.md) — healing detector firings can populate `MetricBundle.robustness`; the optimizer can then evolve prompts that are less likely to trigger watchdogs.
 - [Workbench](workbench.md) — pass `workbench.event_bus` to the runner to surface `optimization.iteration_completed` events alongside the rest of your observability stream.
 - [Observability](observability.md) — the `EventBus` and `Tracer` already capture everything the optimizer feeds GEPA's reflection LLM.
+
+## Runnable demos
+
+- [`notebooks/06_optimization_basic.ipynb`](https://github.com/Kareemlsd/orqest/blob/main/notebooks/06_optimization_basic.ipynb) — evolve a research summariser's prompt against a 15-example gold set
+- [`notebooks/07_optimization_compound.ipynb`](https://github.com/Kareemlsd/orqest/blob/main/notebooks/07_optimization_compound.ipynb) — evolve the planner inside `MetaOrchestrator`

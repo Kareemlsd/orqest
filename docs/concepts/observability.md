@@ -179,3 +179,7 @@ await bus.emit(event)
 
 - [Hooks & Lifecycle](hooks-and-lifecycle.md) -- fire-and-forget pattern for tool-level callbacks
 - [Orchestration](orchestration.md) -- pipeline events that can feed into the EventBus
+
+## Runnable demo
+
+[`notebooks/04_orchestrated_workflow.ipynb`](https://github.com/Kareemlsd/orqest/blob/main/notebooks/04_orchestrated_workflow.ipynb) — `JSONTracer` + `EventBus` riding alongside Router/Parallel/Pipeline/RefinementLoop, with span correlation.

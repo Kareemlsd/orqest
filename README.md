@@ -2,7 +2,7 @@
 
 A Python library for building **agentic harnesses** on top of [pydantic-ai](https://ai.pydantic.dev). Not an agent framework with a runtime, server, or UI of its own — Orqest ships the plumbing you import to build those: typed agents, composition primitives, lifecycle hooks, memory typology, runtime agent design, metacognition, self-healing, and generative UI. All opt-in.
 
-> **Status:** v0.4.0. The five novel cognitive-substrate features have shipped (2026-04-25): runtime agent design, cognitive memory typology, metacognition primitives, self-healing primitives, generative UI. `[0.3.0]` was the reconcile pass — code and docs brought into honest agreement; `[0.4.0]` is the advance pass — the preview tier finished into Tier 1. Test count: 670.
+> **Status:** v0.8.0. The five novel cognitive-substrate features shipped in `[0.2.0]` (2026-04-25): runtime agent design, cognitive memory typology, metacognition primitives, self-healing primitives, generative UI. `[0.3.0]`–`[0.4.0]` were the reconcile + advance passes that brought preview-tier capabilities into Tier 1. `[0.8.0]` adds the `orqest.optimization` battery (GEPA-powered prompt + topology evolution), the Tier-2 Docker sandbox with per-user persisted MCP tool library, runtime topology design, dynamic tool spawning, and a provider-agnostic `reasoning` knob. Test count: 1117.
 
 ## Install
 
@@ -92,10 +92,12 @@ The flagship reference consumer is [`demo/polymath/`](demo/polymath/) — every 
 ## Documentation
 
 - **[SKILLS.md](SKILLS.md)** — how to build with Orqest (discovery → codebase walk → minimal surface → recipes)
+- **[Notebooks](notebooks/)** — *start here if you're evaluating Orqest*: a 12-notebook tour from the cognitive substrate → meta-orchestrator → generative UI → orchestrated workflow → reasoning → optimization (basic + compound) → topology search (basic + GEPA) → runtime topology → dynamic tools → autonomous-coder combo
+- **[Benchmarks](benchmarks/)** — reproducible head-to-heads measuring what each battery delivers over a baseline. Current: [`coding/`](benchmarks/coding/) — test-driven refinement loop beats single-shot by +17pp pass@1 (3-trial average)
 - **[Concepts](https://kareemlsd.github.io/orqest/concepts/agents/)** — agents, state, composition, memory, metacognition, healing, generative UI
 - **[API Reference](https://kareemlsd.github.io/orqest/api/agents/)** — auto-generated from source
-- **[Examples](examples/)** — runnable per-primitive demos (basic agent → streaming → pipeline → refinement → memory → observability)
-- **[CLAUDE.md](.claude/CLAUDE.md)** — agent-instructions ground truth
+- **[Examples](examples/)** — runnable per-primitive references (basic agent → streaming → pipeline → refinement → memory → observability)
+- **[CLAUDE.md](CLAUDE.md)** — agent-instructions ground truth
 - **[ARCHITECTURE.md](.claude/ARCHITECTURE.md)** — extensibility playbook for contributors
 - **[VISION.md](.claude/VISION.md)** — strategic frame for the cognitive-substrate goal
 - **[Changelog](CHANGELOG.md)**

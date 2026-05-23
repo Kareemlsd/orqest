@@ -35,6 +35,7 @@ from orqest.metacognition import MetacognitionHook
 from orqest.observability import EventBus, EventBusPublishHook, JSONTracer
 
 from polymath.config import get_default_config
+from polymath.embedder import maybe_make_embedder
 from polymath.tab_respawn import attach_respawn
 
 
@@ -123,7 +124,15 @@ def build_workbench(session_id: str) -> SessionRuntime:
     cfg = get_default_config()
     cfg.MEMORY_DIR.mkdir(parents=True, exist_ok=True)
 
-    memory = LocalMemoryStore(db_path=cfg.MEMORY_DIR / f"{session_id}.db")
+    # Optional: wire an OpenAI embedder so semantic recall actually works on
+    # free-text concept queries ("find me anything about spectral
+    # decomposition") rather than FTS5 LIKE matching. Returns None gracefully
+    # when OPENAI_API_KEY isn't set — LocalMemoryStore handles that natively.
+    embedder = maybe_make_embedder()
+    memory = LocalMemoryStore(
+        db_path=cfg.MEMORY_DIR / f"{session_id}.db",
+        embedder=embedder,
+    )
     tracer = JSONTracer()
     bus = EventBus()
 

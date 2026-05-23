@@ -15,8 +15,9 @@ matching Orqest's *no import-time side effects* discipline.
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
-from typing import Any
+from typing import Any, Literal
 
 from orqest.agents.base_agent import BaseAgent
 from orqest.agents.context_manager import ContextManager
@@ -25,6 +26,7 @@ from orqest.metacognition import StructuredOutputProtocol
 
 from polymath.config import get_default_config
 from polymath.state import PolymathState
+from polymath.tools.arxiv import arxiv_fetch, arxiv_search
 from polymath.tools.autonomy import (
     invoke_agent,
     list_agents,
@@ -32,8 +34,11 @@ from polymath.tools.autonomy import (
     spawn_analyst,
 )
 from polymath.tools.browser import browser_click, browser_open_url, browser_type
+from polymath.tools.citations import citation_graph
+from polymath.tools.experiment import experiment_run
 from polymath.tools.fs import edit_file, list_dir, read_file, write_file
 from polymath.tools.memory import recall, remember
+from polymath.tools.pdf import pdf_extract
 from polymath.tools.plan import init_plan, update_plan
 from polymath.tools.report import markdown_to_pdf, render_chart
 from polymath.tools.shell import run_command, run_python_snippet
@@ -67,6 +72,55 @@ def _budget_for(model: str) -> int:
     summarize/truncate thresholds; it never blocks on overflow.
     """
     return _MODEL_BUDGETS.get(model, 128_000)
+
+
+_ReasoningEffort = Literal["minimal", "low", "medium", "high"]
+
+
+def _resolve_reasoning_effort(model: str) -> _ReasoningEffort | None:
+    """Pick a reasoning effort for *model*, honoring ``POLYMATH_REASONING_EFFORT``.
+
+    Returns ``None`` for models known not to support reasoning OR for model+
+    transport combinations that error at runtime — e.g. ``openai:gpt-5*`` over
+    the default ``/v1/chat/completions`` endpoint **rejects** the combination
+    of function tools + ``reasoning_effort`` (OpenAI requires the Responses
+    API for that combo). The framework would otherwise return 400 mid-stream
+    and the user sees an unrecoverable error toast.
+
+    To opt INTO reasoning + tools with GPT-5 specifically, switch the model
+    string to ``openai-responses:gpt-5.4`` (uses the Responses API) — that
+    path is allowed below.
+
+    Default for reasoning-capable models is ``"medium"`` — synthesis benefits
+    from extra thinking but the cost ceiling stays bounded. Override via env
+    ``POLYMATH_REASONING_EFFORT={minimal,low,medium,high,off}``.
+    """
+    override = os.getenv("POLYMATH_REASONING_EFFORT")
+    if override in ("minimal", "low", "medium", "high"):
+        return override  # type: ignore[return-value]
+    if override in ("none", "off", ""):
+        if override is not None:
+            return None
+    # KNOWN BAD: openai:gpt-5* with function tools over chat/completions rejects
+    # reasoning_effort. Polymath has 20+ tools wired, so chat/completions is
+    # the only path. Skip reasoning here until we switch to the Responses API.
+    if model.startswith("openai:gpt-5"):
+        return None
+    # Reasoning-capable models that work cleanly with tools today:
+    reasoning_capable = (
+        # OpenAI Responses-API path — supports reasoning + tools
+        "openai-responses:",
+        # OpenAI o-series (use chat/completions; reasoning + tools OK historically)
+        "openai:o1", "openai:o3", "openai:o4",
+        # Anthropic thinking-capable models — thinking + tools work fine
+        "anthropic:claude-sonnet-4-7", "anthropic:claude-opus-4-7",
+        "anthropic:claude-sonnet-4-6", "anthropic:claude-opus-4-6",
+        # Google thinking-capable
+        "google:gemini-2.5",
+    )
+    if any(model.startswith(prefix) for prefix in reasoning_capable):
+        return "medium"
+    return None
 
 
 def _resolve_system_prompt() -> str:
@@ -105,7 +159,13 @@ class PolymathAgent(BaseAgent[PolymathState, str]):
             model=cfg.LLM_MODEL,
             api_key=api_key,
             tools=[
-                # Research
+                # Primary literature (use FIRST for research questions in dynamical
+                # systems / world models / control theory)
+                arxiv_search,
+                arxiv_fetch,
+                pdf_extract,
+                citation_graph,
+                # General web (blog posts, lecture notes, non-arxiv sources)
                 web_search,
                 web_fetch,
                 # Plan
@@ -121,6 +181,10 @@ class PolymathAgent(BaseAgent[PolymathState, str]):
                 list_dir,
                 run_command,
                 run_python_snippet,
+                # Experiments — structured wrapper for numerical research runs
+                # (train a small NN on a toy dynamical system, fit EDMD, etc.)
+                # See tools/experiment.py for the contract.
+                experiment_run,
                 # Browser (Phase 3) — gated on cfg.ENABLE_BROWSER.
                 *browser_tools,
                 # Reports (Phase 4)
@@ -142,6 +206,12 @@ class PolymathAgent(BaseAgent[PolymathState, str]):
             ],
             # Token-aware compaction sized to the configured model.
             context_manager=ContextManager(token_budget=_budget_for(cfg.LLM_MODEL)),
+            # Reasoning effort — translates per-provider (openai_reasoning_effort
+            # / anthropic_thinking / google_thinking_config). "medium" balances
+            # quality vs cost for research synthesis; flip to "high" for hard
+            # multi-paper contradictions via POLYMATH_REASONING_EFFORT=high.
+            # Models that don't support reasoning ignore this gracefully.
+            reasoning=_resolve_reasoning_effort(cfg.LLM_MODEL),
             # Forward-compat: the streaming chat path uses VercelAIAdapter,
             # which doesn't currently invoke run_enriched, so this protocol
             # only fires when a caller explicitly uses run_enriched()

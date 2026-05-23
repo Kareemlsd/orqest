@@ -4,15 +4,25 @@ Defines the MemoryStore protocol for pluggable memory backends, along with
 MemoryEntry (the unit of stored knowledge) and MemoryFilter (query-time
 constraints). Backends implement MemoryStore; callers depend only on the protocol.
 
-Supports three cognitive memory kinds:
+Supports four cognitive memory kinds:
 
 * **semantic** — what's true (facts, summaries, learned content)
 * **episodic** — what happened (sessions, traces, prior runs)
 * **procedural** — how to do things (skills, recipes, learned tool sequences)
+* **tool** — runtime-authored tool implementations (host-side mirror of
+  the in-container SQLite tool library that the Tier-2
+  :class:`DockerSandbox` persists per-user). The ``structured_content``
+  carries a :class:`GeneratedToolSpec`-shaped dict.
 
 Procedural entries carry a structured ``Skill`` payload in
 ``MemoryEntry.structured_content``; the searchable trigger text lives in
 ``MemoryEntry.content`` so FTS5 indexing keeps working uniformly.
+
+Tool entries carry a ``GeneratedToolSpec``-shaped dict in
+``structured_content`` (with ``name``, ``description``, ``parameters``,
+``implementation``, ``allowed_imports``, ``dependencies``). ``content``
+is the tool description (FTS-indexable). They are looked up by exact
+name rather than similarity — see :class:`ToolStrategy`.
 """
 
 from __future__ import annotations
@@ -68,7 +78,7 @@ class Skill(BaseModel):
 class MemoryFilter(BaseModel):
     """Query-time constraints for memory recall."""
 
-    memory_type: Literal["semantic", "episodic", "procedural"] | None = None
+    memory_type: Literal["semantic", "episodic", "procedural", "tool"] | None = None
     source_agent: str | None = None
     min_confidence: float | None = None
     min_reliability: float | None = None
@@ -90,7 +100,7 @@ class MemoryEntry(BaseModel):
     validate against the :class:`Skill` schema. Validation is gated to
     procedural entries to keep the legacy semantic/episodic paths
     untouched."""
-    memory_type: Literal["semantic", "episodic", "procedural"] = "semantic"
+    memory_type: Literal["semantic", "episodic", "procedural", "tool"] = "semantic"
     source_agent: str = "unknown"
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     embedding: list[float] | None = None

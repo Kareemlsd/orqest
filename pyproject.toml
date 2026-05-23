@@ -1,6 +1,6 @@
 [project]
 name = "orqest"
-version = "0.4.0"
+version = "0.8.0"
 description = "Building framework for scalable advanced agentic system using OOP"
 authors = [
   { name="Kareem El Sayed", email="k.elsayed@outlook.com" }
@@ -50,6 +50,18 @@ optimization = [
     # default reflection_lm path, datasets for some adapters, tqdm/cloudpickle)
     # are all gated by it. The bare `gepa` install only ships Protocol classes.
     "gepa[full]>=0.1.1",
+]
+docker = [
+    # Tier-2 sandbox (DockerSandbox) host-side requirements.
+    # The container itself ships in the published `orqest/agent-runtime`
+    # image and does not need this group.
+    "docker>=7.0",
+    "httpx>=0.27",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "docker: integration tests requiring a running Docker daemon AND the orqest/agent-runtime image (skipped by default)",
 ]
 
 [tool.ruff]

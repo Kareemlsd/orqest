@@ -217,8 +217,8 @@ class TestBudgetToolResultsDisabled:
             model=test_model,
             result_budget=None,
         )
-        # No budget processor in the chain — only keep_recent_messages
-        assert len(agent._history_processors) == 1
+        # keep_recent_messages + _repair_orphan_tool_returns appended = 2
+        assert len(agent._history_processors) == 2
 
 
 class TestBaseAgentResultBudget:
@@ -232,8 +232,8 @@ class TestBaseAgentResultBudget:
             output_type=SimpleOutput,
             model=test_model,
         )
-        # Default: budget processor + keep_recent_messages = 2
-        assert len(agent._history_processors) == 2
+        # budget_tool_results + keep_recent_messages + _repair_orphan_tool_returns = 3
+        assert len(agent._history_processors) == 3
 
     def test_custom_result_budget(self, test_model):
         agent = ConcreteAgent(
@@ -243,7 +243,7 @@ class TestBaseAgentResultBudget:
             model=test_model,
             result_budget=50_000,
         )
-        assert len(agent._history_processors) == 2
+        assert len(agent._history_processors) == 3
 
     def test_custom_history_processors_with_budget(self, test_model):
         """Custom history_processors still get budget prepended."""
@@ -256,8 +256,8 @@ class TestBaseAgentResultBudget:
             history_processors=[custom],
             result_budget=10_000,
         )
-        # budget + custom = 2
-        assert len(agent._history_processors) == 2
+        # budget + custom + repair = 3
+        assert len(agent._history_processors) == 3
 
     def test_budget_none_with_custom_processors(self, test_model):
         """result_budget=None does not prepend budget processor."""
@@ -270,5 +270,6 @@ class TestBaseAgentResultBudget:
             history_processors=[custom],
             result_budget=None,
         )
-        assert len(agent._history_processors) == 1
+        # custom + repair = 2
+        assert len(agent._history_processors) == 2
         assert agent._history_processors[0] is custom

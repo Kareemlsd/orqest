@@ -135,3 +135,94 @@ class TestAgentFactory:
         assert fields["required_field"].is_required()
         assert not fields["optional_field"].is_required()
         assert fields["optional_field"].default == 42
+
+
+# --- AgentSpec(output_type=...) tests ---
+
+
+class _CoderOutput(BaseModel):
+    """A user-facing Pydantic output type — the alternative to authoring
+    a JSON Schema dict by hand."""
+
+    reasoning: str
+    code: str
+
+
+class TestAgentSpecOutputType:
+    """The Pydantic-class shortcut for AgentSpec output declaration.
+
+    Two declaration paths: `output_schema=<dict>` (LLM-emittable, wire-format)
+    or `output_type=<PydanticModel>` (code-side ergonomic). Exactly one of
+    them must be set.
+    """
+
+    def test_accepts_output_type_pydantic_class(self):
+        factory = AgentFactory()
+        spec = AgentSpec(
+            name="coder",
+            system_prompt="Write code.",
+            output_type=_CoderOutput,
+        )
+        agent = factory.spawn(spec, model=TestModel())
+        # Spawned agent gets EXACTLY the user-supplied Pydantic class —
+        # no runtime model synthesis, no field-name munging.
+        assert agent.output_type is _CoderOutput
+
+    def test_rejects_both_output_paths_set(self):
+        with pytest.raises(ValueError, match="exactly one of"):
+            AgentSpec(
+                name="bad",
+                system_prompt="prompt",
+                output_type=_CoderOutput,
+                output_schema={"properties": {"x": {"type": "string"}}},
+            )
+
+    def test_rejects_neither_output_path_set(self):
+        with pytest.raises(ValueError, match="must declare output shape"):
+            AgentSpec(name="bad", system_prompt="prompt")
+
+    def test_rejects_non_basemodel_output_type(self):
+        # str isn't a BaseModel subclass — Pydantic's own type validation
+        # rejects it before our custom validator. Either way: clear error.
+        with pytest.raises(ValueError, match="subclass of BaseModel"):
+            AgentSpec(
+                name="bad",
+                system_prompt="prompt",
+                output_type=str,  # type: ignore[arg-type]
+            )
+
+    def test_output_schema_path_still_works(self):
+        """Backward-compatibility check — existing JSON Schema callers see
+        no behavior change."""
+        factory = AgentFactory()
+        spec = AgentSpec(
+            name="legacy",
+            system_prompt="prompt",
+            output_schema={
+                "properties": {"answer": {"type": "string"}},
+                "required": ["answer"],
+            },
+        )
+        agent = factory.spawn(spec, model=TestModel())
+        # Synthesised Pydantic class with name '<spec_name>_Output'
+        assert agent.output_type.__name__ == "legacy_Output"
+        assert "answer" in agent.output_type.model_fields
+
+    @pytest.mark.asyncio
+    async def test_output_type_agent_runs_end_to_end(self):
+        """The Pydantic-class agent actually produces a typed output at runtime."""
+        factory = AgentFactory()
+        spec = AgentSpec(
+            name="run_coder",
+            system_prompt="Write code.",
+            output_type=_CoderOutput,
+        )
+        test_model = TestModel(custom_output_args={
+            "reasoning": "trivial", "code": "def f(): pass",
+        })
+        agent = factory.spawn(spec, model=test_model)
+        state = GlobalState()
+        state.add_message("user", "make a function")
+        result = await agent.run(state)
+        assert isinstance(result, _CoderOutput)
+        assert result.code == "def f(): pass"

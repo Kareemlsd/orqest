@@ -372,10 +372,14 @@ class TestCompactTruncate:
 
         result = cm.compact(msgs)
 
-        # Should preserve at least min_recent_tokens worth of recent messages
-        # (excluding first message)
-        recent_tokens = estimate_tokens(result[1:])
-        assert recent_tokens >= cm.min_recent_tokens
+        # Should preserve at least min_recent_turns recent messages. We can't
+        # check min_recent_tokens any more — the orphan-tool-return repair
+        # sweep (added 2026-05-16 to keep ModelHTTPError 400 at bay) strips
+        # ToolReturnParts whose matching ToolCallPart fell out of the window.
+        # That's the correct trade-off: orphan returns make the API reject the
+        # whole request, so a leaner-but-valid window beats a fatter-but-broken
+        # one.
+        assert len(result) >= cm.min_recent_turns + 1  # +1 for first message
 
 
 class TestCompactImmutability:
@@ -435,8 +439,9 @@ class TestBaseAgentIntegration:
             context_manager=cm,
             result_budget=20_000,
         )
-        # Should have: context_manager.compact, budget_tool_results, keep_recent_messages = 3
-        assert len(agent._history_processors) == 3
+        # context_manager.compact, budget_tool_results, keep_recent_messages,
+        # _repair_orphan_tool_returns appended = 4
+        assert len(agent._history_processors) == 4
         # context_manager is first
         first_proc = agent._history_processors[0]
         assert hasattr(first_proc, "__self__") and first_proc.__self__ is cm
@@ -449,8 +454,8 @@ class TestBaseAgentIntegration:
             output_type=SimpleOutput,
             model=test_model,
         )
-        # Default: budget_tool_results + keep_recent_messages = 2
-        assert len(agent._history_processors) == 2
+        # budget_tool_results + keep_recent_messages + repair = 3
+        assert len(agent._history_processors) == 3
 
     def test_context_manager_none_explicit(self, test_model):
         """Explicitly passing None is same as default."""
@@ -461,4 +466,5 @@ class TestBaseAgentIntegration:
             model=test_model,
             context_manager=None,
         )
-        assert len(agent._history_processors) == 2
+        # budget_tool_results + keep_recent_messages + repair = 3
+        assert len(agent._history_processors) == 3

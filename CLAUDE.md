@@ -8,7 +8,7 @@ Orqest is a Python framework for building autonomous agentic AI systems on top o
 
 **Domain-agnostic litmus test:** "Can a developer building a headless coding assistant use this feature without knowing what Polymath is?" If no, it belongs in the consumer, not Orqest.
 
-**Current version:** `0.4.0` (`pyproject.toml`). **All five novel vision features shipped (2026-04-25)** — runtime agent design, cognitive memory typology (semantic / episodic / procedural), metacognition primitives, self-healing primitives, generative UI. See `.claude/VISION.md` for the strategic frame and `.claude/IMPLEMENTATION_2026-04-25.md` for the three-wave ship plan.
+**Current version:** `0.8.0` (`pyproject.toml`). **All five novel vision features shipped (2026-04-25)** — runtime agent design, cognitive memory typology (semantic / episodic / procedural), metacognition primitives, self-healing primitives, generative UI. See `.claude/VISION.md` for the strategic frame and `.claude/IMPLEMENTATION_2026-04-25.md` for the three-wave ship plan. **Phase 13 (2026-05-16)** added the Tier-2 Docker sandbox (`DockerSandbox`) + per-user persisted MCP tool library — the published `orqest/agent-runtime` image runs an in-container FastMCP server with HMAC-JWT auth, per-agent `uv` venvs, and SQLite-backed cross-session tool persistence per user.
 
 ## Project Structure
 
@@ -33,7 +33,9 @@ orqest/
 │   ├── pipeline.py          # Pipeline (sequential, STOP/SKIP/RETRY)
 │   ├── parallel.py          # Parallel (concurrent + merge + timeout)
 │   ├── router.py            # Router (rule-based + LLM classifier, with fallback)
-│   └── loop.py              # RefinementLoop (evaluator + convergence detection)
+│   ├── loop.py              # RefinementLoop (evaluator + convergence detection)
+│   ├── spec.py              # PipelineSpec/ParallelSpec/RouterSpec/RefinementLoopSpec + AgentStepSpec/FunctionStepSpec — Pydantic IR
+│   └── hydrate.py           # CallableRegistry + topology_from_spec() — IR → live runtime
 │
 ├── memory/                  # Cognitive memory typology (semantic / episodic / procedural)
 │   ├── store.py             # MemoryStore protocol, MemoryEntry, MemoryFilter, Skill / ToolCallSpec / SkillExample
@@ -41,11 +43,29 @@ orqest/
 │   ├── strategies.py        # SemanticStrategy, EpisodicStrategy, ProceduralStrategy (+ injected fuzzy judge)
 │   └── config.py            # MemoryConfig + PerKindConfig (per-kind decay / prune policy)
 │
-├── autonomy/                # Runtime agent spawning (Phase 3 — shipped)
-│   ├── spec.py              # AgentSpec, ToolSpec (serializable contracts)
-│   ├── factory.py           # AgentFactory → DynamicAgent via pydantic.create_model()
+├── autonomy/                # Runtime planners + dynamic tool spawning (Phases 3, 11, 12)
+│   ├── spec.py              # AgentSpec, ToolSpec, GeneratedToolSpec (serializable contracts; mixed via smart-union)
+│   ├── factory.py           # AgentFactory → DynamicAgent; dispatches ToolSpec → registry, GeneratedToolSpec → tool_factory
 │   ├── registry.py          # ToolRegistry (register / get / search / list_all)
-│   └── meta.py              # MetaOrchestrator (goal → decomposition → spawn → execute)
+│   ├── tool_factory.py      # DynamicToolFactory (GeneratedToolSpec → pydantic_ai.Tool via Sandbox)
+│   ├── meta.py              # MetaOrchestrator (goal → flat decomposition → spawn → execute)
+│   ├── runtime.py           # RuntimeTopologyDesigner + TopologyCache (NoCache/InMemoryLRU/MemoryStoreCache) — per-request topology synthesis with cache
+│   └── topology_orchestrator.py  # TopologyOrchestrator (goal → topology design → hydrate → run → record)
+│
+├── sandbox/                 # Phases 12 + 13 — safe execution surface for LLM-generated Python
+│   ├── protocol.py          # Sandbox Protocol + ValidationError + ExecutionResult; execute() takes optional agent_id + dependencies
+│   ├── _static.py           # AST validator shared by all backends (default-deny imports + forbidden-names check)
+│   ├── inprocess.py         # InProcessSandbox (Tier 0 — requires unsafe=True; exec() in restricted namespace)
+│   ├── subprocess.py        # SubprocessSandbox (Tier 1 default — subprocess + RLIMIT_AS + RLIMIT_CPU + outer wait_for)
+│   ├── docker.py            # DockerSandbox (Tier 2 — per-session container; needs `docker` dep group + orqest/agent-runtime image)
+│   ├── jwt.py               # Minimal HS256 JWT (encode/decode/verify, constant-time compare)
+│   ├── _compat.py           # Soft-import boundary for the `docker` SDK (friendly ImportError when missing)
+│   └── docker_runtime/      # Phase 13 — IN-CONTAINER runtime package (runs INSIDE orqest/agent-runtime)
+│       ├── __main__.py      # Entry point — reads ORQEST_USER_ID/SESSION_ID/HMAC_SECRET, boots FastMCP on 0.0.0.0:8000
+│       ├── server.py        # build_server[_from_env]() — FastMCP w/ 4 built-in tools + persisted-library replay
+│       ├── auth.py          # SessionAuthMiddleware — JWT validation on on_call_tool + on_list_tools (FastMCP 2.x)
+│       ├── store.py         # ToolStore — per-user SQLite (name, version) PK + dedup by implementation_hash
+│       └── executor.py      # Per-agent uv venv + uv pip install (allowlisted) + RLIMIT-bounded subprocess
 │
 ├── observability/           # Phase 4 — shipped
 │   ├── tracer.py            # Span, Tracer protocol, JSONTracer (in-memory, JSON export)
@@ -100,6 +120,18 @@ orqest/
 ├── tools/                   # First-party reusable pydantic-ai Tools
 │   └── web.py               # web_search, web_fetch + result models (tavily/exa/brave/serper)
 │
+├── optimization/            # Reflective evolution — search-time only (W1: prompts via GEPA, W3: topology via MetaAgentSearch)
+│   ├── _compat.py           # Single-file gepa import boundary (friendly ImportError when missing)
+│   ├── config.py            # OptimizationConfig (frozen dataclass, FrontierType Literal)
+│   ├── bundle.py            # MetricBundle + MetricWeights (5 dimensions + raw extension)
+│   ├── genome.py            # PromptGene / ScalarGene / CategoricalGene + Genome
+│   ├── evaluator.py         # Evaluator + GoldExample (single-agent path)
+│   ├── adapter.py           # OrqestGEPAAdapter + OrqestEvalBatch (GEPA Protocol bridge)
+│   ├── runner.py            # OptimizationRunner + OptimizationResult (drives gepa.optimize)
+│   ├── apply.py             # apply_result + OptimizationDiff (dry-run by default; resets _agent cache)
+│   ├── topology.py          # TopologyGene + TopologyEvaluator + unpack_topology_output (W3.A/B)
+│   └── meta_agent.py        # MetaAgentConfig + Archive + MetaAgentSearch (W3 — search-time ADAS loop)
+│
 ├── utils/
 │   ├── llm_model.py         # resolve_model() — lazy registry (OpenAI, Anthropic, Google, OpenRouter)
 │   └── token_counter.py     # estimate_tokens() (heuristic 3.5 chars/token)
@@ -110,17 +142,17 @@ orqest/
 
 ### Public API (root re-exports from `orqest/__init__.py`)
 
-`OrqestConfig`, `load_config`, `get_default_config`, `HookRunner`, `ToolHook`, `HookDecision` (`Continue` / `Skip` / `Redirect` / `Abort`), `HookAbortError`, `Pipeline`, `Parallel`, `Router`, `RefinementLoop`, `ExecutionPlan`, `PlanStatus`, `PlanSubtask`, `PlanTask`, `Workbench`, `EnrichedOutput`, `MetacognitionConfig`, `HealingConfig`.
+`OrqestConfig`, `load_config`, `get_default_config`, `HookRunner`, `ToolHook`, `HookDecision` (`Continue` / `Skip` / `Redirect` / `Abort`), `HookAbortError`, `Pipeline`, `Parallel`, `Router`, `RefinementLoop`, `ExecutionPlan`, `PlanStatus`, `PlanSubtask`, `PlanTask`, `Workbench`, `EnrichedOutput`, `MetacognitionConfig`, `HealingConfig`, `OptimizationConfig`, `MetaAgentConfig`.
 
 Other subsystems are imported via their submodules (`from orqest.memory import LocalMemoryStore, Skill`, `from orqest.observability import EventBus, sse_sidecar`, `from orqest.compound import SubAgentTool`, `from orqest.metacognition import StructuredOutputProtocol, MetacognitionHook`, `from orqest.healing import HealingRunner, StallDetector, FallbackModel`, `from orqest.ui import UIComponentSpec, ChartComponent, UIEmitter`, etc.) so the root namespace stays small.
 
 ### Tests
 
-Mirrors source layout under `tests/`. As of latest collect: **670 tests** (655 baseline → 664 after the `[0.3.0]` reconcile pass → 670 after the `[0.4.0]` advance pass's 6 test-first additions). Coverage spans agents, orchestration, memory, mcp, autonomy, observability, workbench, compound, plan, tools, utils, io_utils, **metacognition, healing, ui**, plus root-level tests for config, hooks, hook_decision, budget_tool_results, context_manager.
+Mirrors source layout under `tests/`. As of latest collect: **1117 tests** — 1104 in the default suite + 13 marked `docker` (require a Docker daemon AND the `orqest/agent-runtime` image, skipped by default). The Phase-13 wave added ~74 tests across the new `tests/sandbox/test_jwt.py`, `tests/sandbox/test_docker_compat.py`, `tests/sandbox/test_docker.py`, `tests/sandbox/docker_runtime/`, `tests/mcp/test_streamable_http_transport.py`, `tests/memory/test_tool_memory_type.py`, `tests/autonomy/test_generated_tool_spec_dependencies.py`, `tests/workbench/test_user_session.py`. History: 655 baseline → 664 (`[0.3.0]`) → 670 (`[0.4.0]`) → 689 (reasoning) → 768 (GEPA `optimization`) → 863 (W3 topology evolution) → 898 (runtime topology) → 959 (Phase 12 sandbox + dynamic tool spawning) → 1064 (Phase 13 Docker tier + per-user persisted MCP tool library) → **1117 (post-Phase-13 hardening: orphan-tool-return repair, schema-validation guard, benchmarks fixture, sandbox helpers, multi-trial evaluation)**. Coverage spans agents, orchestration (incl. spec/hydrate IR), memory, mcp, autonomy, observability, workbench, compound, plan, tools, utils, io_utils, **metacognition, healing, ui, optimization (incl. topology + meta_agent), sandbox (incl. docker_runtime)**, plus root-level tests for config, hooks, hook_decision, budget_tool_results, context_manager.
 
 ### Examples
 
-`examples/01_basic_agent`, `02_agent_as_tool`, `03_streaming`, `04_pipeline`, `06_parallel_and_router`, `07_hooks_and_session`, `08_memory`, `09_observability` — all tested with real LLMs. `05_refinement_loop/` exists as a skeleton (not yet authored); worth filling in next time someone touches `RefinementLoop`.
+`examples/01_basic_agent`, `02_agent_as_tool`, `03_streaming`, `04_pipeline`, `05_refinement_loop`, `06_parallel_and_router`, `07_hooks_and_session`, `08_memory`, `09_observability` — all tested with real LLMs. `05_refinement_loop/` demonstrates `confidence_threshold` + `agent_self_eval` (Wave 1.3 metacognition integration).
 
 ## Key Conventions
 
@@ -135,6 +167,7 @@ Mirrors source layout under `tests/`. As of latest collect: **670 tests** (655 b
 - **Python 3.12+.** Modern typing (`type X = ...`, generic `class Foo[T]:`) used throughout.
 - **Testing.** pytest + pytest-asyncio. Mock the model layer; never require real API keys for the CI-blocking suite.
 - **Package docs live at `docs/`** (MkDocs Material + mkdocstrings). Every battery gets a concept doc under `docs/concepts/<name>.md` and an API reference entry wired via mkdocstrings.
+- **Every battery ships with a benchmark.** Convention established in `[0.9.0]`: when a new battery (or a meaningful composition of batteries) lands, it ships with a reproducible head-to-head in `benchmarks/<name>/` that measures its delta over a sensible baseline. The benchmark folder contains: `run.py` (the entry point), a `README.md` documenting expected numbers + variance + cost, and any problem-fixture modules. Multi-trial averaging is the default (single-LLM-run variance swings ±10pp; one trial misleads). The benchmark is the contract: if the numbers regress, the battery regressed — and consumers can verify the win claim with one shell command. Notebook 12 (`notebooks/12_combo_autonomous_coder.ipynb`) walks the architecture; `benchmarks/coding/` is the canonical reference for the layout. *Don't ship a new battery without one.* See `benchmarks/README.md`.
 
 ## Dev Commands
 
@@ -142,7 +175,7 @@ Mirrors source layout under `tests/`. As of latest collect: **670 tests** (655 b
 # Install in editable mode (local venv)
 uv pip install -e .
 
-# Run full suite (670 tests)
+# Run full suite (1051 tests; +13 marked `docker` skip without daemon)
 .venv/bin/python -m pytest tests/ -v
 
 # Single file / test-by-name
@@ -304,7 +337,7 @@ Outstanding consumer-side work (out of Orqest core):
 - **Polymath consolidation** — ✅ shipped 2026-04-25 (`demo/polymath/.claude/CONSOLIDATION_COMPLETE_2026-04-25.md`). The dedicated `ChartsTab` / `ReportTab` were absorbed into the dynamic dockview tab manifest, healing wired into `Workbench`, and sub-agent roster migrated to procedural memory.
 - **Polymath cognitive surfacing** — ✅ shipped 2026-04-26. Confidence per turn, healing toasts, Memory tab (galaxy + 3-kind browser), Agents tab (roster table). See addendums in the same consolidation doc.
 - **Polymath editorial redesign** — ✅ shipped 2026-04-26 from a claude.ai/design handoff. Warm-neutral oklch + amber accent + Newsreader serif + Inter Tight grotesk + the **Cognitive Gutter** (24px left rail per assistant turn — replaces the per-message confidence pill). See `demo/polymath/CLAUDE.md` for the current-state summary.
-- **Concept docs** — ✅ `docs/concepts/{metacognition,healing,generative_ui,autonomy,mcp}.md` shipped 2026-05-02; mkdocs nav wires all 19 concept docs under three groups (Composition / Memory & Cognition / Production).
+- **Concept docs** — ✅ `docs/concepts/{metacognition,healing,generative_ui,autonomy,mcp}.md` shipped 2026-05-02; mkdocs nav wires all 24 concept docs under three groups (Composition / Memory & Cognition / Production).
 - **Orqest skill folder** — ✅ shipped 2026-05-02 at `.claude/skills/orqest/` (and packaged as `.skill`). The canonical playbook for Claude Code consumers; symlinked at `~/.claude/skills/orqest` for global availability.
 - **Production memory backend** — Supabase pgvector (known gap; purely additive — `MemoryStore` Protocol and `MemoryConfig` already accommodate it).
 - **`ToolSandbox`** — generated-tool-code safety surface (Phase 3's deferred safety item; relevant for agents that author + run their own tools).
@@ -318,12 +351,12 @@ For top-level discoverability, [`SKILLS.md`](SKILLS.md) at the repo root points 
 
 ## Known Doc Gaps (to fix when touched)
 
-- `.claude/ROADMAP.md` is current as of 2026-05-02; treat this CLAUDE.md as ground truth if they ever drift.
-- `.claude/ARCHITECTURE.md` rewritten 2026-05-02 as an extensibility playbook (10 named extension patterns).
-- `README.md` refreshed 2026-05-02 with current elevator pitch + pointer to SKILLS.md.
-- `mkdocs.yml` nav now wires all 19 concept docs under three groups; `mkdocs build --strict` clean as of 2026-05-02.
-- `examples/05_refinement_loop/` shipped 2026-05-02 with `main.py` + `README.md` demonstrating `confidence_threshold` + `agent_self_eval` (Wave 1.3 metacognition integration).
-- `CHANGELOG.md` cut into `[0.1.0] - 2026-04-24` (Phases 2–5), `[0.2.0] - 2026-04-25` (Waves 1–3), `[0.3.0] - 2026-05-14` (the reconcile pass), and `[0.4.0] - 2026-05-14` (the advance pass — preview tier finished into Tier 1); fresh `[Unreleased]` for the next ship.
+- `.claude/ROADMAP.md` exists; treat this CLAUDE.md as ground truth if they ever drift.
+- `.claude/ARCHITECTURE.md` is an extensibility playbook (10 named extension patterns).
+- `README.md` carries the current elevator pitch + pointer to SKILLS.md.
+- `mkdocs.yml` nav wires all 24 concept docs under three groups; `mkdocs build --strict` is clean.
+- `examples/05_refinement_loop/` ships `main.py` + `README.md` demonstrating `confidence_threshold` + `agent_self_eval` (Wave 1.3 metacognition integration).
+- `CHANGELOG.md` cut into `[0.0.1] - 2025-07-21`, `[0.1.0] - 2026-04-24` (Phases 2–5), `[0.2.0] - 2026-04-25` (Waves 1–3), `[0.3.0] - 2026-05-14` (the reconcile pass), `[0.4.0] - 2026-05-14` (the advance pass — preview tier finished into Tier 1), and `[0.8.0] - 2026-05-23` (`orqest.optimization` battery + Tier-2 Docker sandbox + per-user persisted MCP tool library + runtime topology design + dynamic tool spawning + reasoning); fresh `[Unreleased]` for the next ship.
 
 ## Operating Mode
 

@@ -173,6 +173,96 @@ class Workbench:
 
         return HealingRunner(config, bus=self.event_bus, api_key=api_key)
 
+    def with_docker_sandbox(
+        self,
+        *,
+        user_id: str,
+        session_id: str,
+        image: str = "orqest/agent-runtime:latest",
+        allowed_packages: set[str] | None = None,
+        memory_mb: int = 2048,
+        cpus: float = 2.0,
+        pids_limit: int = 512,
+        promotion_policy: str = "threshold",
+        promotion_threshold: int = 3,
+        host_port: int | None = None,
+        hmac_secret: bytes | str | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Construct a :class:`DockerSandbox` wired to this workbench's bus.
+
+        ``user_id`` and ``session_id`` are **required positional-keyword args**
+        — strict by design. They are framework-controlled (not LLM-emitted)
+        and never appear in any LLM-visible context window: they're carried
+        in the MCP transport's HMAC-signed JWT bearer token, validated by
+        middleware inside the container.
+
+        ``user_id`` is the persistence boundary — the per-user SQLite tool
+        library mounted at ``/data`` inside the container is keyed by
+        ``orqest-user-<user_id>``. Tools persisted by user A's sessions
+        survive into user A's future sessions but never cross to user B.
+
+        ``session_id`` is the per-container lifecycle key — mint a fresh
+        UUID per session. Reusing one across containers is undefined
+        behavior (the JWT will fail validation against the new container's
+        env-injected ``ORQEST_SESSION_ID``).
+
+        **Construction alone does not start the container.** The sandbox
+        is an async context manager; ``docker run`` happens at
+        ``__aenter__``, ``docker rm -f`` at ``__aexit__``. Always use:
+
+        .. code-block:: python
+
+            async with workbench.with_docker_sandbox(
+                user_id="alice",
+                session_id=str(uuid4()),
+            ) as sandbox:
+                ...
+
+        Args:
+            user_id: Strict per-user identifier. The persistence boundary.
+            session_id: Strict per-session identifier. Typically ``str(uuid4())``.
+            image: Docker image to run; defaults to ``orqest/agent-runtime:latest``.
+            allowed_packages: Allowlist of pip packages the LLM can declare in
+                ``GeneratedToolSpec.dependencies``. Default-deny — empty set
+                blocks all installs.
+            memory_mb: Container ``--memory`` cap.
+            cpus: Container ``--cpus`` cap.
+            pids_limit: Container ``--pids-limit`` cap (fork-bomb defense).
+            promotion_policy: ``"threshold"`` (default), ``"eager"``, or
+                ``"operator_approval"``.
+            promotion_threshold: For ``"threshold"`` policy, N successful
+                invocations before persistence.
+            host_port: Host port to publish; ``None`` lets Docker pick.
+            hmac_secret: Secret for signing JWTs. ``None`` mints a fresh
+                random secret per sandbox (most secure; doesn't survive
+                process restart).
+
+        Returns:
+            An unstarted :class:`DockerSandbox` (async context manager).
+
+        """
+        # Lazy import to keep workbench module import-light for users who
+        # don't use Docker tier (and to surface a friendly error when the
+        # `docker` SDK isn't installed).
+        from orqest.sandbox.docker import DockerSandbox
+
+        return DockerSandbox(
+            user_id=user_id,
+            session_id=session_id,
+            image=image,
+            allowed_packages=allowed_packages,
+            memory_mb=memory_mb,
+            cpus=cpus,
+            pids_limit=pids_limit,
+            promotion_policy=promotion_policy,
+            promotion_threshold=promotion_threshold,
+            host_port=host_port,
+            hmac_secret=hmac_secret,
+            bus=self.event_bus,
+            **kwargs,
+        )
+
 
 def _event_to_dict(event: AgentEvent) -> dict[str, Any]:
     """Serialize an :class:`AgentEvent` to JSON-safe types."""

@@ -86,6 +86,10 @@ async def sidecar_state(wb: Workbench) -> dict:
     return snap
 ```
 
+## Runnable demo
+
+[`notebooks/04_orchestrated_workflow.ipynb`](https://github.com/Kareemlsd/orqest/blob/main/notebooks/04_orchestrated_workflow.ipynb) — `Workbench` bundling tracer + bus across a full Router → Parallel → Pipeline → RefinementLoop run.
+
 ## Reference
 
 ::: orqest.workbench.Workbench

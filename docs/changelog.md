@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_(empty — ready for the next ship)_
+### Added
+
+- `BaseAgent(reasoning=...)` — a provider-agnostic reasoning/thinking knob (`"minimal"` | `"low"` | `"medium"` | `"high"`). pydantic-ai exposes thinking through a different `ModelSettings` key per provider (`anthropic_thinking` / `openai_reasoning_effort` / `google_thinking_config` / `openrouter_reasoning`); `reasoning` collapses that into one effort level, translated and merged into `model_settings` — explicit `model_settings` keys win on conflict. For budget-based providers (Anthropic, Google) a sensible `max_tokens` is filled when unset so reasoning works out of the box. New `orqest.utils.reasoning` module (`ReasoningEffort`, `resolve_reasoning_settings`); `ReasoningEffort` is re-exported from `orqest.agents`.
 
 ## [0.4.0] - 2026-05-14
 

@@ -47,3 +47,10 @@ class MemoryConfig:
     semantic: PerKindConfig = field(default_factory=PerKindConfig)
     episodic: PerKindConfig = field(default_factory=PerKindConfig)
     procedural: PerKindConfig = field(default_factory=PerKindConfig)
+    tool: PerKindConfig = field(
+        default_factory=lambda: PerKindConfig(
+            ttl_days=None,            # tools don't auto-expire
+            version_on_edit=True,     # re-promotion of same name bumps version
+            decay_on_failure=0.5,     # aggressive decay — bad tools are bad
+        )
+    )

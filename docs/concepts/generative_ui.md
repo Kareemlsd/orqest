@@ -267,3 +267,7 @@ asyncio.run(main())
 - [SSE Sidecar](sse-sidecar.md) — flushing events to the frontend
 - [Execution Plan](execution-plan.md) — `PlanComponent` integration
 - [Event Bus Hook](event-bus-publish-hook.md) — emits `tool.*` events alongside `ui.*`
+
+## Runnable demo
+
+[`notebooks/03_generative_ui.ipynb`](https://github.com/Kareemlsd/orqest/blob/main/notebooks/03_generative_ui.ipynb) — agents emit typed components (`PlanComponent`, `TableComponent`, `ChartComponent`) onto the `EventBus`; `sse_sidecar` streams to a frontend.

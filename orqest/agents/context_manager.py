@@ -59,7 +59,15 @@ class ContextManager:
     def compact(self, messages: list[ModelMessage]) -> list[ModelMessage]:
         """Apply progressive compaction based on token usage.
 
-        Returns a new list — never mutates the input.
+        Returns a new list — never mutates the input. Whatever path runs,
+        the result is post-processed by :func:`_repair_orphan_tool_returns`
+        so a ``ToolReturnPart`` never appears without its matching
+        ``ToolCallPart`` earlier in the same window. The Responses API
+        rejects such orphan returns with
+        ``"No tool call found for function call output with call_id ..."``
+        (observed 2026-05-16 mid-Koopman-run), and chat/completions
+        rejects them with ``"messages with role 'tool' must be a response
+        to a preceding message with 'tool_calls'"``.
         """
         if not messages:
             return list(messages)
@@ -67,10 +75,12 @@ class ContextManager:
         tokens = estimate_tokens(messages)
 
         if tokens > self.effective_budget * self.truncate_threshold:
-            return self._emergency_truncate(messages)
-        if tokens > self.effective_budget * self.summarize_threshold:
-            return self._summarize_old_turns(messages)
-        return list(messages)
+            compacted = self._emergency_truncate(messages)
+        elif tokens > self.effective_budget * self.summarize_threshold:
+            compacted = self._summarize_old_turns(messages)
+        else:
+            return list(messages)
+        return _repair_orphan_tool_returns(compacted)
 
     def _summarize_old_turns(
         self, messages: list[ModelMessage]
@@ -222,3 +232,52 @@ def _make_summary_message(summaries: list[str]) -> ModelRequest:
         f"• {s}" for s in summaries
     )
     return ModelRequest(parts=[UserPromptPart(text)])
+
+
+def _repair_orphan_tool_returns(
+    messages: list[ModelMessage],
+) -> list[ModelMessage]:
+    """Drop ``ToolReturnPart`` entries that have no matching ``ToolCallPart``.
+
+    A round of compaction can leave a ``ModelRequest`` containing a
+    ``ToolReturnPart`` whose corresponding tool_call was sliced away. Both
+    the OpenAI chat/completions and the Responses transports reject this
+    with a 400 ("messages with role 'tool' must be a response to a
+    preceeding message with 'tool_calls'" / "No tool call found for
+    function call output with call_id ..."). We walk the window once and
+    track the set of currently-visible ``tool_call_id`` values; any
+    ``ToolReturnPart`` whose id isn't present is removed. If a
+    ``ModelRequest`` ends up with zero parts after the strip we drop the
+    whole message.
+    """
+    seen_call_ids: set[str] = set()
+    repaired: list[ModelMessage] = []
+    for msg in messages:
+        if isinstance(msg, ModelResponse):
+            for part in msg.parts:
+                if isinstance(part, ToolCallPart):
+                    cid = getattr(part, "tool_call_id", None)
+                    if cid:
+                        seen_call_ids.add(cid)
+            repaired.append(msg)
+            continue
+        if isinstance(msg, ModelRequest):
+            kept_parts = []
+            for part in msg.parts:
+                if isinstance(part, ToolReturnPart):
+                    cid = getattr(part, "tool_call_id", None)
+                    if cid and cid in seen_call_ids:
+                        kept_parts.append(part)
+                    # else: orphan — drop it
+                else:
+                    kept_parts.append(part)
+            if kept_parts:
+                # Rebuild only if we changed something to avoid extra alloc
+                if len(kept_parts) == len(msg.parts):
+                    repaired.append(msg)
+                else:
+                    repaired.append(ModelRequest(parts=kept_parts))
+            # else: every part was an orphan tool return — drop the message
+            continue
+        repaired.append(msg)
+    return repaired

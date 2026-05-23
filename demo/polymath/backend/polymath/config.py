@@ -88,12 +88,14 @@ def load_config() -> PolymathConfig:
     compose; finally to defaults.
     """
     memory_dir = Path(os.getenv("POLYMATH_MEMORY_DIR", "/data/memory"))
-    llm_model = os.getenv("LLM_MODEL") or os.getenv("POLYMATH_LLM_MODEL", "openai:gpt-4.1")
+    llm_model = os.getenv("LLM_MODEL") or os.getenv("POLYMATH_LLM_MODEL", "openai:gpt-5.2")
     # Pick the provider-matching API key for common providers; otherwise fall
     # back to a generic POLYMATH_LLM_API_KEY.
     provider = llm_model.split(":", 1)[0] if ":" in llm_model else llm_model
     provider_key_map = {
         "openai": "OPENAI_API_KEY",
+        # Responses API uses the same OpenAI credential.
+        "openai-responses": "OPENAI_API_KEY",
         "anthropic": "ANTHROPIC_API_KEY",
         "google": "GOOGLE_API_KEY",
         "openrouter": "OPENROUTER_API_KEY",

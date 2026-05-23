@@ -254,10 +254,39 @@ The evaluator can be:
 4. Convergence detection checks if recent scores are plateauing (optional)
 5. Repeat until an exit condition triggers
 
-`LoopResult` contains the final `output`, `iterations` count, `exit_reason`, and full `history` of `IterationRecord` objects.
+`LoopResult` contains the final `output`, `iterations` count, `exit_reason`, and full `history` of `IterationRecord` objects, plus `best_iteration` and `best_score` (see Keep-Best Safety below).
+
+### Keep-Best Safety (default ON)
+
+Self-improving loops on imperfect models can *regress*: the step proposes a revised candidate that scores worse than a prior one. To protect against this, `RefinementLoop` defaults to `keep_best=True`:
+
+- Across iterations, the loop tracks the candidate that achieved the highest `EvalResult.score`.
+- On any non-`passed` exit (`max_iterations`, `converged`, `timeout`), if the final iteration's score is strictly *less* than the best seen, the loop returns the *best* iteration's output instead of the final one.
+- The `passed=True` early exit always returns the passing iteration's output — passing is the explicit success bar and overrides keep-best.
+- When the evaluator never returns a numeric `score` (boolean-only `passed`/`feedback`), keep-best is a no-op: the legacy "return latest output" behavior holds.
+- `LoopResult.best_iteration` and `best_score` are always populated for transparency (even with `keep_best=False`) so callers can diagnose regressions.
+
+```python
+loop = RefinementLoop(
+    step=coder,
+    evaluator=run_visible_tests,  # returns EvalResult(passed=False, score=fraction_passing)
+    state_updater=feed_failures_to_fixer,
+    max_iterations=3,
+    # keep_best=True is the default — no need to set it
+)
+result = await loop.run(problem)
+# result.output is the highest-scoring iteration, not necessarily the last
+# result.best_iteration tells you which iteration that was
+```
+
+**Migration:** set `RefinementLoop(..., keep_best=False)` to restore strict last-iteration semantics for callers that depend on it.
 
 ## Related Concepts
 
 - [Agents](agents.md) -- the `BaseAgent` that orchestration primitives wrap
 - [Hooks & Lifecycle](hooks-and-lifecycle.md) -- fire-and-forget callbacks for tool execution
 - [Agent as Tool](agent-as-tool.md) -- lightweight single-agent composition
+
+## Runnable demo
+
+[`notebooks/04_orchestrated_workflow.ipynb`](https://github.com/Kareemlsd/orqest/blob/main/notebooks/04_orchestrated_workflow.ipynb) — Router → Parallel → Pipeline → RefinementLoop with `Workbench` carrying tracer + bus.

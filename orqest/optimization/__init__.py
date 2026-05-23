@@ -36,15 +36,41 @@ from orqest.optimization.genome import (
     PromptGene,
     ScalarGene,
 )
+from orqest.optimization.meta_agent import (
+    Archive,
+    ArchiveEntry,
+    ArchiveStrategy,
+    MetaAgentConfig,
+    MetaAgentSearch,
+    TopologyDesign,
+)
 from orqest.optimization.runner import OptimizationResult, OptimizationRunner
+from orqest.optimization.topology import (
+    TopologyEvaluator,
+    TopologyGene,
+    unpack_topology_output,
+)
+
+# NOTE: RuntimeTopologyDesigner / TopologyCache / NoCache / InMemoryLRU /
+# MemoryStoreCache live in orqest.autonomy.runtime (alongside their natural
+# sibling, orqest.autonomy.topology_orchestrator). They share the TopologySpec
+# IR with this package but they are runtime planners, not optimizers — there
+# is no loss function, no per-request scoring, no Pareto archive. Import them
+# from orqest.autonomy.runtime directly:
+#     from orqest.autonomy.runtime import RuntimeTopologyDesigner, MemoryStoreCache
 
 __all__ = [
+    "Archive",
+    "ArchiveEntry",
+    "ArchiveStrategy",
     "CategoricalGene",
     "Evaluator",
     "FrontierType",
     "Gene",
     "Genome",
     "GoldExample",
+    "MetaAgentConfig",
+    "MetaAgentSearch",
     "MetricBundle",
     "MetricWeights",
     "OptimizationConfig",
@@ -55,5 +81,9 @@ __all__ = [
     "OrqestGEPAAdapter",
     "PromptGene",
     "ScalarGene",
+    "TopologyDesign",
+    "TopologyEvaluator",
+    "TopologyGene",
     "apply_result",
+    "unpack_topology_output",
 ]

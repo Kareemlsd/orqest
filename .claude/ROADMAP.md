@@ -147,13 +147,80 @@ Orqest's goal: **make the jump from 1 agent to N agents incremental, not archite
 
 ---
 
-## Phase 9 — Orchestration specs (closes runtime-agent-design loop)
+## Phase 9 — Orchestration specs (closes runtime-agent-design loop) — ✅ shipped (2026-05-15)
 
 **Goal:** LLM emits not just `AgentSpec` but `PipelineSpec`, `ParallelSpec`, `RouterSpec`, `RefinementLoopSpec`.
 
-- Pydantic models for each orchestration primitive
-- `from_json` hydrators in the autonomy `AgentFactory` (or a new `OrchestrationFactory`)
-- LLM can design topology at runtime, not just agents
+Shipped in `orqest/orchestration/spec.py` + `orqest/orchestration/hydrate.py`:
+
+- Pydantic models for each orchestration primitive (plus `AgentStepSpec` / `FunctionStepSpec` atomic leaves), unified by `OperationSpec` (recursive) and `TopologySpec` (composite-only) discriminated unions.
+- `topology_from_spec()` hydrator + `CallableRegistry` for explicit name→callable allowlists. **No `eval`, no `exec`** — security perimeter is "names from a user-controlled allowlist."
+- `_TopologyAsStep` adapter so nested composites conform to the `Step` protocol.
+- Closes the audit-named gap: LLM can now design topology at runtime, not just agents.
+
+## Phase 10 — Topology evolution (ADAS-style search over Phase 9 IR) — ✅ shipped (2026-05-15)
+
+**Goal:** Evolve agentic topology from real traces against a small gold set; the structural counterpart to GEPA's prompt evolution.
+
+Shipped in `orqest/optimization/topology.py` + `orqest/optimization/meta_agent.py`:
+
+- `TopologyGene` (encode/decode `TopologySpec` JSON; resilient fallback to seed on malformed reflection).
+- `TopologyEvaluator` (subclass of `Evaluator`; surfaces `n_agents` / `depth` to `MetricBundle.raw`).
+- `MetaAgentSearch` (ADAS-style design → reflexion → evaluate → archive loop), `Archive` with three pluggable strategies (`top_k` default per the [2510.06711 critique](https://arxiv.org/abs/2510.06711); `cumulative` ADAS-faithful; `parallel` for end-only selection).
+- Two-phase recommended composition with GEPA (ADAS first, GEPA on the winner). Notebook 09 demonstrates the ablation.
+
+Outstanding: per-step cost capture (today `cost_usd=0.0` for topology evaluations); `Pipeline.to_spec()` inverse direction; W3.C sandboxed codegen (raw Python `forward()` behind a `Sandbox` Protocol).
+
+## Phase 11 — Runtime topology design — ✅ shipped (2026-05-15)
+
+**Goal:** Close the loop between offline ADAS search (Phase 10) and the existing runtime agent design (`MetaOrchestrator`). Per-request topology synthesis with cache-amortized online learning over what works.
+
+Shipped:
+
+- `orqest/autonomy/runtime.py` — `RuntimeTopologyDesigner` (per-request synthesis via a user-provided `BaseAgent[GlobalState, TopologyDesign]`); `TopologyCache` Protocol with `NoCache` / `InMemoryLRU` / `MemoryStoreCache` implementations. Lives in `autonomy/` (not `optimization/`) because it's a runtime planner sibling to `MetaOrchestrator`, not an optimizer — there's no loss function or Pareto archive.
+- `MemoryStoreCache` backed by `LocalMemoryStore` (`memory_type="semantic"`, `source_agent="topology_cache"` namespace) with reliability decay on failure — online learning for free via existing `PerKindConfig.decay_on_failure` machinery.
+- `orqest/autonomy/topology_orchestrator.py` — `TopologyOrchestrator` parallel sibling to `MetaOrchestrator`. Returns `TopologyExecutionResult` with structural metrics, timing breakdown, cache_hit signal.
+- Seed-library bootstrap: pass the Pareto front from offline `MetaAgentSearch` to the runtime designer as `seed_library=`; designer biases toward known-good shapes.
+- 35 new tests (898 total), notebook 10 demonstrates end-to-end (cache reuse cuts design from ~3s to ~1ms; online-learning decay invalidates failed entries).
+
+Outstanding (W3.D-G): `RetrievalPolicy` Protocol over the seed library (when libraries grow past ~20 entries), output-quality reliability signal (decay on bad outputs not just exceptions), `MetacognitionHook` integration (per-step confidence into `TopologyExecutionResult`), MCTS as alternative search-time engine feeding the same library.
+
+## Phase 12 — Sandbox + dynamic tool spawning — ✅ shipped (2026-05-15)
+
+**Goal:** Close the autonomy ladder's missing rung — when an LLM emits an `AgentSpec` requesting a brand-new capability, the framework materializes it safely instead of silently dropping the request. Pairs with the long-deferred Phase-3 `ToolSandbox` item.
+
+Shipped:
+
+- `orqest/sandbox/` — `Sandbox` Protocol + `ValidationError` + `ExecutionResult` + two backends. `InProcessSandbox` (Tier 0, refuses without `unsafe=True`); `SubprocessSandbox` (Tier 1 default, subprocess + RLIMIT_AS + RLIMIT_CPU + outer wait_for). Default-deny imports; defense-in-depth re-validation inside the subprocess.
+- `orqest/autonomy/spec.py` — `GeneratedToolSpec` Pydantic model carrying `implementation: str`. `AgentSpec.tools` widened to smart-union of `ToolSpec | GeneratedToolSpec`.
+- `orqest/autonomy/tool_factory.py` — `DynamicToolFactory.spawn(spec)` validates + produces a runnable `pydantic_ai.Tool`. Bus events for the full lifecycle.
+- `orqest/autonomy/factory.py` — `AgentFactory(tool_factory=...)` dispatches mixed `ToolSpec` + `GeneratedToolSpec` lists; runtime async-bridge for spawn calls.
+- `orqest/agents/base_agent.py` — `BaseAgent.add_tool(tool)` for runtime tool assignment to existing agents (invalidates the `_agent` cache; idempotent on name).
+- 61 new tests (959 total). Notebook 11 demonstrates end-to-end with a real LLM successfully using a runtime-spawned `extract_dois` tool.
+
+Closes the Phase-3 deferred `ToolSandbox` item from `.claude/ARCHITECTURE.md` §2.8. W3.C ADAS sandboxed codegen now unblocked. **W3.M shipped (Phase 13, see below).** Outstanding from this wave: W3.K (`SubprocessPoolSandbox` for amortized startup cost) and W3.L (`E2BSandbox` for hosted micro-VM).
+
+## Phase 13 — Tier-2 Docker sandbox + per-user persisted MCP tool library — ✅ shipped (2026-05-16)
+
+**Goal:** Hardened isolation tier for LLM-authored Python execution; runtime-spawned tools that survive across sessions for the same user. Closes W3.J (procedural-memory persistence for spawned tools) and W3.M (Docker / Firecracker isolation backends — Docker landed; Firecracker is the future Tier 3 seam).
+
+Shipped:
+
+- `orqest/sandbox/docker.py` — host-side `DockerSandbox` (Sandbox-Protocol-conformant; async context manager). Per-construction HMAC-secret mint; `docker run` with `--cap-drop=ALL --read-only --user 1000:1000 --pids-limit --memory --cpus`; MCP boot-wait poll via `/mcp` initialize; auto-discover host port from `NetworkSettings`. Required `user_id` + `session_id` ctor args.
+- `orqest/sandbox/jwt.py` — minimal HS256 JWT (encode/decode/verify), constant-time signature compare, `alg=none` defended.
+- `orqest/sandbox/_compat.py` — soft-import boundary for the optional `docker` SDK; friendly `ImportError` at first call.
+- `orqest/sandbox/docker_runtime/` — IN-CONTAINER runtime package: FastMCP server (`server.py`), `SessionAuthMiddleware` (`auth.py`), per-agent `uv venv` + `uv pip install` allowlisted (`executor.py`), per-user SQLite `ToolStore` (`store.py`). Replays the persisted library on startup; threshold counter auto-promotes after N=3 invocations of the same `(name, code_hash)`; explicit `promote_tool` + `forget_tool` + `list_persisted_tools` MCP tools also exposed.
+- `Dockerfile` (repo root) — `python:3.12-slim` + `tini` + `uv` + orqest + `fastmcp>=2.10,<2.14` (3.x changed middleware HTTP-context lifecycle in a way that breaks `get_http_headers()` for our auth path; pinned via `PIP_CONSTRAINT` so pydantic-ai's transitive `fastmcp>=3.2.4` doesn't override). Two build modes via `ARG ORQEST_SOURCE`: `pypi` (release) / `local` (dev).
+- `orqest/workbench/workbench.py` — required `user_id` + `session_id` ctor args (BREAKING for any external Workbench() consumer; no external consumers exist as of 0.7.0). New `with_docker_sandbox(*, user_id, session_id, image, allowed_packages, ...)` lazy factory.
+- `orqest/sandbox/protocol.py` — additive `agent_id` + `dependencies` kwargs on `Sandbox.execute`; Tier-0/1 accept-and-ignore.
+- `orqest/mcp/{config,client}.py` — `MCPServerConfig.headers: dict[str, str]` and `transport: "streamable-http"` branch using `streamablehttp_client`.
+- `orqest/memory/` — `memory_type="tool"` extension across `MemoryEntry` / `MemoryFilter`; `ToolStrategy` (exact-name match w/ FTS5 fallback) wired into `default_strategy_table`; `MemoryConfig.tool: PerKindConfig` (versioning enabled; no TTL).
+- `orqest/autonomy/{spec,tool_factory,factory}.py` — `GeneratedToolSpec.dependencies: list[str]`; `agent_id` propagated through factory chain.
+- ~74 new tests (1051 default + 13 marked `docker` = 1064 total). New `[tool.pytest.ini_options]` registers the `docker` marker.
+- New optional dependency group `[dependency-groups] docker = ["docker>=7.0", "httpx>=0.27"]`.
+- Honest threat model documented at `docs/concepts/sandbox.md` (Tier 0 → 1 → 2 → Tier 3 microvm seam): Tier 2 protects against accidental damage and most prompt-injection scenarios; not adversarial-multi-tenant grade — for that, run inside a microVM (Firecracker / Kata) or use a managed sandbox provider.
+
+Outstanding (this wave): W3.K (`SubprocessPoolSandbox`), W3.L (`E2BSandbox`), Tier 3 `MicroVMSandbox` (Firecracker/Kata/gVisor) — all documented seams.
 
 ---
 
@@ -205,7 +272,7 @@ After profiling confirms bottlenecks:
 - [x] Parallel (concurrent with merge + timeout)
 - [x] Router (rule-based + LLM classifier)
 - [x] RefinementLoop (iterative with convergence detection)
-- [x] Test suite (670 tests as of 2026-05-14 — 655 baseline → 664 after the `[0.3.0]` reconcile pass → 670 after the `[0.4.0]` advance pass)
+- [x] Test suite (689 tests as of 2026-05-14 — 655 baseline → 664 after the `[0.3.0]` reconcile pass → 670 after the `[0.4.0]` advance pass → 689 with the unreleased reasoning/thinking feature)
 - [x] Examples: 01-07 (tested with real LLMs)
 - [x] MkDocs documentation site
 - [x] Memory subsystem (`MemoryStore` + `LocalMemoryStore`, semantic/episodic/**procedural**)

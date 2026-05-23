@@ -59,6 +59,7 @@ plugins:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - Notebooks: notebooks.md
   - Composition:
       - Agents: concepts/agents.md
       - State & History: concepts/state-and-history.md
@@ -77,6 +78,7 @@ nav:
       - Memory: concepts/memory.md
       - Metacognition: concepts/metacognition.md
       - Optimization: concepts/optimization.md
+      - Topology Optimization: concepts/topology_optimization.md
       - Web Tools: concepts/web-tools.md
   - Production:
       - Workbench: concepts/workbench.md
@@ -84,6 +86,7 @@ nav:
       - SSE Sidecar: concepts/sse-sidecar.md
       - Event Bus Hook: concepts/event-bus-publish-hook.md
       - Self-Healing: concepts/healing.md
+      - Sandbox: concepts/sandbox.md
       - Generative UI: concepts/generative_ui.md
   - API Reference:
       - Configuration: api/config.md
@@ -95,7 +98,9 @@ nav:
       - MCP: api/mcp.md
       - Metacognition: api/metacognition.md
       - Optimization: api/optimization.md
+      - Topology Optimization: api/topology_optimization.md
       - Healing: api/healing.md
+      - Sandbox: api/sandbox.md
       - Generative UI: api/ui.md
       - Workbench: api/workbench.md
       - Compound Tools: api/compound.md

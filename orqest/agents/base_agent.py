@@ -7,6 +7,7 @@ is handled here.
 """
 from __future__ import annotations
 
+import typing
 from abc import abstractmethod
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
@@ -31,6 +32,69 @@ from pydantic_ai.settings import ModelSettings
 
 from orqest.agents.context_manager import ContextManager
 from orqest.utils.llm_model import resolve_model
+from orqest.utils.reasoning import ReasoningEffort, resolve_reasoning_settings
+
+
+class BaseAgentSchemaError(ValueError):
+    """Raised at agent construction when ``output_type`` has a field shape
+    LLM providers reliably reject — most commonly a top-level ``Any``-typed
+    field, which OpenAI's structured-output API surfaces as the opaque
+    ``Invalid schema for function 'final_result'`` error at first inference.
+
+    Failing fast at construction (rather than at first agent.run() call)
+    saves a debugging round-trip and points directly at the offending field.
+    """
+
+
+def _validate_output_type_for_llm_structured_output(
+    agent_name: str,
+    output_type: type[Any],
+) -> None:
+    """Reject ``output_type``s with top-level ``Any``-typed fields.
+
+    LLM providers (OpenAI in particular) reject JSON Schemas where a property
+    has no concrete type. Pydantic emits ``"type": "any"`` (or just an empty
+    schema) for ``field: Any``, and OpenAI's structured-output endpoint
+    returns ``400 Invalid schema for function 'final_result'`` with no
+    breadcrumb. We catch the common case eagerly so the error names the
+    actual field.
+
+    Scalars (``str``, ``int``, etc.) and non-``BaseModel`` types are skipped
+    — there's no field-level schema to inspect.
+
+    Containers with ``Any`` inside (``list[Any]``, ``dict[str, Any]``) are
+    *allowed* — those serialize to typed arrays/objects and the providers
+    accept them. Only top-level ``Any`` (or its alias ``object`` from
+    typing's perspective) triggers the rejection.
+    """
+    if not isinstance(output_type, type) or not issubclass(output_type, BaseModel):
+        return  # scalar / non-Pydantic types — no model_fields to check
+
+    offending: list[str] = []
+    for field_name, field_info in output_type.model_fields.items():
+        annotation = field_info.annotation
+        if annotation is Any or annotation is typing.Any:
+            offending.append(field_name)
+
+    if not offending:
+        return
+
+    field_list = ", ".join(f"'{f}'" for f in offending)
+    plural = "s" if len(offending) > 1 else ""
+    raise BaseAgentSchemaError(
+        f"Agent '{agent_name}': output_type '{output_type.__name__}' has "
+        f"field{plural} {field_list} annotated as `Any`. Most LLM providers "
+        f"(OpenAI in particular) reject `Any`-typed structured outputs at "
+        f"first inference with the opaque error "
+        f"`Invalid schema for function 'final_result'`. Fix one of these ways:\n"
+        f"  - Narrow the type to something concrete: `str`, `int`, a Pydantic "
+        f"model, a discriminated union, or `Literal[...]`.\n"
+        f"  - Use a container holding `Any` (`list[Any]`, `dict[str, Any]`) — "
+        f"those serialise to typed arrays/objects and are accepted.\n"
+        f"  - Use a `str` field carrying a JSON blob you parse downstream.\n"
+        f"To bypass this check (at your own risk), wrap the field in "
+        f"`Annotated[Any, ...]` — but expect runtime rejection from OpenAI."
+    )
 
 Prompt = str | Sequence[UserContent]
 
@@ -146,6 +210,7 @@ class BaseAgent(Generic[StateT, OutputT]):
         result_budget: int | None = 20_000,
         context_manager: ContextManager | None = None,
         model_settings: ModelSettings | None = None,
+        reasoning: ReasoningEffort | None = None,
         confidence_protocol: Any = None,
     ):
         """Initialize the agent.
@@ -169,10 +234,19 @@ class BaseAgent(Generic[StateT, OutputT]):
             model_settings: Optional pydantic-ai ``ModelSettings`` applied to
                 every model call (e.g. ``ModelSettings(temperature=0.0,
                 seed=42)``). Default ``None`` preserves provider defaults.
+            reasoning: Optional provider-agnostic reasoning/thinking effort —
+                one of ``'minimal'`` | ``'low'`` | ``'medium'`` | ``'high'``.
+                Translated to the right provider-specific ``ModelSettings``
+                key (``anthropic_thinking`` / ``openai_reasoning_effort`` /
+                ``google_thinking_config`` / ``openrouter_reasoning``) and
+                merged into ``model_settings`` — explicit ``model_settings``
+                keys win on conflict. The model's provider must be one
+                orqest can resolve, or construction raises ``ValueError``.
             confidence_protocol: Optional agent-level default
                 ``ConfidenceProtocol`` used by :meth:`run_enriched`.
                 ``None`` means ``run_enriched`` returns a bare
                 ``EnrichedOutput`` unless a protocol is passed per call.
+
         """
         if isinstance(model, str):
             if api_key is None:
@@ -189,8 +263,18 @@ class BaseAgent(Generic[StateT, OutputT]):
                 f"got {type(model).__name__}"
             )
 
+        self.reasoning = reasoning
+        if reasoning is not None:
+            provider = model if isinstance(model, str) else self._model.system
+            reasoning_settings = resolve_reasoning_settings(
+                provider, reasoning, base=model_settings
+            )
+            # Reasoning fills in; explicit model_settings keys win on conflict.
+            model_settings = {**reasoning_settings, **(model_settings or {})}
+
         self.agent_name = agent_name
         self.system_prompt = system_prompt
+        _validate_output_type_for_llm_structured_output(agent_name, output_type)
         self.output_type = output_type
         self.retries = retries
         self.truncated_history = truncated_history
@@ -215,6 +299,14 @@ class BaseAgent(Generic[StateT, OutputT]):
 
         if context_manager is not None:
             self._history_processors.insert(0, context_manager.compact)
+
+        # ALWAYS run an orphan-tool-return sweep last. Any earlier processor
+        # (custom or built-in) can split a tool_call/tool_return pair across
+        # the trim boundary; both the OpenAI chat/completions transport AND
+        # the Responses transport reject orphan tool returns with a 400.
+        # See :func:`orqest.agents.context_manager._repair_orphan_tool_returns`.
+        from orqest.agents.context_manager import _repair_orphan_tool_returns
+        self._history_processors.append(_repair_orphan_tool_returns)
 
         self._confidence_protocol = confidence_protocol
         self._agent: Agent | None = None
@@ -251,6 +343,32 @@ class BaseAgent(Generic[StateT, OutputT]):
                 model_settings=self.model_settings,
             )
         return self._agent
+
+    def add_tool(self, tool: Tool) -> None:
+        """Add a :class:`pydantic_ai.Tool` at runtime; invalidate the cache.
+
+        Appends *tool* to ``self.tools`` and resets the cached internal
+        ``pydantic_ai.Agent`` so the next call to :attr:`agent` rebuilds
+        with the new tool list.
+
+        Idempotent for tools sharing a ``name``: an existing entry is
+        replaced (last write wins). Useful when an LLM-spawned tool needs
+        to update its implementation.
+
+        **In-flight runs do NOT see the new tool** — the rebuild happens
+        on the next :attr:`agent` access; any ``Agent.run()`` call already
+        in flight uses the tool list it captured at start time.
+        """
+        if not isinstance(tool, Tool):
+            raise TypeError(
+                f"add_tool expects a pydantic_ai.Tool instance, got {type(tool).__name__}"
+            )
+        # Replace existing entry with same name (idempotent / last-write-wins)
+        self.tools = [t for t in self.tools if t.name != tool.name]
+        self.tools.append(tool)
+        # Critical: invalidate the cached pydantic_ai.Agent so the next
+        # access rebuilds with the updated tool list.
+        self._agent = None
 
     async def call_model(self, prompt: Prompt, state: StateT) -> AgentRunResult:
         """Run the pydantic-ai agent with conversation history from state.
@@ -301,6 +419,7 @@ class BaseAgent(Generic[StateT, OutputT]):
             prompt: The user prompt to send.
             state: Conversation state — history is read and updated.
             debounce_by: Optional minimum interval (seconds) between yields.
+
         """
         kwargs: dict[str, Any] = {}
         if debounce_by is not None:
@@ -325,6 +444,7 @@ class BaseAgent(Generic[StateT, OutputT]):
         Args:
             prompt: The user prompt to send.
             state: Conversation state — history is read and updated.
+
         """
         history = getattr(state, "message_history", None) or None
         async with self.agent.iter(prompt, message_history=history) as agent_run:
@@ -367,6 +487,7 @@ class BaseAgent(Generic[StateT, OutputT]):
                 metacognitive fields at their defaults.
             **kwargs: Forwarded to ``_run_implementation`` and to the
                 protocol's ``enrich`` call.
+
         """
         from orqest.metacognition.enriched import EnrichedOutput
 

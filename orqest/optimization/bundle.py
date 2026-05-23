@@ -20,6 +20,7 @@ so GEPA can compare candidates on each axis independently.
 
 from __future__ import annotations
 
+import statistics
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -76,6 +77,26 @@ class MetricBundle(BaseModel):
     """Extension point — consumer-defined extras (e.g., per-tool counters).
     Surfaced in events / notebooks but ignored by :meth:`scalarize`."""
 
+    n_trials: int = Field(default=1, ge=1)
+    """Number of independent observations aggregated into this bundle.
+    ``1`` (the default) means a single observation. Values ``> 1`` indicate
+    this bundle is the *mean* of ``n_trials`` underlying bundles, produced
+    by :meth:`MetricBundle.aggregate`. Use this when you've re-run the same
+    candidate / example multiple times to wash out LLM run-to-run variance —
+    the discovery from the coding benchmark was that single-trial numbers
+    swing ±10pp on weaker models, so multi-trial averaging is often the
+    right default for evaluator pipelines."""
+
+    stdev: dict[str, float] | None = Field(default=None)
+    """Per-dimension standard deviation across the trials this bundle
+    aggregates. Keys mirror the metric field names (``accuracy``,
+    ``confidence``, ``cost_usd``, ``latency_ms``, ``robustness``). ``None``
+    when ``n_trials == 1`` (no dispersion to report). When a dimension was
+    ``None`` in some trials but present in others, the stdev is computed
+    only over trials where it was present — and omitted entirely from
+    ``stdev`` when fewer than 2 such trials exist (single observations
+    have no defined standard deviation)."""
+
     def scalarize(self, w: MetricWeights) -> float:
         """Single per-example fitness score for GEPA's acceptance test.
 
@@ -110,3 +131,78 @@ class MetricBundle(BaseModel):
         if self.robustness is not None:
             scores["robustness"] = self.robustness
         return scores
+
+    @classmethod
+    def aggregate(cls, bundles: "list[MetricBundle]") -> "MetricBundle":
+        """Mean each metric across ``bundles``; compute per-dimension stdev.
+
+        Use this to collapse N independent observations of the same
+        candidate / example into a single representative bundle. The
+        returned bundle has ``n_trials = len(bundles)`` and a populated
+        ``stdev`` dict (when N >= 2) so consumers can see dispersion
+        alongside the central tendency.
+
+        Optional dimensions (``confidence``, ``robustness``) are handled
+        gracefully:
+
+        * If *every* bundle has it ``None``, the aggregate also reports
+          ``None`` for that dimension and omits it from ``stdev``.
+        * If *some* bundles have it set and others ``None``, the aggregate
+          reports the mean over present values. ``stdev`` includes the
+          dimension only when 2 or more bundles supplied it.
+
+        The ``raw`` dict of the first bundle is preserved as a
+        representative sample (it's a consumer-defined extension point;
+        merging semantics belong to the consumer, not this aggregator).
+
+        Args:
+            bundles: At least one bundle. Empty list raises ``ValueError``.
+
+        Returns:
+            A new ``MetricBundle`` with mean metrics + populated ``stdev``.
+
+        Raises:
+            ValueError: When ``bundles`` is empty.
+        """
+        if not bundles:
+            raise ValueError(
+                "MetricBundle.aggregate requires at least one bundle "
+                "(got empty list); nothing to average."
+            )
+        if len(bundles) == 1:
+            # Single observation: return unchanged (n_trials=1, stdev=None).
+            # Callers can rely on aggregate([x]) == x for any x.
+            return bundles[0]
+
+        n = len(bundles)
+        accuracy_mean = statistics.fmean(b.accuracy for b in bundles)
+        cost_mean = statistics.fmean(b.cost_usd for b in bundles)
+        latency_mean = statistics.fmean(b.latency_ms for b in bundles)
+
+        # Optional dims: average over PRESENT values only
+        confidence_vals = [b.confidence for b in bundles if b.confidence is not None]
+        robustness_vals = [b.robustness for b in bundles if b.robustness is not None]
+        confidence_mean = statistics.fmean(confidence_vals) if confidence_vals else None
+        robustness_mean = statistics.fmean(robustness_vals) if robustness_vals else None
+
+        # stdev requires >= 2 samples per dimension
+        stdev: dict[str, float] = {
+            "accuracy": statistics.stdev(b.accuracy for b in bundles),
+            "cost_usd": statistics.stdev(b.cost_usd for b in bundles),
+            "latency_ms": statistics.stdev(b.latency_ms for b in bundles),
+        }
+        if len(confidence_vals) >= 2:
+            stdev["confidence"] = statistics.stdev(confidence_vals)
+        if len(robustness_vals) >= 2:
+            stdev["robustness"] = statistics.stdev(robustness_vals)
+
+        return cls(
+            accuracy=accuracy_mean,
+            confidence=confidence_mean,
+            cost_usd=cost_mean,
+            latency_ms=latency_mean,
+            robustness=robustness_mean,
+            raw=dict(bundles[0].raw),  # representative; consumer owns merge semantics
+            n_trials=n,
+            stdev=stdev,
+        )

@@ -40,12 +40,22 @@ class IterationRecord:
 
 @dataclass(frozen=True)
 class LoopResult(Generic[OutputT]):
-    """Final result of a RefinementLoop run."""
+    """Final result of a RefinementLoop run.
+
+    ``output`` is the iteration that the loop is returning to the caller. With
+    ``keep_best=True`` (the default), this may be an *earlier* iteration's
+    output than the final one — specifically the iteration that achieved the
+    highest scored :class:`EvalResult`. ``best_iteration`` and ``best_score``
+    record which iteration was kept and at what score; both are ``None`` when
+    no iteration produced a numeric score.
+    """
 
     output: OutputT
     iterations: int
     exit_reason: str
     history: list[IterationRecord] = field(default_factory=list)
+    best_iteration: int | None = None
+    best_score: float | None = None
 
 
 Evaluator = Callable[..., Any] | BaseAgent
@@ -72,6 +82,7 @@ class RefinementLoop(Generic[StateT, OutputT]):
         convergence_threshold: float = 0.01,
         confidence_threshold: float | None = None,
         agent_self_eval: BaseAgent | None = None,
+        keep_best: bool = True,
     ) -> None:
         """Configure the refinement loop.
 
@@ -98,6 +109,16 @@ class RefinementLoop(Generic[StateT, OutputT]):
                 score=enriched.confidence)`` is produced each iteration,
                 so the loop only exits early via ``confidence_threshold``
                 — never via the implicit ``passed=True`` short-circuit.
+            keep_best: When ``True`` (the default), track the iteration with
+                the highest :attr:`EvalResult.score` and return THAT
+                iteration's output if the final iteration regressed. Protects
+                self-improving loops from "fixer breaks code that already
+                worked" failure modes on imperfect models. The ``passed=True``
+                early exit always wins over keep-best (a passing iteration is
+                the explicit success bar). When the evaluator never returns a
+                numeric ``score``, keep-best is a no-op and the legacy
+                "return latest output" behavior holds. Set ``keep_best=False``
+                to restore strict last-iteration semantics.
 
         """
         if max_iterations < 1:
@@ -126,24 +147,49 @@ class RefinementLoop(Generic[StateT, OutputT]):
         self._convergence_threshold = convergence_threshold
         self._confidence_threshold = confidence_threshold
         self._agent_self_eval = agent_self_eval
+        self._keep_best = keep_best
 
     async def run(self, initial_input: StateT) -> LoopResult[OutputT]:
-        """Execute the refinement loop starting from *initial_input*."""
+        """Execute the refinement loop starting from *initial_input*.
+
+        With ``keep_best=True`` (the default), tracks the highest-scoring
+        iteration and returns *its* output on any non-``passed`` exit if the
+        final iteration regressed. The ``passed=True`` early exit always
+        returns the passing iteration's output regardless of score.
+        """
         current_input: Any = initial_input
         history: list[IterationRecord] = []
         scores: list[float] = []
         output: Any = None
         start = time.monotonic()
 
+        # Best-so-far tracking (only meaningful when keep_best=True and the
+        # evaluator returns numeric scores). Always populated when a score
+        # is seen so LoopResult.best_iteration/best_score are accurate.
+        best_output: Any = None
+        best_score: float | None = None
+        best_iteration: int | None = None
+        last_eval_score: float | None = None
+
         for i in range(1, self._max_iterations + 1):
             if self._timeout is not None:
                 elapsed = time.monotonic() - start
                 if elapsed >= self._timeout:
+                    chosen, chosen_iter = self._resolve_kept_output(
+                        latest_output=output,
+                        latest_score=last_eval_score,
+                        latest_iter=i - 1,
+                        best_output=best_output,
+                        best_score=best_score,
+                        best_iteration=best_iteration,
+                    )
                     return LoopResult(
-                        output=output,
+                        output=chosen,
                         iterations=i - 1,
                         exit_reason="timeout",
                         history=history,
+                        best_iteration=best_iteration,
+                        best_score=best_score,
                     )
 
             iter_start = time.monotonic()
@@ -157,13 +203,29 @@ class RefinementLoop(Generic[StateT, OutputT]):
                 duration_ms=iter_ms,
             )
             history.append(record)
+            last_eval_score = eval_result.score
+
+            # Track best-so-far on STRICT improvement (ties keep the earlier
+            # one in best_score memory; the resolver still prefers the latest
+            # on tied final score so we don't gratuitously walk back).
+            if eval_result.score is not None and (
+                best_score is None or eval_result.score > best_score
+            ):
+                best_output = output
+                best_score = eval_result.score
+                best_iteration = i
 
             if eval_result.passed:
+                # passed is the explicit success bar — keep_best does NOT
+                # override it. Also clears best_iteration/score to reflect
+                # that the returned output is the passing iteration's.
                 return LoopResult(
                     output=output,
                     iterations=i,
                     exit_reason="passed",
                     history=history,
+                    best_iteration=i,
+                    best_score=eval_result.score,
                 )
 
             if eval_result.score is not None:
@@ -180,24 +242,75 @@ class RefinementLoop(Generic[StateT, OutputT]):
                     iterations=i,
                     exit_reason="confident",
                     history=history,
+                    best_iteration=i,
+                    best_score=eval_result.score,
                 )
 
             if self._check_convergence(scores):
+                chosen, chosen_iter = self._resolve_kept_output(
+                    latest_output=output,
+                    latest_score=eval_result.score,
+                    latest_iter=i,
+                    best_output=best_output,
+                    best_score=best_score,
+                    best_iteration=best_iteration,
+                )
                 return LoopResult(
-                    output=output,
+                    output=chosen,
                     iterations=i,
                     exit_reason="converged",
                     history=history,
+                    best_iteration=best_iteration,
+                    best_score=best_score,
                 )
 
             current_input = self._state_updater(current_input, output, eval_result)
 
+        chosen, chosen_iter = self._resolve_kept_output(
+            latest_output=output,
+            latest_score=last_eval_score,
+            latest_iter=self._max_iterations,
+            best_output=best_output,
+            best_score=best_score,
+            best_iteration=best_iteration,
+        )
         return LoopResult(
-            output=output,
+            output=chosen,
             iterations=self._max_iterations,
             exit_reason="max_iterations",
             history=history,
+            best_iteration=best_iteration,
+            best_score=best_score,
         )
+
+    def _resolve_kept_output(
+        self,
+        *,
+        latest_output: Any,
+        latest_score: float | None,
+        latest_iter: int,
+        best_output: Any,
+        best_score: float | None,
+        best_iteration: int | None,
+    ) -> tuple[Any, int]:
+        """Decide which iteration's output to surface on non-``passed`` exit.
+
+        - When ``keep_best=False`` → always the latest iteration's output.
+        - When no iteration produced a score → latest (we have nothing to
+          compare against).
+        - When the latest score is None but we have a best → return the best
+          (a known-scored candidate beats an unscored one).
+        - When the latest score is *strictly less* than the best → return the
+          best (regression protection).
+        - Otherwise (latest >= best) → return latest (ties prefer freshness).
+        """
+        if not self._keep_best or best_output is None:
+            return latest_output, latest_iter
+        if latest_score is None:
+            return best_output, best_iteration  # type: ignore[return-value]
+        if best_score is not None and latest_score < best_score:
+            return best_output, best_iteration  # type: ignore[return-value]
+        return latest_output, latest_iter
 
     async def _call_evaluator(self, output: Any) -> EvalResult:
         """Invoke the evaluator, handling sync/async callables and BaseAgent.

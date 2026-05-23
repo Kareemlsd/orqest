@@ -152,3 +152,130 @@ async def test_agent_factory_called_per_evaluation():
     ]
     await evaluator.evaluate_batch({"system_prompt": "x"}, batch)
     assert call_count == 3
+
+
+# --- n_trials_per_example tests ---------------------------------------
+
+
+def test_evaluator_rejects_zero_or_negative_trials():
+    with pytest.raises(ValueError, match=">= 1"):
+        Evaluator(agent_factory=_make_agent, score_fn=_score, n_trials_per_example=0)
+    with pytest.raises(ValueError, match=">= 1"):
+        Evaluator(agent_factory=_make_agent, score_fn=_score, n_trials_per_example=-1)
+
+
+@pytest.mark.asyncio
+async def test_evaluate_one_default_n_trials_unchanged_behavior():
+    """Default n_trials_per_example=1 preserves the legacy bundle shape:
+    n_trials=1, stdev=None — identical to pre-change semantics."""
+    evaluator = Evaluator(agent_factory=_make_agent, score_fn=_score)
+    bundle = await evaluator.evaluate_one(
+        {"system_prompt": "x"},
+        GoldExample[str, _SummaryOutput](
+            input="q", expected=_SummaryOutput(answer="stubbed")
+        ),
+    )
+    assert bundle.n_trials == 1
+    assert bundle.stdev is None
+
+
+@pytest.mark.asyncio
+async def test_evaluate_one_multi_trial_aggregates_to_single_bundle():
+    """n_trials_per_example=3 runs 3 trials and aggregates to one bundle."""
+    factory_calls = 0
+
+    def counting_factory(decoded: dict[str, Any]) -> _StubAgent:
+        nonlocal factory_calls
+        factory_calls += 1
+        return _make_agent(decoded)
+
+    evaluator = Evaluator(
+        agent_factory=counting_factory,
+        score_fn=_score,
+        n_trials_per_example=3,
+    )
+    bundle = await evaluator.evaluate_one(
+        {"system_prompt": "x"},
+        GoldExample[str, _SummaryOutput](
+            input="q", expected=_SummaryOutput(answer="stubbed")
+        ),
+    )
+    assert factory_calls == 3, "fresh agent per trial"
+    assert bundle.n_trials == 3
+    # Three trials all scored 1.0 (TestModel deterministic) → mean 1.0, stdev 0
+    assert bundle.accuracy == pytest.approx(1.0)
+    assert bundle.stdev is not None
+    assert bundle.stdev["accuracy"] == pytest.approx(0.0)
+
+
+@pytest.mark.asyncio
+async def test_evaluate_one_multi_trial_averages_variable_scores():
+    """When scores vary across trials, the aggregate reflects mean + stdev."""
+    score_seq = [1.0, 0.0, 1.0]
+    idx = [0]
+
+    def varying_score(output: _SummaryOutput, ex: GoldExample[str, _SummaryOutput]) -> float:
+        v = score_seq[idx[0] % len(score_seq)]
+        idx[0] += 1
+        return v
+
+    evaluator = Evaluator(
+        agent_factory=_make_agent,
+        score_fn=varying_score,
+        n_trials_per_example=3,
+    )
+    bundle = await evaluator.evaluate_one(
+        {"system_prompt": "x"},
+        GoldExample[str, _SummaryOutput](input="q"),
+    )
+    assert bundle.n_trials == 3
+    assert bundle.accuracy == pytest.approx(2.0 / 3.0)
+    assert bundle.stdev is not None
+    assert bundle.stdev["accuracy"] > 0.0  # genuine dispersion
+
+
+@pytest.mark.asyncio
+async def test_evaluate_one_multi_trial_all_failures_keeps_error():
+    """When every trial fails, the aggregate keeps the failure info (not a
+    misleading 0.0 averaged accuracy with stdev=0)."""
+
+    def failing_factory(decoded: dict[str, Any]) -> _StubAgent:
+        raise RuntimeError("agent construction blew up")
+
+    evaluator = Evaluator(
+        agent_factory=failing_factory,
+        score_fn=_score,
+        n_trials_per_example=3,
+    )
+    bundle = await evaluator.evaluate_one(
+        {"system_prompt": "x"},
+        GoldExample[str, _SummaryOutput](input="q"),
+    )
+    # Failure preserved + multi-trial annotation
+    assert "error" in bundle.raw
+    assert "agent construction blew up" in bundle.raw["error"]
+    assert bundle.raw["aggregation_note"].startswith("all 3 trials failed")
+    assert bundle.raw["n_trials_attempted"] == 3
+
+
+@pytest.mark.asyncio
+async def test_evaluate_batch_propagates_n_trials_setting():
+    """evaluate_batch routes through evaluate_one — multi-trial config applies
+    to every example uniformly."""
+    factory_calls = 0
+
+    def counting_factory(decoded: dict[str, Any]) -> _StubAgent:
+        nonlocal factory_calls
+        factory_calls += 1
+        return _make_agent(decoded)
+
+    evaluator = Evaluator(
+        agent_factory=counting_factory,
+        score_fn=_score,
+        n_trials_per_example=2,
+    )
+    batch = [GoldExample[str, _SummaryOutput](input=f"q{i}") for i in range(3)]
+    bundles = await evaluator.evaluate_batch({"system_prompt": "x"}, batch)
+    assert len(bundles) == 3
+    assert all(b.n_trials == 2 for b in bundles)
+    assert factory_calls == 3 * 2  # 3 examples × 2 trials

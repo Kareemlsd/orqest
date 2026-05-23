@@ -41,7 +41,14 @@ except ImportError as _import_err:  # pragma: no cover - exercised only when mis
     optimize = _missing  # type: ignore[assignment]
 
     class _MissingBase:
-        def __init_subclass__(cls, **_kw: object) -> None:
+        # NOTE: subclassing is allowed (no error) so module-load-time class
+        # definitions don't break orqest import when GEPA is missing.
+        # The ImportError surfaces at instantiation time — that's when the
+        # consumer actually needs the GEPA functionality. This lets the
+        # Docker runtime image (which ships orqest but not GEPA) load the
+        # orqest package without breaking on the optimization adapter's
+        # `class OrqestEvalBatch(EvaluationBatch)` declaration.
+        def __init__(self, *_a: object, **_kw: object) -> None:
             raise ImportError(_INSTALL_HINT) from _GEPA_IMPORT_ERROR
 
     GEPAAdapter = _MissingBase  # type: ignore[assignment,misc]
