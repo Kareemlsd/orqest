@@ -2911,19 +2911,35 @@
 
         <p><code>orqest.sandbox</code> — safe execution of dynamic tool implementations.</p>
 <p>The Protocol is small and explicit: validate then execute.</p>
-<p>Two backends ship today:</p>
+<p>Three backends ship today:</p>
 <ul>
 <li>:class:<code>InProcessSandbox</code> — Tier 0; in-process <code>exec()</code> with AST-level
-  static restriction. <strong>Requires explicit</strong> <code>unsafe=True</code> <strong>at construction</strong>
-  because there is no real isolation. Suitable for tests and tightly-controlled
-  dev workflows. NOT for LLM-generated code from untrusted sources.</li>
+  static restriction and a curated <code>__builtins__</code> set. <strong>Requires explicit</strong>
+  <code>unsafe=True</code> <strong>at construction</strong> because there is no real isolation.
+  Suitable for tests and tightly-controlled dev workflows. NOT for
+  LLM-generated code from untrusted sources.</li>
 <li>:class:<code>SubprocessSandbox</code> — Tier 1, the production default. Subprocess
   isolation with <code>RLIMIT_AS</code> + <code>RLIMIT_CPU</code> (POSIX) + outer
-  <code>asyncio.wait_for</code> timeout. JSON args/result; stdin/stdout transport.</li>
+  <code>asyncio.wait_for</code> timeout. The wrapper subprocess runs against the same
+  curated <code>__builtins__</code> (from :mod:<code>orqest.sandbox._safe_builtins</code>) so
+  reflection helpers and the unsafe builtins are never reachable. JSON
+  args/result; stdin/stdout transport.</li>
+<li>:class:<code>orqest.sandbox.docker.DockerSandbox</code> — Tier 2; per-session
+  container running the published <code>orqest/agent-runtime</code> image. Requires
+  <code>uv sync --group docker</code>. Imported lazily from the <code>orqest.sandbox.docker</code>
+  submodule so the host-side <code>docker</code> SDK stays an optional dep. Adds
+  scope-separated JWT auth (<code>agent</code> for execution, <code>operator</code> for
+  <code>promote_tool</code> / <code>forget_tool</code>) and per-user persisted tool library.</li>
 </ul>
-<p>Third parties can ship :class:<code>E2BSandbox</code> / :class:<code>DockerSandbox</code> /
-:class:<code>WasmSandbox</code> / :class:<code>FirecrackerSandbox</code> against the same
-:class:<code>Sandbox</code> Protocol.</p>
+<p>Every tier rejects the same set of static escapes (default-deny imports,
+reflection helpers, dunder reach-through, string-keyed subscript access —
+see :mod:<code>orqest.sandbox._static</code>) and runs with the same curated
+<code>__builtins__</code> (:mod:<code>orqest.sandbox._safe_builtins</code>). Identifier paths
+that feed into per-agent workspaces are bounded by
+:mod:<code>orqest.sandbox._identifiers</code>.</p>
+<p>Third parties can ship :class:<code>E2BSandbox</code> / :class:<code>WasmSandbox</code> /
+:class:<code>FirecrackerSandbox</code> against the same :class:<code>Sandbox</code> Protocol —
+no changes required in core.</p>
 <p>The matching consumer is :class:<code>orqest.autonomy.tool_factory.DynamicToolFactory</code>,
 which turns a :class:<code>GeneratedToolSpec</code> (carrying an <code>implementation</code> string)
 into a runnable <code>pydantic_ai.Tool</code> via this Protocol.</p>

@@ -2319,6 +2319,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#removed" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2681,6 +2692,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#removed" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3026,6 +3048,33 @@
 <a href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a> and the project
 follows <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h3 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p><strong>Sandbox Phase 1 — defense-in-depth hardening</strong> (<a href="https://github.com/Kareemlsd/orqest/pull/8">#8</a>). Five focused commits closing documented and undocumented holes in <code>orqest.sandbox</code>. None of the changes break the public API or constructor signatures; behavior changes are strictly "things that were quietly unsafe now refuse to run."</p>
+</li>
+<li>
+<p><strong>Static validator widened.</strong> <code>_static.py</code> blocks reflection helpers that previously let LLM-emitted code reach dunder attributes by string lookup: <code>getattr</code>, <code>setattr</code>, <code>delattr</code>, <code>hasattr</code>, <code>type</code>, <code>dir</code>, <code>super</code>, <code>__build_class__</code>. Forbidden-attributes set adds <code>__dict__</code>, <code>__init_subclass__</code>, <code>__init__</code>, <code>__new__</code>. A new <code>ast.Subscript</code> check catches <code>obj["__class__"]</code>-style string-keyed reach-through.</p>
+</li>
+<li>
+<p><strong>Subprocess wrappers restrict <code>__builtins__</code>.</strong> Tier-1 (<code>SubprocessSandbox</code>) and Tier-2 (in-container <code>Executor</code>) previously ran user code with the full Python builtin set — <code>getattr</code> / <code>type</code> / <code>open</code> reachable at runtime even when the static validator had a gap. New <code>orqest/sandbox/_safe_builtins.py</code> carries the curated set + a factory; every tier now builds its <code>__builtins__</code> from the same allowlist. The wrappers load <code>_safe_builtins.py</code> + <code>_static.py</code> by file path (<code>importlib.util.spec_from_file_location</code>) to bypass the heavy <code>orqest/__init__.py</code> import chain that would blow past the 128 MB <code>RLIMIT_AS</code> cap.</p>
+</li>
+<li>
+<p><strong>Path-traversal hardening on identifiers.</strong> New <code>orqest/sandbox/_identifiers.py</code> exposes the grammar <code>^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$</code> and a fail-fast check. Wired in at three layers: <code>DockerSandbox.__init__</code> validates <code>user_id</code> / <code>session_id</code> before any Docker call; <code>Executor.execute</code> validates <code>agent_id</code> at the in-container boundary. Closes <code>agent_id="../escape"</code> paths that would have resolved out of the per-agent workspace.</p>
+</li>
+<li>
+<p><strong>JWT scope separation.</strong> New <code>scope</code> claim on the bearer JWT — <code>"agent"</code> (LLM-facing connection — what <code>DockerSandbox._mint_jwt</code> stamps by default) or <code>"operator"</code> (host-orchestrator only). <code>SessionAuthMiddleware</code> enforces a per-tool allowlist: <code>promote_tool</code> and <code>forget_tool</code> reject <code>agent</code>-scope tokens. Tokens minted before this change (no <code>scope</code> claim) default to agent-scope — least privilege. New <code>DEFAULT_OPERATOR_TOOLS</code> / <code>SCOPE_AGENT</code> / <code>SCOPE_OPERATOR</code> constants in <code>docker_runtime/auth.py</code>; new public helper <code>DockerSandbox.mint_operator_token()</code> for host code that needs to call persistence APIs.</p>
+</li>
+<li>
+<p><strong>Origin enforcement on by default.</strong> <code>SessionAuthMiddleware.from_env</code> defaults <code>ORQEST_ALLOWED_ORIGINS</code> to <code>http://127.0.0.1,http://localhost</code> when unset (was: empty = skip check). DNS-rebinding defense matches the MCP spec out of the box. Explicit empty value (<code>""</code>) is the documented escape hatch. New <code>DEFAULT_ALLOWED_ORIGINS</code> constant.</p>
+</li>
+<li>
+<p><strong>Concurrency hardening.</strong> <code>asyncio.Lock</code> around the promotion threshold check in <code>build_server</code> (prevents duplicate <code>promote_tool</code> fires on concurrent invocations of the same <code>(name, hash)</code>). Per-agent <code>asyncio.Lock</code> around <code>Executor.ensure_venv</code> + <code>install_deps</code> (prevents <code>uv venv</code> from racing when multiple concurrent <code>execute_python</code> calls target the same <code>agent_id</code>). The execution subprocess itself stays outside the lock so cross-agent concurrency is preserved.</p>
+</li>
+<li>
+<p><strong>Test resilience for optional <code>optimization</code> deps</strong> (<a href="https://github.com/Kareemlsd/orqest/pull/9">#9</a>). <code>tests/optimization/test_adapter.py</code> and <code>tests/optimization/test_runner.py</code> previously failed with confusing errors when the <code>optimization</code> dep group was absent from the venv (<code>OrqestEvalBatch.__init__() got an unexpected keyword argument 'outputs'</code> from the stubbed <code>EvaluationBatch</code> base; <code>ModuleNotFoundError: litellm</code> from tests patching <code>litellm.completion</code>). Added <code>pytest.importorskip("gepa")</code> at module level on <code>test_adapter.py</code> and per-test <code>pytest.importorskip("litellm")</code> on the two <code>TestMakeReflectionLM</code> tests that touch it. Test outcomes now reflect <em>test code</em>, not optional-dep installation state — 1096 pass / 4 skip without <code>gepa[full]</code>; 1107 pass / 0 fail with it.</p>
+</li>
+</ul>
 <h3 id="removed">Removed<a class="headerlink" href="#removed" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><code>SKILLS.md</code></strong> at the repository root — superseded by <code>docs/concepts/skills.md</code> and the bundled skill at <code>orqest/skills/orqest/SKILL.md</code>. The single inbound reference in <code>README.md</code> now points at the docs page and the bundled skill.</li>
