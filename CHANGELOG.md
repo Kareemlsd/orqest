@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **`SKILLS.md`** at the repository root — superseded by `docs/concepts/skills.md` and the bundled skill at `orqest/skills/orqest/SKILL.md`. The single inbound reference in `README.md` now points at the docs page and the bundled skill.
+- **`demo/`** directory (Polymath reference consumer) — not part of the published package and not relevant for PyPI consumers. The five remaining inbound references in `README.md`, `CLAUDE.md`, `docs/concepts/autonomy.md`, and `.claude/skills/principles/SKILL.md` were updated or removed.
+- **`orqest/benchmarks/`** — internal BIRD and Spider benchmark code that shipped in the wheel but had no callers outside itself. Moved to `benchmarks/bird/` and `benchmarks/spider/` (with `git mv` to preserve history), matching the project convention established by `benchmarks/coding/`. Internal `from orqest.benchmarks.*` imports were converted to relative imports.
+- **`.claude/skills/gstack`** untracked — was a symlink to an absolute path on the maintainer's machine; broken for any other clone. Added to `.gitignore` so the local convenience symlink can stay.
+
+### Docs
+
+- Documentation site polish landed in [#6](https://github.com/Kareemlsd/orqest/pull/6): rewrote `docs/index.md` for v0.8.0; replaced `docs/changelog.md` with an `mkdocs-include-markdown-plugin` include directive that pulls the root `CHANGELOG.md`; added `docs/concepts/reasoning.md` and `docs/concepts/skills.md`; added `navigation.tabs`, social icons, `git-revision-date-localized`, and several markdown extensions to `mkdocs.yml`.
+
 ## [0.8.0] - 2026-05-23
 
 ### Added

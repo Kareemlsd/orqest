@@ -1,11 +1,11 @@
 ---
 name: principles
-description: Canonical development principles for the orqest codebase — Pragmatic-Programmer-rooted concrete rules (no import-time side effects, explicit deps, no input mutation, mapping-based dispatch, validate at boundaries, mock the model layer, async tests, crash early, max one level of inheritance, tracer bullets). Trigger whenever writing, reviewing, refactoring, or designing API surface in this repo; whenever planning a new battery; whenever evaluating a code change for merge; whenever a PR touches orqest/, tests/, or demo/polymath/backend/. Apply these rules as guardrails — when in doubt, the rule wins.
+description: Canonical development principles for the orqest codebase — Pragmatic-Programmer-rooted concrete rules (no import-time side effects, explicit deps, no input mutation, mapping-based dispatch, validate at boundaries, mock the model layer, async tests, crash early, max one level of inheritance, tracer bullets). Trigger whenever writing, reviewing, refactoring, or designing API surface in this repo; whenever planning a new battery; whenever evaluating a code change for merge; whenever a PR touches orqest/ or tests/. Apply these rules as guardrails — when in doubt, the rule wins.
 ---
 
 # Orqest Development Principles
 
-Guidelines rooted in *The Pragmatic Programmer*. Concrete rules — not abstract advice. Apply these to every change touching `orqest/`, `tests/`, or `demo/polymath/backend/`. When a rule conflicts with a local convenience, the rule wins; flag the conflict instead of bending it.
+Guidelines rooted in *The Pragmatic Programmer*. Concrete rules — not abstract advice. Apply these to every change touching `orqest/` or `tests/`. When a rule conflicts with a local convenience, the rule wins; flag the conflict instead of bending it.
 
 ## Principles
 
