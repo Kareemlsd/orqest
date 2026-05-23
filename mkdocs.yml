@@ -1,11 +1,17 @@
 site_name: Orqest
 site_url: https://kareemlsd.github.io/orqest/
-site_description: A Python framework for building autonomous agentic AI systems on top of pydantic-ai
+site_description: Typed agent primitives and orchestration on top of pydantic-ai — memory, autonomy, healing, metacognition, generative UI, MCP, and reflective optimization.
+site_author: Kareem El Sayed
 repo_url: https://github.com/Kareemlsd/orqest
 repo_name: Kareemlsd/orqest
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2025 Kareem El Sayed
 
 theme:
   name: material
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/graph-outline
   palette:
     - scheme: default
       primary: deep purple
@@ -22,10 +28,26 @@ theme:
   features:
     - content.code.copy
     - content.code.annotate
+    - content.tooltips
+    - content.action.edit
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.indexes
     - navigation.sections
     - navigation.top
+    - navigation.tracking
     - search.suggest
     - search.highlight
+    - toc.follow
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Kareemlsd/orqest
+      name: Orqest on GitHub
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/orqest/
+      name: Orqest on PyPI
 
 markdown_extensions:
   - admonition
@@ -33,16 +55,34 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.highlight:
       anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
   - pymdownx.inlinehilite
+  - pymdownx.snippets
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - toc:
       permalink: true
   - attr_list
   - def_list
+  - md_in_html
+  - tables
 
 plugins:
   - search
+  - include-markdown
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+      fallback_to_build_date: true
   - mkdocstrings:
       handlers:
         python:
@@ -55,11 +95,15 @@ plugins:
             show_signature_annotations: true
             separate_signature: true
             docstring_style: google
+            show_docstring_examples: true
+            show_bases: false
+            merge_init_into_class: true
 
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Notebooks: notebooks.md
+  - Skills: concepts/skills.md
   - Composition:
       - Agents: concepts/agents.md
       - State & History: concepts/state-and-history.md
@@ -77,6 +121,7 @@ nav:
   - Memory & Cognition:
       - Memory: concepts/memory.md
       - Metacognition: concepts/metacognition.md
+      - Reasoning: concepts/reasoning.md
       - Optimization: concepts/optimization.md
       - Topology Optimization: concepts/topology_optimization.md
       - Web Tools: concepts/web-tools.md
