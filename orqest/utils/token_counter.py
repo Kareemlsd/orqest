@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from pydantic_ai.messages import (
     ModelMessage,
-    ModelRequest,
-    ModelResponse,
     TextPart,
     ToolCallPart,
     ToolReturnPart,

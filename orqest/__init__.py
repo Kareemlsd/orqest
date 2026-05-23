@@ -1,4 +1,5 @@
 from .config import OrqestConfig, get_default_config, load_config
+from .healing import HealingConfig
 from .hooks import (
     Abort,
     Continue,
@@ -9,7 +10,6 @@ from .hooks import (
     Skip,
     ToolHook,
 )
-from .healing import HealingConfig
 from .metacognition import EnrichedOutput, MetacognitionConfig
 from .optimization import MetaAgentConfig, OptimizationConfig
 from .orchestration import (

@@ -7,7 +7,7 @@ event type emitted during pipeline execution.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Literal
 
@@ -51,6 +51,6 @@ class PipelineEvent:
     pipeline_name: str
     step_name: str = ""
     step_index: int = -1
-    timestamp: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(tz=UTC))
     data: dict[str, Any] = field(default_factory=dict)
     error: Exception | None = field(default=None, compare=False)

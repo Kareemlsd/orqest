@@ -25,7 +25,6 @@ from typing import Any, Literal, Protocol, runtime_checkable
 from loguru import logger
 from pydantic import BaseModel, ConfigDict
 
-
 # ---- HookDecision discriminated union ---------------------------------
 
 

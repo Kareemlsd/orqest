@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Literal, Protocol
 
 
@@ -88,7 +88,7 @@ class JSONTracer:
             parent_span_id=parent.span_id if parent else None,
             name=name,
             agent_name=agent_name,
-            started_at=datetime.now(tz=timezone.utc),
+            started_at=datetime.now(tz=UTC),
         )
         self._spans.append(span)
         return span
@@ -104,7 +104,7 @@ class JSONTracer:
 
         Merges any extra attributes into the span.
         """
-        span.ended_at = datetime.now(tz=timezone.utc)
+        span.ended_at = datetime.now(tz=UTC)
         span.duration_ms = (
             (span.ended_at - span.started_at).total_seconds() * 1000.0
         )

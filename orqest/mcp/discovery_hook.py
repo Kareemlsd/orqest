@@ -55,12 +55,12 @@ class DiscoveryHook:
 
     def __init__(
         self,
-        registry: "ToolRegistry",
-        discovery: "MCPDiscovery",
-        manager: "MCPServerManager",
+        registry: ToolRegistry,
+        discovery: MCPDiscovery,
+        manager: MCPServerManager,
         *,
-        permission: "PermissionGate | None" = None,
-        audit_bus: "EventBus | None" = None,
+        permission: PermissionGate | None = None,
+        audit_bus: EventBus | None = None,
     ) -> None:
         self._registry = registry
         self._discovery = discovery

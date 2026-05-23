@@ -13,16 +13,16 @@ runs through Orqest's own batteries:
 No bespoke search loop, no hand-rolled mutation engine — pure dog-food.
 """
 
-from orqest.benchmarks.bird.adas.state import SQLTaskState
-from orqest.benchmarks.bird.adas.registry import (
-    build_agent_registry,
-    build_callable_registry,
-)
 from orqest.benchmarks.bird.adas.evaluator import (
     BIRDTopologyEvaluator,
     bird_gold_examples,
 )
+from orqest.benchmarks.bird.adas.registry import (
+    build_agent_registry,
+    build_callable_registry,
+)
 from orqest.benchmarks.bird.adas.seed import seed_topology
+from orqest.benchmarks.bird.adas.state import SQLTaskState
 
 __all__ = [
     "BIRDTopologyEvaluator",

@@ -133,7 +133,7 @@ class MetricBundle(BaseModel):
         return scores
 
     @classmethod
-    def aggregate(cls, bundles: "list[MetricBundle]") -> "MetricBundle":
+    def aggregate(cls, bundles: list[MetricBundle]) -> MetricBundle:
         """Mean each metric across ``bundles``; compute per-dimension stdev.
 
         Use this to collapse N independent observations of the same

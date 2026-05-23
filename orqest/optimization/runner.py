@@ -86,7 +86,7 @@ def _ensure_litellm_api_key(model: str | None, api_key: str | None) -> None:
 
 def _make_reflection_lm(
     model: str | None, api_key: str | None
-) -> "Any | None":
+) -> Any | None:
     """Build a GEPA ``reflection_lm`` callable that explicitly passes the
     ``api_key`` to ``litellm.completion`` — no env-var dependency.
 
@@ -106,7 +106,7 @@ def _make_reflection_lm(
     if litellm_model is None:
         return None
 
-    def _lm(prompt: "str | list[dict[str, str]]") -> str:
+    def _lm(prompt: str | list[dict[str, str]]) -> str:
         # Late-import litellm so module load doesn't require gepa[full].
         import litellm  # type: ignore[import-not-found]
 

@@ -68,7 +68,7 @@ class AgentStepSpec(BaseModel):
     :class:`AgentFactory`. Mutually exclusive with ``agent_name``."""
 
     @model_validator(mode="after")
-    def _exactly_one_source(self) -> "AgentStepSpec":
+    def _exactly_one_source(self) -> AgentStepSpec:
         if (self.agent_name is None) == (self.inline_spec is None):
             raise ValueError(
                 "AgentStepSpec requires exactly one of "
@@ -101,7 +101,7 @@ class PipelineStepEntry(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    operation: "OperationSpec"
+    operation: OperationSpec
     config: StepConfigSpec | None = None
 
 
@@ -130,7 +130,7 @@ class ParallelSpec(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     kind: Literal["parallel"] = "parallel"
-    steps: list["OperationSpec"] = Field(min_length=1)
+    steps: list[OperationSpec] = Field(min_length=1)
 
     merge: str = "collect_all"
     """Merge strategy name. ``"collect_all"`` and ``"first_wins"`` resolve to
@@ -154,7 +154,7 @@ class RouteSpec(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     name: str
-    step: "OperationSpec"
+    step: OperationSpec
     condition_name: str | None = None
     """Registered predicate name; ``None`` makes this route classifier-only.
 
@@ -178,7 +178,7 @@ class RouterSpec(BaseModel):
     EITHER a classifier OR at least one route with a condition — the hydrator
     surfaces the underlying ``ValueError`` if neither is present."""
 
-    fallback_step: "OperationSpec | None" = None
+    fallback_step: OperationSpec | None = None
     """Step to run when no route matches. ``None`` raises ``RouterError`` on
     no-match."""
 
@@ -194,7 +194,7 @@ class RefinementLoopSpec(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     kind: Literal["refinement_loop"] = "refinement_loop"
-    step: "OperationSpec"
+    step: OperationSpec
 
     evaluator: AgentSpec | str
     """Required evaluator. ``str`` is an agent_registry name (the agent must

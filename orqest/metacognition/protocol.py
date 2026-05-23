@@ -46,7 +46,7 @@ class ConfidenceProtocol(Protocol):
 
     async def enrich(
         self,
-        agent: "BaseAgent",
+        agent: BaseAgent,
         state: Any,
         output: Any,
         **agent_kwargs: Any,
@@ -134,7 +134,7 @@ class StructuredOutputProtocol:
 
     async def enrich(
         self,
-        agent: "BaseAgent",
+        agent: BaseAgent,
         state: Any,
         output: Any,
         **agent_kwargs: Any,
@@ -185,7 +185,7 @@ class LLMSelfRatingProtocol:
 
     async def enrich(
         self,
-        agent: "BaseAgent",
+        agent: BaseAgent,
         state: Any,
         output: Any,
         **agent_kwargs: Any,
@@ -278,7 +278,7 @@ class EnsembleProtocol:
 
     async def enrich(
         self,
-        agent: "BaseAgent",
+        agent: BaseAgent,
         state: Any,
         output: Any,
         **agent_kwargs: Any,

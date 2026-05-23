@@ -103,27 +103,35 @@ markers = [
 ]
 
 [tool.ruff]
+line-length = 100
+
+# Pragmatic lint surface: catch real bugs (pyflakes, undefined names, unused
+# imports, builtin shadowing), enforce import order, and keep pycodestyle on
+# for whitespace/indent — but skip pydocstyle (`D`), mccabe complexity (`C90`),
+# and bandit (`S`). Those produce noise vs. signal on this codebase today;
+# tighten incrementally if a class becomes load-bearing.
 lint.select = [
-    "E",
-    "W",
-    "F",
-    "I",
-    "C",
-    "C90",
-    "S",
-    "A",
-    "D",
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "C4",     # flake8-comprehensions
+    "A",      # flake8-builtins
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
 ]
 
 lint.ignore = [
-    "D203",
-    "D213"
+    "E501",   # line-too-long — line-length=100 covers the legit cases; rest are inherited
+    "B008",   # function call in default arg — common in FastAPI/typer patterns
+    "B904",   # raise from in except — pre-existing pattern
+    "UP038",  # isinstance (A, B) tuple — explicit + still works fine
+    "UP046",  # Generic[T] inheritance — PEP 695 migration is a separate sweep
+    "A002",   # arg shadows builtin — intentional in sandbox.inprocess __import__ shim
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B011"]    # `assert False` is fine in test scaffolds
 
 [tool.ruff.lint.isort]
 known-third-party = ["pandas", "pydantic", "matplotlib", "shapely", "scipy", "munch"]
-
-[tool.ruff.lint.mccabe]
-max-complexity = 10

@@ -21,7 +21,7 @@ import json
 import os
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -238,7 +238,7 @@ async def run_baseline(
 
     if persist:
         RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-        ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+        ts = datetime.now(UTC).strftime("%Y-%m-%dT%H-%M-%S")
         out_path = RESULTS_DIR / f"baseline_{ts}_n{len(questions)}.json"
         out_path.write_text(
             json.dumps(

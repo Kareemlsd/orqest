@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from orqest.healing.watchdog import Detection
 from orqest.observability.events import AgentEvent, EventBus
@@ -44,7 +44,7 @@ class StallDetector:
         self._open_calls[cid] = (
             event.timestamp
             if event.timestamp.tzinfo is not None
-            else event.timestamp.replace(tzinfo=timezone.utc)
+            else event.timestamp.replace(tzinfo=UTC)
         )
 
     async def _on_after_or_error(self, event: AgentEvent) -> None:
@@ -59,7 +59,7 @@ class StallDetector:
                 break
 
     async def signal(self) -> Detection | None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for cid, started in list(self._open_calls.items()):
             if cid in self._fired:
                 continue

@@ -127,7 +127,7 @@ class Sandbox(Protocol):
         """
         ...
 
-    async def __aenter__(self) -> "Sandbox":
+    async def __aenter__(self) -> Sandbox:
         """Optional context-manager hook for backends that hold resources."""
         ...
 

@@ -36,7 +36,7 @@ from orqest.orchestration.hydrate import CallableRegistry
 def _execute(db_id: str, sql: str, timeout_s: float = 30.0):
     path = db_path(db_id)
     if not path.exists() or not sql.strip():
-        return None, f"missing db or empty sql"
+        return None, "missing db or empty sql"
     try:
         con = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=timeout_s)
         con.text_factory = lambda b: b.decode("utf-8", errors="replace")

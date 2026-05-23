@@ -246,7 +246,7 @@ Three honest tests for "should I reach for this primitive":
 
 The MetaOrchestrator's value shows up sharply when the decomposition is *itself* the hard part — open-ended research, multi-domain triage, anything where "what subtasks does this break into?" needs an LLM to answer. For a CSV-to-JSON converter or a known QA pipeline, you don't need it. Reach for the simpler primitive when it fits.
 
-(Same principle for `RuntimeTopologyDesigner` — see [Topology Optimization → When NOT to use](topology_optimization.md#when-not-to-use-runtimetopologydesigner--just-hand-write-a-pipeline).)
+(Same principle for `RuntimeTopologyDesigner` — see [Topology Optimization → When NOT to use](topology_optimization.md#when-not-to-use-runtimetopologydesigner-just-hand-write-a-pipeline).)
 
 ## Best practices
 

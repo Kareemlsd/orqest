@@ -86,7 +86,7 @@ class ExecutionPlan(BaseModel):
     _emit_ui_events: bool = PrivateAttr(default=False)
     _ui_component_id: str = PrivateAttr(default="plan")
 
-    def enable_ui_events(self, *, component_id: str = "plan") -> "ExecutionPlan":
+    def enable_ui_events(self, *, component_id: str = "plan") -> ExecutionPlan:
         """Opt into dual-emission of typed ``ui.plan.{init,delta}`` events.
 
         When enabled, :meth:`set_task_status` and :meth:`emit_init`
@@ -108,7 +108,7 @@ class ExecutionPlan(BaseModel):
 
     def as_component(
         self, *, component_id: str | None = None
-    ) -> "PlanComponent":
+    ) -> PlanComponent:
         """Wrap this plan as a :class:`PlanComponent` for the
         generative-UI pipeline."""
         from orqest.ui.components.plan import PlanComponent, PlanComponentData
@@ -232,7 +232,7 @@ class ExecutionPlan(BaseModel):
     @classmethod
     def from_tasks_json(
         cls, tasks_json: str | list[dict[str, Any]] | dict[str, Any]
-    ) -> "ExecutionPlan":
+    ) -> ExecutionPlan:
         """Construct from either a JSON string, a bare task list, or a
         ``{"tasks": [...]}`` dict. Useful when an LLM produces the plan
         as an opaque JSON string.

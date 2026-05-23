@@ -18,12 +18,11 @@ import asyncio
 import json
 import os
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from pydantic import BaseModel
 
 from orqest.benchmarks.bird.adas.evaluator import _score_fn, bird_gold_examples
 from orqest.benchmarks.bird.adas.registry import (
@@ -261,7 +260,7 @@ async def run_gepa(
 
     if persist:
         RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-        ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+        ts = datetime.now(UTC).strftime("%Y-%m-%dT%H-%M-%S")
         out = RESULTS_DIR / f"gepa_{ts}.json"
         out.write_text(json.dumps(summary, indent=2))
         print(f"[gepa] result → {out}")

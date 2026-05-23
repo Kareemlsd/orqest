@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
-from dotenv import load_dotenv, find_dotenv
+from dotenv import find_dotenv, load_dotenv
 
 
 @dataclass(frozen=True)

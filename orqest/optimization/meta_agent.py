@@ -244,8 +244,8 @@ class Archive:
                     continue
                 oa = axes(other)
                 # other dominates e if it's >= on every axis and > on at least one
-                if all(o >= a for o, a in zip(oa, ea)) and any(
-                    o > a for o, a in zip(oa, ea)
+                if all(o >= a for o, a in zip(oa, ea, strict=False)) and any(
+                    o > a for o, a in zip(oa, ea, strict=False)
                 ):
                     dominated = True
                     break

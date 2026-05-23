@@ -26,7 +26,7 @@ import asyncio
 import json
 from collections.abc import AsyncIterator, Iterable
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from orqest.observability.events import AgentEvent, EventBus
@@ -110,12 +110,12 @@ def sse_sidecar(
             while True:
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=heartbeat_s)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     yield ": keep-alive\n\n"
                     continue
 
                 counter += 1
-                event_id = f"{datetime.now(tz=timezone.utc).isoformat()}-{counter}"
+                event_id = f"{datetime.now(tz=UTC).isoformat()}-{counter}"
                 yield _format_sse(event, event_id)
         finally:
             bus.unsubscribe_all(_push)

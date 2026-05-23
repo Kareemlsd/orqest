@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 async def _audit(
-    bus: "EventBus | None", event_type: str, data: dict[str, Any]
+    bus: EventBus | None, event_type: str, data: dict[str, Any]
 ) -> None:
     """Emit a discovery audit event if a bus is supplied; otherwise no-op."""
     if bus is None:
@@ -79,10 +79,10 @@ class ToolRegistry:
         self,
         name: str,
         *,
-        discovery: "MCPDiscovery | None" = None,
-        manager: "MCPServerManager | None" = None,
-        permission: "PermissionGate | None" = None,
-        audit_bus: "EventBus | None" = None,
+        discovery: MCPDiscovery | None = None,
+        manager: MCPServerManager | None = None,
+        permission: PermissionGate | None = None,
+        audit_bus: EventBus | None = None,
         max_servers: int = 3,
     ) -> Tool | None:
         """Get a tool by name; if missing, fall back to MCP discovery.

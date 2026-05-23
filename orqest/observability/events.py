@@ -11,7 +11,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from loguru import logger
@@ -32,7 +32,7 @@ class AgentEvent:
 
     event_type: str
     agent_name: str
-    timestamp: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(tz=UTC))
     data: dict[str, Any] = field(default_factory=dict)
     span_id: str | None = None
     trace_id: str | None = None

@@ -298,7 +298,7 @@ class Executor:
                 proc.communicate(input=spec_json.encode("utf-8")),
                 timeout=timeout_s,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             proc.kill()
             try:
                 await proc.wait()

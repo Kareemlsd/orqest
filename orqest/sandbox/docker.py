@@ -218,7 +218,7 @@ class DockerSandbox:
 
     # -- Lifecycle --------------------------------------------------------
 
-    async def __aenter__(self) -> "DockerSandbox":
+    async def __aenter__(self) -> DockerSandbox:
         """Run the container, wait for MCP server, open the MCP connection."""
         if not DOCKER_AVAILABLE:
             docker_from_env()  # raises ImportError with install hint

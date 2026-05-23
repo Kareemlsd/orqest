@@ -56,7 +56,7 @@ class AgentFactory:
         default_model: str = "openai:gpt-4.1",
         api_key: str = "",
         *,
-        tool_factory: "DynamicToolFactory | None" = None,
+        tool_factory: DynamicToolFactory | None = None,
     ) -> None:
         """Initialize with an optional registry, default model, and API key.
 

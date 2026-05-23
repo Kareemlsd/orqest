@@ -212,7 +212,7 @@ class InProcessSandbox:
             duration_ms=(monotonic() - t0) * 1000.0,
         )
 
-    async def __aenter__(self) -> "InProcessSandbox":
+    async def __aenter__(self) -> InProcessSandbox:
         return self
 
     async def __aexit__(self, *_args: Any) -> None:

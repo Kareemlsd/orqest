@@ -15,7 +15,7 @@ subclass; consumers' typed events round-trip cleanly through
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Generic, Literal, TypeVar
 from uuid import uuid4
 
@@ -45,7 +45,7 @@ class UIComponentSpec(BaseModel, Generic[T]):
     data: T
     metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(tz=timezone.utc)
+        default_factory=lambda: datetime.now(tz=UTC)
     )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)

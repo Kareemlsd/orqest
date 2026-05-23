@@ -13,7 +13,7 @@ composable across consumers.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
@@ -29,7 +29,7 @@ class Detection(BaseModel):
     summary: str
     payload: dict[str, Any] = Field(default_factory=dict)
     detected_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
 
 

@@ -39,7 +39,6 @@ from orqest.benchmarks.bird.adas.state import SQLTaskState
 from orqest.benchmarks.bird.dataset import db_path
 from orqest.orchestration.hydrate import CallableRegistry
 
-
 # ── Agent base class ─────────────────────────────────────────────────
 
 

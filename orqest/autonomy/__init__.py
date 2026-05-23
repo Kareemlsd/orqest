@@ -6,7 +6,13 @@ agent), and the AgentFactory hydrates it into a live BaseAgent. The
 ToolRegistry provides discoverable tools.
 """
 from orqest.autonomy.factory import AgentFactory, DynamicAgent
-from orqest.autonomy.meta import ExecutionResult, MetaOrchestrator, SubTask, SubTaskResult, TaskDecomposition
+from orqest.autonomy.meta import (
+    ExecutionResult,
+    MetaOrchestrator,
+    SubTask,
+    SubTaskResult,
+    TaskDecomposition,
+)
 from orqest.autonomy.registry import ToolInfo, ToolRegistry
 from orqest.autonomy.spec import AgentSpec, GeneratedToolSpec, ToolSpec
 from orqest.autonomy.tool_factory import DynamicToolFactory

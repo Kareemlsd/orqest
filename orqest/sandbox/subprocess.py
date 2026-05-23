@@ -270,7 +270,7 @@ class SubprocessSandbox:
                 proc.communicate(input=spec_json.encode("utf-8")),
                 timeout=timeout_s,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             proc.kill()
             try:
                 await proc.wait()
@@ -318,7 +318,7 @@ class SubprocessSandbox:
             duration_ms=duration_ms,
         )
 
-    async def __aenter__(self) -> "SubprocessSandbox":
+    async def __aenter__(self) -> SubprocessSandbox:
         return self
 
     async def __aexit__(self, *_args: Any) -> None:

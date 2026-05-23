@@ -123,7 +123,7 @@ class AgentSpec(BaseModel):
     constraints: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def _exactly_one_output_shape(self) -> "AgentSpec":
+    def _exactly_one_output_shape(self) -> AgentSpec:
         has_schema = self.output_schema is not None
         has_type = self.output_type is not None
         if has_schema and has_type:

@@ -83,7 +83,7 @@ class SessionAuthMiddleware(Middleware):
         self._allowed_origins = allowed_origins or set()
 
     @classmethod
-    def from_env(cls) -> "SessionAuthMiddleware":
+    def from_env(cls) -> SessionAuthMiddleware:
         """Construct from the standard env vars used by the runtime image."""
         secret = os.environ.get("ORQEST_HMAC_SECRET", "")
         user_id = os.environ.get("ORQEST_USER_ID", "")

@@ -28,8 +28,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from orqest.agents.base_agent import BaseAgent
 from orqest.autonomy.factory import AgentFactory
-from orqest.observability.events import AgentEvent, EventBus
 from orqest.autonomy.runtime import RuntimeTopologyDesigner
+from orqest.observability.events import AgentEvent, EventBus
 from orqest.optimization.topology import unpack_topology_output
 from orqest.orchestration.hydrate import (
     CallableRegistry,

@@ -23,11 +23,10 @@ import asyncio
 import json
 import os
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
-from loguru import logger
 
 from orqest.benchmarks.bird.adas.evaluator import (
     BIRDTopologyEvaluator,
@@ -36,7 +35,6 @@ from orqest.benchmarks.bird.adas.evaluator import (
 from orqest.benchmarks.bird.adas.registry import (
     build_agent_registry,
     build_callable_registry,
-    default_prompts,
 )
 from orqest.benchmarks.bird.adas.seed import seed_topology
 from orqest.benchmarks.bird.dataset import load_dev, stratified_sample
@@ -262,7 +260,7 @@ async def run_adas(
 
     if persist:
         RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-        ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+        ts = datetime.now(UTC).strftime("%Y-%m-%dT%H-%M-%S")
         out = RESULTS_DIR / f"adas_{ts}_gens{n_generations}.json"
         out.write_text(json.dumps(summary, indent=2))
         print(f"[adas] result → {out}")
