@@ -2315,6 +2315,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="[Unreleased]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2341,7 +2369,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#docs" class="md-nav__link">
+  <a href="#docs_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Docs
@@ -2485,7 +2513,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed" class="md-nav__link">
+  <a href="#removed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -2649,6 +2677,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="[Unreleased]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2675,7 +2731,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#docs" class="md-nav__link">
+  <a href="#docs_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Docs
@@ -2819,7 +2875,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#removed" class="md-nav__link">
+  <a href="#removed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Removed
@@ -2970,6 +3026,17 @@
 <a href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a> and the project
 follows <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h3 id="removed">Removed<a class="headerlink" href="#removed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><code>SKILLS.md</code></strong> at the repository root — superseded by <code>docs/concepts/skills.md</code> and the bundled skill at <code>orqest/skills/orqest/SKILL.md</code>. The single inbound reference in <code>README.md</code> now points at the docs page and the bundled skill.</li>
+<li><strong><code>demo/</code></strong> directory (Polymath reference consumer) — not part of the published package and not relevant for PyPI consumers. The five remaining inbound references in <code>README.md</code>, <code>CLAUDE.md</code>, <code>docs/concepts/autonomy.md</code>, and <code>.claude/skills/principles/SKILL.md</code> were updated or removed.</li>
+<li><strong><code>orqest/benchmarks/</code></strong> — internal BIRD and Spider benchmark code that shipped in the wheel but had no callers outside itself. Moved to <code>benchmarks/bird/</code> and <code>benchmarks/spider/</code> (with <code>git mv</code> to preserve history), matching the project convention established by <code>benchmarks/coding/</code>. Internal <code>from orqest.benchmarks.*</code> imports were converted to relative imports.</li>
+<li><strong><code>.claude/skills/gstack</code></strong> untracked — was a symlink to an absolute path on the maintainer's machine; broken for any other clone. Added to <code>.gitignore</code> so the local convenience symlink can stay.</li>
+</ul>
+<h3 id="docs">Docs<a class="headerlink" href="#docs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Documentation site polish landed in <a href="https://github.com/Kareemlsd/orqest/pull/6">#6</a>: rewrote <code>docs/index.md</code> for v0.8.0; replaced <code>docs/changelog.md</code> with an <code>mkdocs-include-markdown-plugin</code> include directive that pulls the root <code>CHANGELOG.md</code>; added <code>docs/concepts/reasoning.md</code> and <code>docs/concepts/skills.md</code>; added <code>navigation.tabs</code>, social icons, <code>git-revision-date-localized</code>, and several markdown extensions to <code>mkdocs.yml</code>.</li>
+</ul>
 <h2 id="080-2026-05-23">[0.8.0] - 2026-05-23<a class="headerlink" href="#080-2026-05-23" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
@@ -3001,7 +3068,7 @@ follows <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</
 <p><strong><code>BaseAgent</code> validates <code>output_type</code> at construction</strong> — top-level <code>Any</code>-typed Pydantic fields now raise <code>BaseAgentSchemaError</code> immediately at agent construction, with a message naming the offending field and concrete remediations (narrow the type, use a container of <code>Any</code>, or use a JSON-string field). Previously this slipped through to first inference where OpenAI's structured-output endpoint surfaced an opaque <code>Invalid schema for function 'final_result'</code> 400 error with no breadcrumb. Containers holding <code>Any</code> (<code>list[Any]</code>, <code>dict[str, Any]</code>) and scalar output types (<code>str</code>, <code>int</code>, etc.) are still accepted — only top-level <code>Any</code> fields trigger rejection. Discovered while building <code>notebooks/12_combo_autonomous_coder.ipynb</code> where this cost ~20 min of debugging on two separate occasions. 6 new tests in <code>tests/agents/test_base_agent.py::TestOutputTypeSchemaValidation</code>. New exception class <code>orqest.agents.base_agent.BaseAgentSchemaError(ValueError)</code>.</p>
 </li>
 </ul>
-<h3 id="docs">Docs<a class="headerlink" href="#docs" title="Permanent link">&para;</a></h3>
+<h3 id="docs_1">Docs<a class="headerlink" href="#docs_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
 <p><strong><code>docs/concepts/sandbox.md</code></strong> — new "Recipe: test-driven loops over LLM-generated code" section. Documents the per-spec pattern for safely running LLM-generated candidate functions: bake source into a fresh <code>GeneratedToolSpec</code> per (iteration × test), pass through the sandbox's static validator + RLIMIT-bounded subprocess, never <code>exec()</code> strings against the parent namespace. Names what the pattern protects against and what it doesn't (kernel isolation, network egress, filesystem reads). Discovered while building <code>notebooks/12_combo_autonomous_coder.ipynb</code> where the instinct was an exec-based test runner — which the validator rightly rejects.</p>
@@ -3120,7 +3187,7 @@ follows <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</
 <li><code>RefinementLoop</code> no longer silently accepts an <code>agent_self_eval</code> agent with no confidence protocol (the loop could never exit via <code>"confident"</code>).</li>
 <li>~12 stale doc / docstring claims corrected: the <code>salience</code> "side-table cache", the <code>WatchdogHook</code> "hook.shadowed event", <code>MCPDiscovery</code>'s "three discovery sources", the <code>ContextManager</code> salience threshold, generative UI's "5 first-party components" (it is 17 across 3 layers), the MetaOrchestrator "successful specs" persistence claim, the "pay for what you use" provider claim, <code>load_sys_prompt</code> typing, and missing <code>__all__</code> exports (<code>WebSearchResponse</code>, <code>budget_tool_results</code>).</li>
 </ul>
-<h3 id="removed">Removed<a class="headerlink" href="#removed" title="Permanent link">&para;</a></h3>
+<h3 id="removed_1">Removed<a class="headerlink" href="#removed_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>RetrySameTool</code>, <code>RetryDifferentModel</code>, <code>DiscoverAndRetry</code> recovery actions and the <code>healing.retry_initiated</code> event.</li>
 <li><code>HealingConfig.abort_on_unresolved_loop</code> — dead config flag, never read.</li>
