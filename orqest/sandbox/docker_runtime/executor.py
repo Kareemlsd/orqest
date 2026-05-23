@@ -35,10 +35,19 @@ from pathlib import Path
 from time import monotonic
 from typing import Any
 
+from orqest.sandbox import _safe_builtins as _safe_builtins_mod
+from orqest.sandbox import _static as _static_mod
+from orqest.sandbox._identifiers import check_identifier
 from orqest.sandbox._static import collect_issues, format_issues
 from orqest.sandbox.protocol import ExecutionResult
 
 _IS_POSIX = platform.system() != "Windows"
+
+# Captured file paths of helper modules — the wrapper loads them by path
+# so the per-agent subprocess never invokes ``orqest/__init__.py`` (heavy
+# import chain that would not fit under the inner RLIMIT_AS cap).
+_SAFE_BUILTINS_PATH = _safe_builtins_mod.__file__
+_STATIC_PATH = _static_mod.__file__
 
 
 @dataclass(frozen=True)
@@ -61,11 +70,29 @@ class ExecutorConfig:
 
 
 _WRAPPER_SCRIPT = '''
+import importlib.util
 import io
 import json
 import sys
 import traceback
 from contextlib import redirect_stdout
+
+
+def _load_by_path(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"could not load {name!r} from {path!r}")
+    module = importlib.util.module_from_spec(spec)
+    # Register before exec_module — dataclass + other reflection helpers
+    # look up ``sys.modules[cls.__module__]`` during class construction.
+    sys.modules[name] = module
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(name, None)
+        raise
+    return module
+
 
 def _main():
     try:
@@ -77,7 +104,39 @@ def _main():
 
     code = spec.get("code", "")
     args = spec.get("args", {})
-    namespace = {"args": dict(args)}
+    allowed = set(spec.get("allowed_imports", []))
+    helpers = spec.get("_helpers", {})
+
+    try:
+        _safe_builtins_mod = _load_by_path(
+            "_sandbox_safe_builtins", helpers["safe_builtins_path"]
+        )
+        _static_mod = _load_by_path(
+            "_sandbox_static", helpers["static_path"]
+        )
+    except Exception as exc:
+        sys.stdout.write(json.dumps({"success": False,
+                                     "error": f"failed to load sandbox helpers: {exc}"}))
+        return
+
+    build_safe_namespace = _safe_builtins_mod.build_safe_namespace
+    collect_issues = _static_mod.collect_issues
+    format_issues = _static_mod.format_issues
+
+    issues = collect_issues(code, allowed_imports=allowed)
+    if issues:
+        sys.stdout.write(json.dumps({
+            "success": False,
+            "error": f"validation failed inside subprocess: {format_issues(issues)}",
+        }))
+        return
+
+    try:
+        namespace = build_safe_namespace(args=args, allowed_imports=allowed)
+    except ImportError as exc:
+        sys.stdout.write(json.dumps({"success": False,
+                                     "error": f"allowed import not available: {exc}"}))
+        return
 
     wrapped = (
         "def __orqest_tool(args):\\n"
@@ -148,6 +207,22 @@ class Executor:
 
     def __init__(self, config: ExecutorConfig) -> None:
         self._config = config
+        # Per-agent locks serialise ``ensure_venv`` + ``install_deps`` so
+        # concurrent ``execute_python`` calls for the same agent_id don't
+        # race on ``uv venv`` / ``uv pip install``. Without this, the first
+        # call wins the directory creation and the rest fail (the
+        # promotion-race regression caught it in CI but not locally —
+        # timing sensitivity, exactly the kind of bug a lock fixes).
+        self._agent_locks: dict[str, asyncio.Lock] = {}
+
+    def _agent_lock(self, agent_id: str) -> asyncio.Lock:
+        """Return (lazily create) the lock for *agent_id*.
+
+        ``dict.setdefault`` is atomic across coroutines because the event
+        loop only yields at ``await`` points — the lookup-and-insert
+        happens within a single tick.
+        """
+        return self._agent_locks.setdefault(agent_id, asyncio.Lock())
 
     @property
     def config(self) -> ExecutorConfig:
@@ -165,7 +240,16 @@ class Executor:
         return self.agent_venv_path(agent_id) / bin_dir / "python"
 
     async def ensure_venv(self, agent_id: str) -> None:
-        """Create the agent's venv if it doesn't exist. ~50ms with uv."""
+        """Create the agent's venv if it doesn't exist. ~50ms with uv.
+
+        ``--system-site-packages`` lets the per-agent venv inherit the
+        container's system Python — that's where ``orqest`` is installed,
+        and the wrapper script imports ``orqest.sandbox._safe_builtins``
+        and ``orqest.sandbox._static`` to enforce the curated builtin set
+        + AST validation defence-in-depth. Per-agent ``uv pip install``
+        targets still write into the agent's own site-packages, so deps
+        installed by agent A do not bleed into agent B.
+        """
         venv_dir = self.agent_venv_path(agent_id)
         if (venv_dir / ("Scripts" if not _IS_POSIX else "bin")).exists():
             return  # Already exists
@@ -176,6 +260,7 @@ class Executor:
             str(venv_dir),
             "--python",
             sys.executable,
+            "--system-site-packages",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -243,6 +328,19 @@ class Executor:
         memory_mb: int = 128,
     ) -> ExecutionResult:
         """Validate, ensure venv, install deps, run, return ExecutionResult."""
+        # Identifier validation — ``agent_id`` is LLM-controlled at the
+        # MCP tool boundary and feeds directly into ``agent_workspace``
+        # paths + ``uv venv`` directory names. Reject anything outside
+        # the strict allowlist before any filesystem operation runs.
+        try:
+            check_identifier(agent_id, kind="agent_id")
+        except ValueError as exc:
+            return ExecutionResult(
+                success=False,
+                error=str(exc),
+                duration_ms=0.0,
+            )
+
         # Static AST validation
         issues = collect_issues(code, allowed_imports=allowed_imports)
         if issues:
@@ -254,9 +352,22 @@ class Executor:
 
         t0 = monotonic()
 
-        # Ensure venv + install deps
+        # Ensure venv + install deps. The per-agent lock serialises the
+        # ``uv venv`` + ``uv pip install`` block so concurrent execute calls
+        # don't race on directory creation / venv setup. The execution
+        # subprocess itself runs outside the lock — that's the part where
+        # we actually want concurrency.
         try:
-            await self.ensure_venv(agent_id)
+            async with self._agent_lock(agent_id):
+                await self.ensure_venv(agent_id)
+                if dependencies:
+                    ok, err = await self.install_deps(agent_id, dependencies)
+                    if not ok:
+                        return ExecutionResult(
+                            success=False,
+                            error=err or "dependency install failed",
+                            duration_ms=(monotonic() - t0) * 1000.0,
+                        )
         except Exception as exc:  # noqa: BLE001
             return ExecutionResult(
                 success=False,
@@ -264,17 +375,20 @@ class Executor:
                 duration_ms=(monotonic() - t0) * 1000.0,
             )
 
-        if dependencies:
-            ok, err = await self.install_deps(agent_id, dependencies)
-            if not ok:
-                return ExecutionResult(
-                    success=False,
-                    error=err or "dependency install failed",
-                    duration_ms=(monotonic() - t0) * 1000.0,
-                )
-
-        # Run the implementation
-        spec_json = json.dumps({"code": code, "args": dict(args)})
+        # Run the implementation. ``allowed_imports`` is threaded into the
+        # spec so the wrapper builds the curated ``__builtins__`` matching
+        # what the host-side validator approved. ``_helpers`` carries the
+        # paths the wrapper needs to load the validator + safe-builtins
+        # modules without importing the full ``orqest`` package.
+        spec_json = json.dumps({
+            "code": code,
+            "args": dict(args),
+            "allowed_imports": sorted(allowed_imports),
+            "_helpers": {
+                "safe_builtins_path": _SAFE_BUILTINS_PATH,
+                "static_path": _STATIC_PATH,
+            },
+        })
         try:
             proc = await asyncio.create_subprocess_exec(
                 str(self.agent_python(agent_id)),

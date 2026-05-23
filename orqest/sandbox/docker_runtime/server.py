@@ -27,6 +27,7 @@ Wires:
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import os
 from collections import defaultdict
@@ -110,6 +111,12 @@ def build_server(
     counts: dict[tuple[str, str], int] = defaultdict(int)
     # Track which (name, hash) pairs are already persisted to avoid re-promote
     persisted_hashes: set[tuple[str, str]] = set()
+    # Serialise the increment + threshold-check + promote sequence so two
+    # concurrent ``execute_python`` calls for the same ``(name, hash)`` can't
+    # both observe ``count == threshold-1``, increment, and trigger duplicate
+    # promotion. The lock is per-server-instance; contention is negligible
+    # because the granularity is per-key already.
+    promotion_lock = asyncio.Lock()
 
     def _refresh_persisted_hashes() -> None:
         persisted_hashes.clear()
@@ -159,25 +166,28 @@ def build_server(
             memory_mb=memory_mb,
         )
 
-        # Promotion logic — only on success + when caller named the tool
+        # Promotion logic — only on success + when caller named the tool.
+        # The lock ensures concurrent calls for the same (name, hash) can't
+        # both cross the threshold simultaneously.
         if result.success and tool_name and promotion_policy == "threshold":
             key = (tool_name, _hash_impl(code))
-            if key not in persisted_hashes:
-                counts[key] += 1
-                if counts[key] >= promotion_threshold:
-                    logger.info(
-                        "auto-promoting tool '{n}' after {c} successes",
-                        n=tool_name, c=counts[key],
-                    )
-                    await _do_promote(
-                        name=tool_name,
-                        description=tool_name,  # caller can re-promote with better desc
-                        parameters={},
-                        implementation=code,
-                        allowed_imports=list(allowed_imports or []),
-                        dependencies=list(dependencies or []),
-                        agent_id=agent_id,
-                    )
+            async with promotion_lock:
+                if key not in persisted_hashes:
+                    counts[key] += 1
+                    if counts[key] >= promotion_threshold:
+                        logger.info(
+                            "auto-promoting tool '{n}' after {c} successes",
+                            n=tool_name, c=counts[key],
+                        )
+                        await _do_promote(
+                            name=tool_name,
+                            description=tool_name,  # caller can re-promote with better desc
+                            parameters={},
+                            implementation=code,
+                            allowed_imports=list(allowed_imports or []),
+                            dependencies=list(dependencies or []),
+                            agent_id=agent_id,
+                        )
 
         return {
             "success": result.success,

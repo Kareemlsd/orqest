@@ -36,11 +36,20 @@ from typing import Any
 
 from loguru import logger
 
+from orqest.sandbox import _safe_builtins as _safe_builtins_mod
+from orqest.sandbox import _static as _static_mod
 from orqest.sandbox._static import collect_issues, format_issues
 from orqest.sandbox.protocol import ExecutionResult, ValidationError
 
 _IS_POSIX = platform.system() != "Windows"
 _WARNED_WINDOWS = False
+
+# File paths of the helper modules the wrapper subprocess loads by path.
+# Captured at import time so the wrapper never has to invoke
+# ``orqest/__init__.py`` (heavy chain — pydantic-ai, fastmcp — that would
+# blow past the RLIMIT_AS cap).
+_SAFE_BUILTINS_PATH = _safe_builtins_mod.__file__
+_STATIC_PATH = _static_mod.__file__
 
 
 def _warn_once_windows() -> None:
@@ -57,49 +66,44 @@ def _warn_once_windows() -> None:
 
 # --- Subprocess wrapper script ----------------------------------------------
 # Runs as: ``python -c <_WRAPPER_SCRIPT>``. Stdin: JSON {"args":..., "code":...,
-# "allowed_imports":[...]}. Stdout: JSON {"success":bool, "output":..., "error":..., "stdout": "..."}.
+# "allowed_imports":[...], "_helpers": {...}}. Stdout: JSON {"success":bool,
+# "output":..., "error":..., "stdout": "..."}.
+#
+# The wrapper loads the canonical validator + safe-builtins by file path
+# (``importlib.util.spec_from_file_location``) rather than by package
+# name. That bypasses ``orqest/__init__.py``'s heavy import chain (pydantic-ai,
+# fastmcp, …) which would otherwise blow past the 128 MB ``RLIMIT_AS`` cap
+# the parent sets before this subprocess loads anything. The two helper
+# modules import only stdlib, so they fit comfortably.
+#
+# Restricting ``__builtins__`` to the curated set before ``exec``-ing the
+# user code is the load-bearing defence-in-depth: without it the static
+# AST validator was the only safety surface against reflection-based
+# escapes (``getattr``, ``type``, etc.).
 
 _WRAPPER_SCRIPT = '''
-import ast
+import importlib.util
 import io
 import json
 import sys
 import traceback
 from contextlib import redirect_stdout
 
-_FORBIDDEN = {"eval","exec","compile","__import__","open","globals","locals",
-              "vars","input","breakpoint"}
-_FORBIDDEN_ATTRS = {"__class__","__bases__","__subclasses__","__mro__",
-                    "__globals__","__builtins__","__import__","__loader__",
-                    "__spec__","__code__","__closure__","__getattribute__",
-                    "__reduce__","__reduce_ex__"}
 
-
-def _root(name):
-    return name.split(".", 1)[0]
-
-
-def _validate(code, allowed):
+def _load_by_path(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"could not load {name!r} from {path!r}")
+    module = importlib.util.module_from_spec(spec)
+    # Register before exec_module — dataclass + other reflection helpers
+    # look up ``sys.modules[cls.__module__]`` during class construction.
+    sys.modules[name] = module
     try:
-        tree = ast.parse(code)
-    except SyntaxError as exc:
-        return f"syntax error: {exc.msg}"
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                if _root(alias.name) not in allowed:
-                    return f"import {alias.name!r} not in allowed_imports"
-        elif isinstance(node, ast.ImportFrom):
-            if _root(node.module or "") not in allowed:
-                return f"from {node.module!r} import not in allowed_imports"
-        elif isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-            if node.func.id in _FORBIDDEN:
-                return f"call to forbidden name {node.func.id!r}"
-        elif isinstance(node, ast.Attribute) and node.attr in _FORBIDDEN_ATTRS:
-            return f"access to forbidden attribute {node.attr!r}"
-        elif isinstance(node, ast.Name) and node.id in _FORBIDDEN:
-            return f"reference to forbidden name {node.id!r}"
-    return None
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(name, None)
+        raise
+    return module
 
 
 def _emit(payload):
@@ -117,20 +121,39 @@ def _main():
     code = spec.get("code", "")
     args = spec.get("args", {})
     allowed = set(spec.get("allowed_imports", []))
+    helpers = spec.get("_helpers", {})
 
-    issue = _validate(code, allowed)
-    if issue:
-        _emit({"success": False, "error": f"validation failed inside subprocess: {issue}"})
+    # Load the validator + safe-builtins helpers by file path. The parent
+    # injects ``_helpers.safe_builtins_path`` / ``_helpers.static_path``.
+    try:
+        _safe_builtins_mod = _load_by_path(
+            "_sandbox_safe_builtins", helpers["safe_builtins_path"]
+        )
+        _static_mod = _load_by_path(
+            "_sandbox_static", helpers["static_path"]
+        )
+    except Exception as exc:
+        _emit({"success": False,
+               "error": f"failed to load sandbox helpers: {exc}"})
         return
 
-    namespace = {"args": dict(args)}
-    import importlib
-    for module_name in allowed:
-        try:
-            namespace[_root(module_name)] = importlib.import_module(module_name)
-        except ImportError as exc:
-            _emit({"success": False, "error": f"allowed import {module_name!r} not available: {exc}"})
-            return
+    build_safe_namespace = _safe_builtins_mod.build_safe_namespace
+    collect_issues = _static_mod.collect_issues
+    format_issues = _static_mod.format_issues
+
+    issues = collect_issues(code, allowed_imports=allowed)
+    if issues:
+        _emit({
+            "success": False,
+            "error": f"validation failed inside subprocess: {format_issues(issues)}",
+        })
+        return
+
+    try:
+        namespace = build_safe_namespace(args=args, allowed_imports=allowed)
+    except ImportError as exc:
+        _emit({"success": False, "error": f"allowed import not available: {exc}"})
+        return
 
     wrapped = (
         "def __orqest_tool(args):\\n"
@@ -243,6 +266,10 @@ class SubprocessSandbox:
                 "code": code,
                 "args": dict(args),
                 "allowed_imports": sorted(allowed_imports),
+                "_helpers": {
+                    "safe_builtins_path": _SAFE_BUILTINS_PATH,
+                    "static_path": _STATIC_PATH,
+                },
             }
         )
 

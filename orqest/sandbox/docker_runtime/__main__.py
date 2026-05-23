@@ -20,7 +20,9 @@ Optional env vars:
   threshold-mode auto-promotion (default 3)
 * ``ORQEST_TOOLS_DB`` — SQLite path (default ``/data/orqest-tools.sqlite``)
 * ``ORQEST_ALLOWED_ORIGINS`` — comma-separated Origin header allowlist
-  (DNS rebinding defense; default empty = don't check Origin)
+  (DNS-rebinding defense). When **unset**, defaults to
+  ``http://127.0.0.1,http://localhost``. Set explicitly (incl. ``""``
+  for "no check") to override.
 * ``ORQEST_HOST`` — bind host (default ``0.0.0.0``)
 * ``ORQEST_PORT`` — bind port (default ``8000``)
 """

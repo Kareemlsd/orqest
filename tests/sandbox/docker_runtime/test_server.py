@@ -212,3 +212,43 @@ async def test_threshold_promotion_fires_after_n_invocations(executor, store):
     persisted = store.get("constant_42")
     assert persisted is not None
     assert persisted.version == 1
+
+
+@pytest.mark.asyncio
+@_skip_if_no_uv
+async def test_concurrent_promotion_does_not_double_promote(executor, store):
+    """Concurrent invocations of the same (name, hash) crossing the threshold
+    must promote exactly once. Without the lock, two calls observing
+    ``count == threshold-1`` would both increment and both fire ``_do_promote``,
+    producing two persisted versions instead of one."""
+    import asyncio
+
+    mcp = build_server(
+        executor=executor,
+        store=store,
+        middleware=None,
+        promotion_policy="threshold",
+        promotion_threshold=2,
+    )
+    execute = (await mcp.get_tools())["execute_python"]
+
+    async def _one_call() -> None:
+        await execute.run({
+            "code": "return 7",
+            "agent_id": "alice",
+            "args": {},
+            "allowed_imports": [],
+            "tool_name": "constant_7",
+            "timeout_s": 10.0,
+        })
+
+    # Fire four concurrent calls. With threshold=2 and a working lock, only
+    # one version should be persisted (the first crossing wins; subsequent
+    # invocations no-op because the key joins ``persisted_hashes``).
+    await asyncio.gather(_one_call(), _one_call(), _one_call(), _one_call())
+
+    all_versions = [t for t in store.list_all() if t.name == "constant_7"]
+    assert len(all_versions) == 1, (
+        f"expected exactly one persisted version, got {len(all_versions)}: "
+        f"{[(t.name, t.version) for t in all_versions]}"
+    )
