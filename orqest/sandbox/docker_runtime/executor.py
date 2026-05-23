@@ -35,10 +35,18 @@ from pathlib import Path
 from time import monotonic
 from typing import Any
 
+from orqest.sandbox import _safe_builtins as _safe_builtins_mod
+from orqest.sandbox import _static as _static_mod
 from orqest.sandbox._static import collect_issues, format_issues
 from orqest.sandbox.protocol import ExecutionResult
 
 _IS_POSIX = platform.system() != "Windows"
+
+# Captured file paths of helper modules — the wrapper loads them by path
+# so the per-agent subprocess never invokes ``orqest/__init__.py`` (heavy
+# import chain that would not fit under the inner RLIMIT_AS cap).
+_SAFE_BUILTINS_PATH = _safe_builtins_mod.__file__
+_STATIC_PATH = _static_mod.__file__
 
 
 @dataclass(frozen=True)
@@ -61,11 +69,29 @@ class ExecutorConfig:
 
 
 _WRAPPER_SCRIPT = '''
+import importlib.util
 import io
 import json
 import sys
 import traceback
 from contextlib import redirect_stdout
+
+
+def _load_by_path(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"could not load {name!r} from {path!r}")
+    module = importlib.util.module_from_spec(spec)
+    # Register before exec_module — dataclass + other reflection helpers
+    # look up ``sys.modules[cls.__module__]`` during class construction.
+    sys.modules[name] = module
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(name, None)
+        raise
+    return module
+
 
 def _main():
     try:
@@ -77,7 +103,39 @@ def _main():
 
     code = spec.get("code", "")
     args = spec.get("args", {})
-    namespace = {"args": dict(args)}
+    allowed = set(spec.get("allowed_imports", []))
+    helpers = spec.get("_helpers", {})
+
+    try:
+        _safe_builtins_mod = _load_by_path(
+            "_sandbox_safe_builtins", helpers["safe_builtins_path"]
+        )
+        _static_mod = _load_by_path(
+            "_sandbox_static", helpers["static_path"]
+        )
+    except Exception as exc:
+        sys.stdout.write(json.dumps({"success": False,
+                                     "error": f"failed to load sandbox helpers: {exc}"}))
+        return
+
+    build_safe_namespace = _safe_builtins_mod.build_safe_namespace
+    collect_issues = _static_mod.collect_issues
+    format_issues = _static_mod.format_issues
+
+    issues = collect_issues(code, allowed_imports=allowed)
+    if issues:
+        sys.stdout.write(json.dumps({
+            "success": False,
+            "error": f"validation failed inside subprocess: {format_issues(issues)}",
+        }))
+        return
+
+    try:
+        namespace = build_safe_namespace(args=args, allowed_imports=allowed)
+    except ImportError as exc:
+        sys.stdout.write(json.dumps({"success": False,
+                                     "error": f"allowed import not available: {exc}"}))
+        return
 
     wrapped = (
         "def __orqest_tool(args):\\n"
@@ -165,7 +223,16 @@ class Executor:
         return self.agent_venv_path(agent_id) / bin_dir / "python"
 
     async def ensure_venv(self, agent_id: str) -> None:
-        """Create the agent's venv if it doesn't exist. ~50ms with uv."""
+        """Create the agent's venv if it doesn't exist. ~50ms with uv.
+
+        ``--system-site-packages`` lets the per-agent venv inherit the
+        container's system Python — that's where ``orqest`` is installed,
+        and the wrapper script imports ``orqest.sandbox._safe_builtins``
+        and ``orqest.sandbox._static`` to enforce the curated builtin set
+        + AST validation defence-in-depth. Per-agent ``uv pip install``
+        targets still write into the agent's own site-packages, so deps
+        installed by agent A do not bleed into agent B.
+        """
         venv_dir = self.agent_venv_path(agent_id)
         if (venv_dir / ("Scripts" if not _IS_POSIX else "bin")).exists():
             return  # Already exists
@@ -176,6 +243,7 @@ class Executor:
             str(venv_dir),
             "--python",
             sys.executable,
+            "--system-site-packages",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -273,8 +341,20 @@ class Executor:
                     duration_ms=(monotonic() - t0) * 1000.0,
                 )
 
-        # Run the implementation
-        spec_json = json.dumps({"code": code, "args": dict(args)})
+        # Run the implementation. ``allowed_imports`` is threaded into the
+        # spec so the wrapper builds the curated ``__builtins__`` matching
+        # what the host-side validator approved. ``_helpers`` carries the
+        # paths the wrapper needs to load the validator + safe-builtins
+        # modules without importing the full ``orqest`` package.
+        spec_json = json.dumps({
+            "code": code,
+            "args": dict(args),
+            "allowed_imports": sorted(allowed_imports),
+            "_helpers": {
+                "safe_builtins_path": _SAFE_BUILTINS_PATH,
+                "static_path": _STATIC_PATH,
+            },
+        })
         try:
             proc = await asyncio.create_subprocess_exec(
                 str(self.agent_python(agent_id)),

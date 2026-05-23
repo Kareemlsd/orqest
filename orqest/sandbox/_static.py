@@ -17,10 +17,18 @@ import ast
 from dataclasses import dataclass
 
 # Names that must never appear as call targets, even if reachable via
-# Python builtins. The InProcessSandbox already strips these from
-# __builtins__, but a static check fails fast and produces a clearer error.
+# Python builtins. Every sandbox tier also strips these from the runtime
+# ``__builtins__`` dict (see ``_safe_builtins.py``); the static check
+# fails fast and produces a clearer error than a runtime ``NameError``.
+#
+# Reflection helpers (``getattr`` / ``setattr`` / ``delattr`` / ``hasattr``,
+# ``type``, ``dir``, ``super``, ``__build_class__``) are blocked because
+# they let user code reach dunders by string lookup, bypassing the
+# ast.Attribute-based check below. Without them blocked, ``getattr(obj,
+# "__cla" + "ss__")`` would defeat the dunder-attribute blocklist entirely.
 _FORBIDDEN_NAMES: frozenset[str] = frozenset(
     {
+        # Direct execution / namespace access
         "eval",
         "exec",
         "compile",
@@ -31,6 +39,15 @@ _FORBIDDEN_NAMES: frozenset[str] = frozenset(
         "vars",
         "input",
         "breakpoint",
+        # Reflection / introspection escape hatches
+        "getattr",
+        "setattr",
+        "delattr",
+        "hasattr",
+        "type",
+        "dir",
+        "super",
+        "__build_class__",
     }
 )
 
@@ -52,6 +69,13 @@ _FORBIDDEN_ATTRIBUTES: frozenset[str] = frozenset(
         "__getattribute__",
         "__reduce__",
         "__reduce_ex__",
+        # Instance/class dict reach-through (``cls.__dict__["__class__"]``)
+        "__dict__",
+        # Subclass-creation hijack
+        "__init_subclass__",
+        # Direct dunder invocation
+        "__init__",
+        "__new__",
     }
 )
 
@@ -136,6 +160,27 @@ def collect_issues(code: str, *, allowed_imports: set[str]) -> list[StaticIssue]
                     StaticIssue(
                         reason=f"access to forbidden attribute {node.attr!r}",
                         node_kind="Attribute",
+                        line=node.lineno,
+                    )
+                )
+        elif isinstance(node, ast.Subscript):
+            # Catch ``obj["__class__"]``-style string-keyed reach-through.
+            # Only constant string subscripts are checked; we deliberately
+            # don't try to evaluate dynamic expressions (that's what the
+            # blocked-builtins set + runtime restriction are for).
+            slice_node = node.slice
+            if (
+                isinstance(slice_node, ast.Constant)
+                and isinstance(slice_node.value, str)
+                and slice_node.value in _FORBIDDEN_ATTRIBUTES
+            ):
+                issues.append(
+                    StaticIssue(
+                        reason=(
+                            f"subscript access to forbidden attribute "
+                            f"{slice_node.value!r}"
+                        ),
+                        node_kind="Subscript",
                         line=node.lineno,
                     )
                 )

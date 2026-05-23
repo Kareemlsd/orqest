@@ -22,66 +22,15 @@ import io
 import json
 from contextlib import redirect_stdout
 from time import monotonic
-from typing import Any, ClassVar
+from typing import Any
 
+from orqest.sandbox._safe_builtins import build_safe_builtins
 from orqest.sandbox._static import collect_issues, format_issues
 from orqest.sandbox.protocol import ExecutionResult, ValidationError
 
 
 class InProcessSandbox:
     """Tier-0 sandbox — see module docstring. Refuses ``unsafe=False``."""
-
-    _SAFE_BUILTINS: ClassVar[dict[str, Any]] = {
-        # Arithmetic + safe collection helpers + str/repr.
-        # NOTABLY ABSENT: __import__, eval, exec, open, compile, globals,
-        # locals, vars, input, breakpoint, exit, quit, help.
-        "abs": abs,
-        "all": all,
-        "any": any,
-        "bool": bool,
-        "bytes": bytes,
-        "chr": chr,
-        "dict": dict,
-        "divmod": divmod,
-        "enumerate": enumerate,
-        "filter": filter,
-        "float": float,
-        "frozenset": frozenset,
-        "hash": hash,
-        "hex": hex,
-        "int": int,
-        "isinstance": isinstance,
-        "issubclass": issubclass,
-        "iter": iter,
-        "len": len,
-        "list": list,
-        "map": map,
-        "max": max,
-        "min": min,
-        "next": next,
-        "oct": oct,
-        "ord": ord,
-        "pow": pow,
-        "print": print,  # captured via redirect_stdout
-        "range": range,
-        "repr": repr,
-        "reversed": reversed,
-        "round": round,
-        "set": set,
-        "slice": slice,
-        "sorted": sorted,
-        "str": str,
-        "sum": sum,
-        "tuple": tuple,
-        "zip": zip,
-        # Common exceptions so user code can catch / raise them.
-        "Exception": Exception,
-        "ValueError": ValueError,
-        "TypeError": TypeError,
-        "KeyError": KeyError,
-        "IndexError": IndexError,
-        "RuntimeError": RuntimeError,
-    }
 
     def __init__(self, *, unsafe: bool = False) -> None:
         if not unsafe:
@@ -128,31 +77,11 @@ class InProcessSandbox:
         # Re-validate (defense in depth — also done at spawn time)
         await self.validate(code, allowed_imports=allowed_imports)
 
-        # Build the restricted namespace. Pre-bind allowed-import modules so
-        # user code sees them already in scope; also install a restricted
-        # __import__ so user code that writes `import re` (a common LLM
-        # pattern) works without triggering the default __import__ machinery.
-        # The restricted import only allows modules in allowed_imports.
+        # Build the curated namespace from the shared safe-builtins module
+        # so every sandbox tier runs against the same allowlist.
         import importlib
 
-        builtins = dict(self._SAFE_BUILTINS)
-
-        def _restricted_import(
-            name: str,
-            globals: dict | None = None,
-            locals: dict | None = None,
-            fromlist: tuple = (),
-            level: int = 0,
-        ) -> Any:
-            root = name.split(".", 1)[0]
-            if root not in allowed_imports:
-                raise ImportError(
-                    f"import of {name!r} blocked by sandbox; allowed: {sorted(allowed_imports)}"
-                )
-            return importlib.import_module(name)
-
-        builtins["__import__"] = _restricted_import
-
+        builtins = build_safe_builtins(allowed_imports)
         namespace: dict[str, Any] = {
             "__builtins__": builtins,
             "args": dict(args),
