@@ -82,7 +82,7 @@ class TestConstruction:
         }
 
 
-# --- _validate_request — the actual auth logic ----------------------------
+# --- _verify_request — the actual auth logic ----------------------------
 
 
 @pytest.fixture
@@ -101,7 +101,7 @@ def test_valid_token_passes(mw):
         return_value={"authorization": f"Bearer {token}"},
     ):
         # Should not raise
-        mw._validate_request(stage="test")
+        mw._verify_request(stage="test")
 
 
 def test_missing_bearer_rejected(mw):
@@ -109,7 +109,7 @@ def test_missing_bearer_rejected(mw):
         "fastmcp.server.dependencies.get_http_headers",
         return_value={},
     ), pytest.raises(SessionAuthError, match="missing bearer token"):
-        mw._validate_request(stage="test")
+        mw._verify_request(stage="test")
 
 
 def test_empty_bearer_rejected(mw):
@@ -117,7 +117,7 @@ def test_empty_bearer_rejected(mw):
         "fastmcp.server.dependencies.get_http_headers",
         return_value={"authorization": "Bearer "},
     ), pytest.raises(SessionAuthError, match="empty bearer token"):
-        mw._validate_request(stage="test")
+        mw._verify_request(stage="test")
 
 
 def test_tampered_token_rejected(mw):
@@ -127,7 +127,7 @@ def test_tampered_token_rejected(mw):
         "fastmcp.server.dependencies.get_http_headers",
         return_value={"authorization": f"Bearer {bad}"},
     ), pytest.raises(SessionAuthError, match="invalid bearer token"):
-        mw._validate_request(stage="test")
+        mw._verify_request(stage="test")
 
 
 def test_expired_token_rejected(mw):
@@ -136,7 +136,7 @@ def test_expired_token_rejected(mw):
         "fastmcp.server.dependencies.get_http_headers",
         return_value={"authorization": f"Bearer {token}"},
     ), pytest.raises(SessionAuthError, match="invalid bearer token"):
-        mw._validate_request(stage="test")
+        mw._verify_request(stage="test")
 
 
 def test_wrong_user_rejected(mw):
@@ -145,7 +145,7 @@ def test_wrong_user_rejected(mw):
         "fastmcp.server.dependencies.get_http_headers",
         return_value={"authorization": f"Bearer {token}"},
     ), pytest.raises(SessionAuthError, match="user_id mismatch"):
-        mw._validate_request(stage="test")
+        mw._verify_request(stage="test")
 
 
 def test_wrong_session_rejected(mw):
@@ -154,7 +154,7 @@ def test_wrong_session_rejected(mw):
         "fastmcp.server.dependencies.get_http_headers",
         return_value={"authorization": f"Bearer {token}"},
     ), pytest.raises(SessionAuthError, match="session_id mismatch"):
-        mw._validate_request(stage="test")
+        mw._verify_request(stage="test")
 
 
 def test_origin_not_in_allowlist_rejected():
@@ -172,7 +172,7 @@ def test_origin_not_in_allowlist_rejected():
             "origin": "http://evil.example",
         },
     ), pytest.raises(SessionAuthError, match="origin not allowed"):
-        mw._validate_request(stage="test")
+        mw._verify_request(stage="test")
 
 
 def test_origin_in_allowlist_passes():
@@ -190,7 +190,7 @@ def test_origin_in_allowlist_passes():
             "origin": "http://localhost:3000",
         },
     ):
-        mw._validate_request(stage="test")  # no raise
+        mw._verify_request(stage="test")  # no raise
 
 
 def test_no_origin_header_with_allowlist_passes():
@@ -206,7 +206,7 @@ def test_no_origin_header_with_allowlist_passes():
         "fastmcp.server.dependencies.get_http_headers",
         return_value={"authorization": f"Bearer {token}"},
     ):
-        mw._validate_request(stage="test")  # no raise
+        mw._verify_request(stage="test")  # no raise
 
 
 def test_outside_http_context_fails_closed(mw):
@@ -215,4 +215,4 @@ def test_outside_http_context_fails_closed(mw):
         "fastmcp.server.dependencies.get_http_headers",
         side_effect=RuntimeError("not in HTTP context"),
     ), pytest.raises(SessionAuthError, match="auth context unavailable"):
-        mw._validate_request(stage="test")
+        mw._verify_request(stage="test")

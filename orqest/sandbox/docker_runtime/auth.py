@@ -1,4 +1,4 @@
-"""FastMCP middleware for HMAC-signed JWT session-auth.
+"""FastMCP middleware for HMAC-signed JWT session-auth + scope enforcement.
 
 Validates the ``Authorization: Bearer <jwt>`` header on every
 ``tools/call`` and ``tools/list`` request:
@@ -9,7 +9,19 @@ Validates the ``Authorization: Bearer <jwt>`` header on every
 3. Verify ``sub == ORQEST_USER_ID`` (mismatch = wrong-user attack).
 4. Verify ``sid == ORQEST_SESSION_ID`` (mismatch = wrong-session attack).
 5. Verify ``exp`` is in the future (replay attack defense).
-6. Reject with a typed exception that FastMCP maps to JSON-RPC error.
+6. **Verify ``scope`` matches the requirement of the specific MCP tool
+   being called.** ``promote_tool`` and ``forget_tool`` require
+   ``scope == "operator"``; everything else accepts ``"agent"`` or
+   ``"operator"``. Missing ``scope`` claim defaults to ``"agent"`` so
+   tokens minted before the scope feature stay strictly bounded.
+7. Reject with a typed exception that FastMCP maps to JSON-RPC error.
+
+Why scope separation: the host's MCP connection minted a single JWT and
+used it for every tool call. The LLM, calling tools through that
+connection, could reach ``promote_tool`` and bypass the threshold
+counter (or the ``operator_approval`` gate) directly. Splitting the
+scope so the agent-facing connection can only run code — never persist
+tools — closes the hole at the transport boundary.
 
 Origin header validation (DNS-rebinding defense per MCP spec) is
 delegated to the underlying transport layer (Starlette/uvicorn handles
@@ -54,6 +66,24 @@ DEFAULT_ALLOWED_ORIGINS: frozenset[str] = frozenset({
     "http://localhost",
 })
 
+# JWT scopes. ``agent`` is the everyday agent-loop scope; the host's
+# regular MCP connection mints this. ``operator`` is reserved for
+# persistence-side calls (``promote_tool`` / ``forget_tool``) that must
+# only be initiated by the host orchestrator — never the LLM.
+SCOPE_AGENT = "agent"
+SCOPE_OPERATOR = "operator"
+_VALID_SCOPES: frozenset[str] = frozenset({SCOPE_AGENT, SCOPE_OPERATOR})
+
+# Tools that require ``scope == "operator"``. Everything else accepts
+# either scope (least privilege still applies — the alternative would be
+# a default-deny on unknown tools, but FastMCP also serves tools added
+# at runtime via ``add_tool``, and we don't want to break those by
+# default).
+DEFAULT_OPERATOR_TOOLS: frozenset[str] = frozenset({
+    "promote_tool",
+    "forget_tool",
+})
+
 
 class SessionAuthError(PermissionError):
     """Raised when a request fails session-auth validation.
@@ -85,6 +115,7 @@ class SessionAuthMiddleware(Middleware):
         expected_user_id: str,
         expected_session_id: str,
         allowed_origins: set[str] | None = None,
+        operator_tools: set[str] | None = None,
     ) -> None:
         if not secret:
             raise ValueError("HMAC secret is required (non-empty)")
@@ -96,6 +127,11 @@ class SessionAuthMiddleware(Middleware):
         self._expected_user_id = expected_user_id
         self._expected_session_id = expected_session_id
         self._allowed_origins = allowed_origins or set()
+        self._operator_tools = (
+            set(operator_tools)
+            if operator_tools is not None
+            else set(DEFAULT_OPERATOR_TOOLS)
+        )
 
     @classmethod
     def from_env(cls) -> SessionAuthMiddleware:
@@ -126,17 +162,21 @@ class SessionAuthMiddleware(Middleware):
     # --- Middleware hooks -------------------------------------------------
 
     async def on_call_tool(self, context: MiddlewareContext, call_next: Any) -> Any:
-        self._validate_request(stage="call_tool")
+        claims = self._verify_request(stage="call_tool")
+        tool_name = _extract_tool_name(context)
+        self._check_scope(claims, tool_name=tool_name)
         return await call_next(context)
 
     async def on_list_tools(self, context: MiddlewareContext, call_next: Any) -> Any:
-        self._validate_request(stage="list_tools")
+        # tools/list doesn't act on persistence, so any authenticated scope
+        # is fine. (An operator-scope token can also list.)
+        self._verify_request(stage="list_tools")
         return await call_next(context)
 
     # --- Internals -------------------------------------------------------
 
-    def _validate_request(self, *, stage: str) -> None:
-        """Pull the bearer + Origin from the current HTTP request and verify.
+    def _verify_request(self, *, stage: str) -> dict:
+        """Verify token + Origin; return the claims dict on success.
 
         Lazy-imports ``get_http_headers`` from FastMCP — only available
         at request time. If we're called outside an HTTP context (e.g.
@@ -198,6 +238,42 @@ class SessionAuthMiddleware(Middleware):
                 "SessionAuthMiddleware: sid mismatch at {s}", s=stage
             )
             raise SessionAuthError("session_id mismatch")
+
+        return claims
+
+    def _check_scope(self, claims: dict, *, tool_name: str | None) -> None:
+        """Enforce per-tool scope requirements.
+
+        Tokens that omit ``scope`` default to ``agent`` — the least-privilege
+        scope. ``operator``-only tools reject ``agent`` tokens; ``agent``
+        tokens can call everything else.
+        """
+        raw_scope = claims.get("scope", SCOPE_AGENT)
+        if raw_scope not in _VALID_SCOPES:
+            logger.warning(
+                "SessionAuthMiddleware: unknown scope {s!r}", s=raw_scope
+            )
+            raise SessionAuthError("invalid scope claim")
+
+        if tool_name in self._operator_tools and raw_scope != SCOPE_OPERATOR:
+            logger.warning(
+                "SessionAuthMiddleware: agent-scope token rejected for "
+                "operator-only tool {t!r}", t=tool_name,
+            )
+            raise SessionAuthError("operator scope required")
+
+
+def _extract_tool_name(context: MiddlewareContext) -> str | None:
+    """Best-effort tool-name extraction from a FastMCP middleware context.
+
+    Returns ``None`` when the shape doesn't match — defensive against
+    FastMCP API drift; callers treat ``None`` as "non-operator tool"
+    (least privilege still applies because the scope check defaults to
+    requiring agent-or-operator, which any verified token satisfies).
+    """
+    message = getattr(context, "message", None)
+    name = getattr(message, "name", None)
+    return name if isinstance(name, str) else None
 
 
 __all__ = [

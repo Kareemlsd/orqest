@@ -342,14 +342,32 @@ class DockerSandbox:
 
     # -- Internals --------------------------------------------------------
 
-    def _mint_jwt(self) -> str:
-        """Mint a fresh JWT for the auth bearer header."""
+    def _mint_jwt(self, *, scope: str = "agent") -> str:
+        """Mint a fresh JWT for the auth bearer header.
+
+        ``scope`` is one of ``"agent"`` (default — what the LLM-facing MCP
+        connection uses) or ``"operator"`` (host-orchestrator only — needed
+        to call ``promote_tool`` / ``forget_tool``). Keeping the LLM-facing
+        connection bound to ``agent`` is what enforces the separation —
+        the LLM cannot upgrade its own bearer.
+        """
         claims = {
             "sub": self._user_id,
             "sid": self._session_id,
             "exp": int(time.time()) + self._jwt_ttl_s,
+            "scope": scope,
         }
         return jwt_encode(claims, self._hmac_secret)
+
+    def mint_operator_token(self) -> str:
+        """Mint an operator-scope JWT for host-orchestrator persistence calls.
+
+        Exposed so consumer code that wants to call ``promote_tool`` /
+        ``forget_tool`` directly (outside the agent-loop MCP connection) can
+        do so without holding the HMAC secret. The returned token is bound
+        to the same user / session as the sandbox.
+        """
+        return self._mint_jwt(scope="operator")
 
     async def _wait_for_mcp_ready(self) -> None:
         """Poll the MCP endpoint until it accepts requests, or time out."""
