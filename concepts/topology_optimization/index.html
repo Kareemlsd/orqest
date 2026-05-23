@@ -1,0 +1,2872 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Python framework for building autonomous agentic AI systems on top of pydantic-ai">
+      
+      
+      
+        <link rel="canonical" href="https://kareemlsd.github.io/orqest/concepts/topology_optimization/">
+      
+      
+        <link rel="prev" href="../optimization/">
+      
+      
+        <link rel="next" href="../web-tools/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+    
+    
+      
+        <title>Topology Optimization - Orqest</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#topology-optimization" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Orqest" class="md-header__button md-logo" aria-label="Orqest" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Orqest
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Topology Optimization
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Kareemlsd/orqest" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Kareemlsd/orqest
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Orqest" class="md-nav__button md-logo" aria-label="Orqest" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Orqest
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Kareemlsd/orqest" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Kareemlsd/orqest
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Notebooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Composition
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Composition
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../state-and-history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State & History
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-as-tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent as Tool
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../orchestration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Orchestration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hooks-and-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hooks & Lifecycle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../session-persistence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session Persistence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compound-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compound Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sub-agent-tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sub-Agent Tool
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../execution-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Autonomy
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Autonomy
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../autonomy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime Agent Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory & Cognition
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Memory & Cognition
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metacognition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metacognition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Topology Optimization
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Topology Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-problem-does-this-solve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What problem does this solve?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-two-layer-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The two-layer split
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#topologyspec-instead-of-raw-python-the-deliberate-cap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TopologySpec instead of raw Python — the deliberate cap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-callableregistry-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The CallableRegistry contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-metaagentsearch-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The MetaAgentSearch loop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#archive-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Archive strategies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#two-phase-composition-with-gepa-never-nest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two-phase composition with GEPA — never nest
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metricbundle-dimensions-for-topology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MetricBundle dimensions for topology
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apply-dry-run-by-default-again" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Apply: dry-run-by-default again
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cost-reasoning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cost reasoning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runtime-topology-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime topology design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Runtime topology design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-which" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use which
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-not-to-use-runtimetopologydesigner-just-hand-write-a-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When NOT to use RuntimeTopologyDesigner — just hand-write a Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#where-it-lives-and-an-honest-framing-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where it lives — and an honest framing note
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-four-design-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The four design calls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memorystorecache-online-learning-over-topologies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MemoryStoreCache — online learning over topologies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#seed-library-bootstrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Seed-library bootstrap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#honest-tradeoffs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Honest tradeoffs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caveat-llm-generated-tests-as-evaluator-feedback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caveat: LLM-generated tests as evaluator feedback
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-next-deferred" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's next (deferred)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runnable-demos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runnable demos
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Production
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workbench/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workbench
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sse-sidecar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SSE Sidecar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../event-bus-publish-hook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event Bus Hook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../healing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Self-Healing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../generative_ui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generative UI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/orchestration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Orchestration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/autonomy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Autonomy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/metacognition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metacognition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/topology_optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Topology Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/healing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Healing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generative UI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/workbench/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workbench
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/compound/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compound Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Resolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/io-utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-problem-does-this-solve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What problem does this solve?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-two-layer-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The two-layer split
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#topologyspec-instead-of-raw-python-the-deliberate-cap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TopologySpec instead of raw Python — the deliberate cap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-callableregistry-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The CallableRegistry contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-metaagentsearch-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The MetaAgentSearch loop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#archive-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Archive strategies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#two-phase-composition-with-gepa-never-nest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two-phase composition with GEPA — never nest
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metricbundle-dimensions-for-topology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MetricBundle dimensions for topology
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#apply-dry-run-by-default-again" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Apply: dry-run-by-default again
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cost-reasoning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cost reasoning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runtime-topology-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime topology design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Runtime topology design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-which" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use which
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-not-to-use-runtimetopologydesigner-just-hand-write-a-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When NOT to use RuntimeTopologyDesigner — just hand-write a Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#where-it-lives-and-an-honest-framing-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where it lives — and an honest framing note
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-four-design-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The four design calls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memorystorecache-online-learning-over-topologies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MemoryStoreCache — online learning over topologies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#seed-library-bootstrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Seed-library bootstrap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#honest-tradeoffs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Honest tradeoffs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caveat-llm-generated-tests-as-evaluator-feedback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caveat: LLM-generated tests as evaluator feedback
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-next-deferred" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's next (deferred)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runnable-demos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runnable demos
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="topology-optimization">Topology optimization<a class="headerlink" href="#topology-optimization" title="Permanent link">&para;</a></h1>
+<p>GEPA evolves the prompts inside a fixed topology (<a href="../optimization/">Optimization</a>). This battery evolves the <em>topology itself</em> — discovers Pipeline / Parallel / Router compositions from real traces against a small gold set. <strong>Same Pareto frontier contract; different mutation engine.</strong></p>
+<p>The implementation is ADAS-inspired (<a href="https://arxiv.org/abs/2408.08435">Hu, Lu, Clune 2024, arXiv 2408.08435</a>) — Meta Agent Search with archive-based reflective evolution — but <strong>diverges deliberately on the search surface</strong>: the meta agent emits typed <code>TopologySpec</code> JSON, not raw Python. There is no <code>exec()</code>, no sandbox, no code-execution failure modes. Expressivity is capped to compositions of registered primitives; the cap is the deliberate price of safety.</p>
+<h2 id="what-problem-does-this-solve">What problem does this solve?<a class="headerlink" href="#what-problem-does-this-solve" title="Permanent link">&para;</a></h2>
+<p>Two complementary failure modes in the GEPA-only world:</p>
+<ol>
+<li><strong>Wrong structure.</strong> A single CoT agent can't compete with a CoT → Verifier Pipeline on inferential tasks; no amount of prompt evolution recovers what a missing structural step costs.</li>
+<li><strong>Wrong specialization.</strong> A Router with an abstain-classifier in front handles off-topic inputs cleanly; a single agent with "abstain when unsure" baked into its prompt is unreliable at it.</li>
+</ol>
+<p>This battery surfaces those structural axes as evolvable. The meta agent designs combinations of <code>AgentStep</code> / <code>FunctionStep</code> over <code>Pipeline</code> / <code>Parallel</code> / <code>Router</code> / <code>RefinementLoop</code>, evaluates each candidate against your gold set, and keeps the top-K on a Pareto frontier of accuracy / cost / latency / <code>n_agents</code> / <code>depth</code>.</p>
+<h2 id="the-two-layer-split">The two-layer split<a class="headerlink" href="#the-two-layer-split" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Files</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Orchestration IR</strong></td>
+<td><code>orqest/orchestration/spec.py</code>, <code>orqest/orchestration/hydrate.py</code></td>
+<td>Pydantic models + spec→runtime hydration. Independently useful (closes the audit-named "LLM cannot emit topology at runtime" gap regardless of search).</td>
+</tr>
+<tr>
+<td><strong>Search engine</strong></td>
+<td><code>orqest/optimization/topology.py</code>, <code>orqest/optimization/meta_agent.py</code></td>
+<td>TopologyGene + TopologyEvaluator + MetaAgentSearch loop (design → reflexion → evaluate → archive).</td>
+</tr>
+</tbody>
+</table>
+<p>Both ship together but the IR is the load-bearing piece — once <code>TopologySpec</code> exists, any search engine (MetaAgentSearch today, MCTS / GA / RL tomorrow) is a plug-in.</p>
+<h2 id="topologyspec-instead-of-raw-python-the-deliberate-cap">TopologySpec instead of raw Python — the deliberate cap<a class="headerlink" href="#topologyspec-instead-of-raw-python-the-deliberate-cap" title="Permanent link">&para;</a></h2>
+<p>ADAS's public repo (<a href="https://github.com/ShengranHu/ADAS"><code>ShengranHu/ADAS</code></a>) calls <code>exec(forward_str, globals(), namespace)</code> directly in the search process — the paper claims "containerized execution," but the public code is in-process <code>exec</code> with try/except. This is fine for research, <strong>unacceptable for a library shipped to consumers.</strong></p>
+<p>Orqest takes the <a href="https://arxiv.org/abs/2410.10762">AFlow</a> approach instead: meta agent emits a typed JSON document validated by Pydantic. The hydrator looks up agent and callable references against explicit registries — there is no <code>eval</code>, no <code>exec</code>, no name forgery. The emission surface is <em>names from a user-controlled allowlist</em>, nothing more.</p>
+<p>The cap: candidates are restricted to compositions of <em>registered</em> primitives. Novel reasoning blocks (the kind ADAS occasionally discovers) are not expressible. We earn that expressivity back later (W3.C — <code>orqest/sandbox/</code> + raw-Python codegen behind a <code>Sandbox</code> Protocol) only if users prove they need it.</p>
+<h2 id="the-callableregistry-contract">The CallableRegistry contract<a class="headerlink" href="#the-callableregistry-contract" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">orqest.orchestration.hydrate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CallableRegistry</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">cr</span> <span class="o">=</span> <span class="n">CallableRegistry</span><span class="p">()</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">cr</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;is_long&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">200</span><span class="p">)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">cr</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;first_wins_priority&quot;</span><span class="p">,</span> <span class="n">custom_merge</span><span class="p">)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">cr</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;propose_next&quot;</span><span class="p">,</span> <span class="n">state_updater</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">cr</span><span class="o">.</span><span class="n">names</span><span class="p">())</span>   <span class="c1"># [&#39;first_wins_priority&#39;, &#39;is_long&#39;, &#39;propose_next&#39;]</span>
+</code></pre></div>
+<p>The meta agent receives <code>cr.names()</code> in its design prompt as the <em>only</em> legal callable references. Hydrating a spec that names <code>"unknown_fn"</code> raises <code>KeyError</code> — the search loop catches that, feeds the error back to the meta agent as debug feedback, and retries up to <code>MetaAgentConfig.debug_max</code> times.</p>
+<p>The same pattern applies to the agent registry — a <code>dict[str, Callable[[], BaseAgent]]</code> of factories (not instances; factories avoid cached-<code>_agent</code> problems when the same agent appears in multiple candidates).</p>
+<h2 id="the-metaagentsearch-loop">The MetaAgentSearch loop<a class="headerlink" href="#the-metaagentsearch-loop" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">orqest.optimization</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">MetaAgentConfig</span><span class="p">,</span> <span class="n">MetaAgentSearch</span><span class="p">,</span> <span class="n">TopologyGene</span><span class="p">,</span> <span class="n">TopologyEvaluator</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="p">)</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">orqest.orchestration.spec</span><span class="w"> </span><span class="kn">import</span> <span class="n">PipelineSpec</span><span class="p">,</span> <span class="n">AgentStepSpec</span><span class="p">,</span> <span class="n">PipelineStepEntry</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">seed</span> <span class="o">=</span> <span class="n">PipelineSpec</span><span class="p">(</span><span class="n">steps</span><span class="o">=</span><span class="p">[</span><span class="n">PipelineStepEntry</span><span class="p">(</span><span class="n">operation</span><span class="o">=</span><span class="n">AgentStepSpec</span><span class="p">(</span><span class="n">agent_name</span><span class="o">=</span><span class="s2">&quot;cot&quot;</span><span class="p">))])</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">gene</span> <span class="o">=</span> <span class="n">TopologyGene</span><span class="p">(</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;main&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">initial</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">constraints</span><span class="o">=</span><span class="s2">&quot;Must end with an agent capable of abstaining for off-topic inputs.&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">)</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">search</span> <span class="o">=</span> <span class="n">MetaAgentSearch</span><span class="p">(</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="n">MetaAgentConfig</span><span class="p">(</span><span class="n">n_generations</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">archive_strategy</span><span class="o">=</span><span class="s2">&quot;top_k&quot;</span><span class="p">,</span> <span class="n">archive_size</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">gene</span><span class="o">=</span><span class="n">gene</span><span class="p">,</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="n">evaluator</span><span class="o">=</span><span class="n">TopologyEvaluator</span><span class="p">(</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>        <span class="n">score_fn</span><span class="o">=</span><span class="n">score_fn</span><span class="p">,</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>        <span class="n">callable_registry</span><span class="o">=</span><span class="n">callable_registry</span><span class="p">,</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>        <span class="n">agent_registry</span><span class="o">=</span><span class="n">agent_registry</span><span class="p">,</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="p">),</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="n">meta_agent_model</span><span class="o">=</span><span class="s2">&quot;openai:gpt-4.1&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">,</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="p">)</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">search</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">trainset</span><span class="o">=</span><span class="n">gold_set</span><span class="p">)</span>
+</code></pre></div>
+<p>Each generation:</p>
+<ol>
+<li><strong>Design</strong> — the meta agent emits a <code>TopologyDesign(thought, spec)</code> given the archive view (strategy-dependent), the TopologySpec JSON schema, the agent / callable allowlists, and any <code>TopologyGene.constraints</code>.</li>
+<li><strong>Reflexion</strong> — <code>MetaAgentConfig.reflexion_passes</code> rounds of "critique your own design and revise" (ADAS uses 2 by default).</li>
+<li><strong>Evaluate</strong> — hydrate the spec, run on a deterministically-sampled <code>minibatch_size</code>-sized subset of the valset, score with <code>TopologyEvaluator</code>. On Pydantic ValidationError or hydration KeyError, the error is fed back as debug feedback (analogue of ADAS's traceback retry) and the design step retries.</li>
+<li><strong>Archive</strong> — append the <code>(spec, bundles, aggregate_score, thought)</code> entry. The next generation sees a strategy-dependent archive view in its prompt.</li>
+</ol>
+<p>After <code>n_generations</code>, the loop returns an <code>OptimizationResult</code> shaped identically to the GEPA path — same <code>best_candidate</code> / <code>best_decoded</code> / <code>pareto_candidates</code> / <code>history</code> / <code>raw</code> fields. Downstream consumers (<code>apply_result</code>, notebook visualizations) work without dispatch.</p>
+<h2 id="archive-strategies">Archive strategies<a class="headerlink" href="#archive-strategies" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>What the meta agent sees on the next design</th>
+<th>Use case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>top_k</code> (default)</td>
+<td>Top <code>archive_size</code> entries by aggregate score</td>
+<td>Strongest signal-to-noise per the <a href="https://arxiv.org/abs/2510.06711">2510.06711 critique</a>. Recommended.</td>
+</tr>
+<tr>
+<td><code>cumulative</code></td>
+<td>Every entry seen so far</td>
+<td>ADAS-paper-faithful. Tends to overflow context after ~20 entries and dilute strong signals. Use for reproducing the original paper.</td>
+</tr>
+<tr>
+<td><code>parallel</code></td>
+<td>Nothing</td>
+<td>Each generation designs from scratch; selection is end-only. Surprisingly competitive per the same critique. Useful when archive context is biasing the meta agent toward incremental tweaks.</td>
+</tr>
+</tbody>
+</table>
+<p>All entries are retained in storage (so <code>pareto()</code> and <code>best()</code> see the full history); the strategy only affects what's <em>shown</em> to the next design step.</p>
+<h2 id="two-phase-composition-with-gepa-never-nest">Two-phase composition with GEPA — never nest<a class="headerlink" href="#two-phase-composition-with-gepa-never-nest" title="Permanent link">&para;</a></h2>
+<p>Naive nesting (running GEPA inside each MetaAgentSearch iteration) compounds cost multiplicatively: <code>O(N_topology × N_prompts × N_eval × |val_set|)</code> LLM calls — four-to-five-figure dollar bills per discovery. Worse, topology mutations invalidate GEPA-learned prompts (a prompt evolved for <code>LLM_debate(roles=[A,B,C])</code> does not transfer to <code>Router(abstain | CoT-then-Verifier)</code>), so the inner GEPA run wastes compute on a structure about to change.</p>
+<p><strong>Always two-phase:</strong> find topology with a fixed strong-prompt template; tune prompts on the winner.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Phase 1: topology</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">topology_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">MetaAgentSearch</span><span class="p">(</span><span class="o">...</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">gold_set</span><span class="p">)</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">winning_topology</span> <span class="o">=</span> <span class="n">topology_result</span><span class="o">.</span><span class="n">best_decoded</span><span class="p">[</span><span class="s2">&quot;main&quot;</span><span class="p">]</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Phase 2: prompts on the winner</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">prompt_genes</span> <span class="o">=</span> <span class="p">[</span><span class="n">PromptGene</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2">.system_prompt&quot;</span><span class="p">,</span> <span class="n">initial</span><span class="o">=</span><span class="n">SEED</span><span class="p">[</span><span class="n">a</span><span class="p">])</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">agents_in</span><span class="p">(</span><span class="n">winning_topology</span><span class="p">)]</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">prompt_runner</span> <span class="o">=</span> <span class="n">OptimizationRunner</span><span class="p">(</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">OptimizationConfig</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="n">genome</span><span class="o">=</span><span class="n">Genome</span><span class="p">(</span><span class="n">genes</span><span class="o">=</span><span class="n">prompt_genes</span><span class="p">),</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">evaluator</span><span class="o">=</span><span class="n">Evaluator</span><span class="p">(</span><span class="n">agent_factory</span><span class="o">=</span><span class="n">evolved_topology_factory</span><span class="p">(</span><span class="n">winning_topology</span><span class="p">),</span> <span class="n">score_fn</span><span class="o">=</span><span class="n">score_fn</span><span class="p">),</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">,</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="p">)</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="n">final_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">prompt_runner</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">trainset</span><span class="o">=</span><span class="n">gold_set</span><span class="p">)</span>
+</code></pre></div>
+<p>Notebook <code>09_topology_with_gepa.ipynb</code> demonstrates the full ablation with concrete numbers.</p>
+<h2 id="metricbundle-dimensions-for-topology">MetricBundle dimensions for topology<a class="headerlink" href="#metricbundle-dimensions-for-topology" title="Permanent link">&para;</a></h2>
+<p><code>TopologyEvaluator</code> reuses <a href="../optimization/#the-metricbundle-contract">the standard MetricBundle</a> with two extra structural dimensions in <code>bundle.raw</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>What it measures</th>
+<th>Direction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>n_agents</code></td>
+<td>Total <code>AgentStepSpec</code> count in the hydrated topology</td>
+<td>lower is better (cost ceiling proxy)</td>
+</tr>
+<tr>
+<td><code>depth</code></td>
+<td>Maximum nesting depth</td>
+<td>lower is better (latency ceiling proxy)</td>
+</tr>
+</tbody>
+</table>
+<p>These flow through to <code>MetricBundle.to_per_instance_scores()</code> automatically when surfaced; the optimizer's Pareto frontier prefers smaller / shallower topologies on accuracy ties without any further wiring.</p>
+<p><strong>Cost limitation (honest).</strong> Today, <code>cost_usd=0.0</code> for topology evaluations because we don't aggregate <code>Usage</code> across multiple agents in the hydrated topology — each agent's <code>Usage</code> is local to its own <code>BaseAgent.call_model</code> invocation. Consumers wanting cost-as-fitness should pass a <code>cost_estimator</code> callable that walks the topology and sums per-agent token usage; the <code>MetricBundle.raw</code> extension point is the seam. This is a known limitation; per-step cost capture is on the future seams list below.</p>
+<h2 id="apply-dry-run-by-default-again">Apply: dry-run-by-default again<a class="headerlink" href="#apply-dry-run-by-default-again" title="Permanent link">&para;</a></h2>
+<p>The same <code>apply_result</code> from the GEPA path handles topology values via the dict-target case:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">orqest.optimization</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_result</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">topology_registry</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;main&quot;</span><span class="p">:</span> <span class="n">seed_topology</span><span class="p">}</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">diffs</span> <span class="o">=</span> <span class="n">apply_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">topology_registry</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">diffs</span><span class="p">:</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">changed</span><span class="p">:</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">unified</span><span class="p">)</span>   <span class="c1"># JSON pretty-printed diff for Pydantic values</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="c1"># When ready, commit:</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">apply_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">topology_registry</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># topology_registry[&quot;main&quot;] is now the evolved TopologySpec</span>
+</code></pre></div>
+<p>Dry-run is the default; commit is opt-in. Object-target and dict-target paths both work.</p>
+<h2 id="cost-reasoning">Cost reasoning<a class="headerlink" href="#cost-reasoning" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>total_cost ≈ (n_generations × (1 + reflexion_passes) × meta_call_cost)        # meta agent calls
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>            + (n_generations × minibatch_size × candidate_eval_cost)            # candidate evaluations
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>            + (full_valset × candidate_eval_cost)                               # seed + final winner re-eval
+</code></pre></div>
+<p>Worked example with <code>gpt-4o-mini</code> ($0.15 per 1M input tokens, $0.60 per 1M output tokens), 10 generations, 2 reflexion passes, 5-example minibatch, 9-example full set, ~3 agents per candidate, ~500 tokens per call:</p>
+<ul>
+<li>Meta-agent design + reflexion: 10 × 3 × ~$0.005 ≈ <strong>$0.15</strong></li>
+<li>Candidate evaluation (each runs ~3 agents × 500 tokens): 10 × 5 × ~$0.0075 ≈ <strong>$0.40</strong></li>
+<li>Seed + winner full-set eval: 2 × 9 × ~$0.0075 ≈ <strong>$0.15</strong></li>
+<li><strong>Total: ~$0.70 per search.</strong></li>
+</ul>
+<p>Notebook <code>08_topology_search_basic.ipynb</code> runs at this scale (~$1–2 with <code>gpt-4.1</code>).</p>
+<h2 id="runtime-topology-design">Runtime topology design<a class="headerlink" href="#runtime-topology-design" title="Permanent link">&para;</a></h2>
+<p><code>MetaAgentSearch</code> discovers topologies <em>offline</em> against a fixed gold set. <code>RuntimeTopologyDesigner</code> + <code>TopologyOrchestrator</code> complete the picture: the LLM designs a topology <em>per request</em>, hydrates it on the fly, runs it. Same <code>TopologySpec</code> IR, same <code>topology_from_spec()</code> hydrator — the only difference is <em>when</em> synthesis happens.</p>
+<p>The framework already does runtime LLM-driven planning via <code>MetaOrchestrator</code>, but that planner emits a flat <code>TaskDecomposition</code> (a sequential list of <code>SubTask</code>s) — it can't produce branching, parallelism, refinement loops, or routing. <code>TopologyOrchestrator</code> is the topology-shaped sibling.</p>
+<h3 id="when-to-use-which">When to use which<a class="headerlink" href="#when-to-use-which" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Use search-time <code>MetaAgentSearch</code></th>
+<th>Use runtime <code>TopologyOrchestrator</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Workload shape</td>
+<td>Stable — the same kind of task over and over</td>
+<td>Variable — every request is meaningfully different</td>
+</tr>
+<tr>
+<td>Latency budget</td>
+<td>Generous (offline batch)</td>
+<td>Tight (each request waits for synthesis or cache)</td>
+</tr>
+<tr>
+<td>Compute per design</td>
+<td>High (~\$1–5 per discovery)</td>
+<td>Low (single LLM call + cache hit)</td>
+</tr>
+<tr>
+<td>Output</td>
+<td>One winning topology to deploy</td>
+<td>Per-request topology</td>
+</tr>
+<tr>
+<td>Output shape vs. <code>MetaOrchestrator</code></td>
+<td>(n/a)</td>
+<td>Richer (full topology IR vs. flat subtask list)</td>
+</tr>
+</tbody>
+</table>
+<p>The two compose: offline search produces a Pareto-front library of validated topologies; runtime designer is <em>seeded</em> with that library and primarily picks or specializes from it, falling back to fresh design only on novel requests.</p>
+<h3 id="when-not-to-use-runtimetopologydesigner-just-hand-write-a-pipeline">When NOT to use <code>RuntimeTopologyDesigner</code> — just hand-write a Pipeline<a class="headerlink" href="#when-not-to-use-runtimetopologydesigner-just-hand-write-a-pipeline" title="Permanent link">&para;</a></h3>
+<p>Worth saying out loud: the runtime designer adds a per-request LLM call. That cost is real (~1-3 s + a few cents). It's only worth paying when there's <em>genuine structural variability</em> across requests that the designer can exploit. If every request takes the same shape — same agents in the same order, same refinement loop, same routing logic — <strong>hand-writing the <code>Pipeline</code> is the right answer</strong>.</p>
+<p>Three honest tests for "should I reach for this primitive":</p>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Hand-write a Pipeline</th>
+<th>Use <code>RuntimeTopologyDesigner</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Shape variability:</strong> how often does the optimal structure differ between requests?</td>
+<td>Rarely; one structure handles 90%+ of the workload</td>
+<td>Often — short questions want one shape, complex multi-step asks want another</td>
+</tr>
+<tr>
+<td><strong>Cache hit ratio (target):</strong> what fraction of requests will be similar enough to reuse a cached design?</td>
+<td>N/A (no design)</td>
+<td>&gt;50% (otherwise the designer LLM call dominates latency)</td>
+</tr>
+<tr>
+<td><strong>Cost per request budget:</strong> how many cents can you spend on orchestration overhead?</td>
+<td>~free</td>
+<td>~$0.001–0.01 in extra LLM cost per cold request</td>
+</tr>
+</tbody>
+</table>
+<p>A simple rule: <strong><code>MetaOrchestrator</code>'s flat decomposition + a hand-written <code>Pipeline</code> covers most production workloads</strong>. Only escalate to <code>RuntimeTopologyDesigner</code> when you have measured evidence (or strong prior) that different request shapes need different orchestration shapes. The notebook 10 demo is <em>deliberately</em> a domain (mixed factual-QA + summarisation + verification requests) where this variability is real; not every consumer is in that situation.</p>
+<p>Don't reach for <code>RuntimeTopologyDesigner</code> because it's the most sophisticated tool in the box. Reach for it because your workload has <em>measured</em> structural variability and you've ruled out simpler answers.</p>
+<h3 id="where-it-lives-and-an-honest-framing-note">Where it lives — and an honest framing note<a class="headerlink" href="#where-it-lives-and-an-honest-framing-note" title="Permanent link">&para;</a></h3>
+<p><code>RuntimeTopologyDesigner</code> lives in <strong><code>orqest.autonomy.runtime</code></strong>, alongside <code>MetaOrchestrator</code> (<code>orqest.autonomy.meta</code>) and <code>TopologyOrchestrator</code> (<code>orqest.autonomy.topology_orchestrator</code>). All three are <strong>runtime planners</strong> — they decide what to do for each incoming request.</p>
+<p>The runtime designer <strong>is not an optimizer in the classical sense.</strong> There's no loss function, no per-request scoring, no Pareto archive — the cache's "online learning" is exception-driven invalidation (a topology that crashes during execution decays in reliability), not optimization over a quality signal. It shares the <code>TopologySpec</code> IR with <code>MetaAgentSearch</code> (which <em>is</em> an optimizer) because the IR is provenance-agnostic — but the relationship is shared infrastructure, not shared algorithm. Closing the loop into real online optimization requires the deferred <strong>W3.E</strong> (output-quality reliability signal) item below.</p>
+<h3 id="the-four-design-calls">The four design calls<a class="headerlink" href="#the-four-design-calls" title="Permanent link">&para;</a></h3>
+<ol>
+<li>
+<p><strong>Designer-as-agent.</strong> The designer is a user-provided <code>BaseAgent[GlobalState, TopologyDesign]</code>, not a class that constructs its own <code>pydantic_ai.Agent</code>. Mirrors <code>MetaOrchestrator(planner: BaseAgent, ...)</code>. Lets you plug in your preferred model / hooks / reasoning effort. Pydantic-AI handles the <code>TopologySpec</code> JSON schema automatically via the structured-output mechanism — saves ~2-3k tokens per design call vs. the search-time path (which embeds the schema in the prompt).</p>
+</li>
+<li>
+<p><strong>Cache pluggable behind a Protocol.</strong> <code>TopologyCache</code> is a Protocol with three concrete implementations: <code>NoCache</code> (default, zero state), <code>InMemoryLRU</code> (exact-match goal string, demos and tests), and <code>MemoryStoreCache</code> (production — backed by <code>LocalMemoryStore</code> with semantic recall + reliability decay).</p>
+</li>
+<li>
+<p><strong><code>TopologyOrchestrator</code> is parallel to <code>MetaOrchestrator</code>, not a mode flag.</strong> <code>MetaOrchestrator</code>'s flat-subtask shape is well-tested, has live consumers, and maps cleanly to <code>ExecutionPlan</code> UI. New sibling class for the topology-shaped runtime; both ship.</p>
+</li>
+<li>
+<p><strong><code>verify_on_hit=True</code> by default; runtime design failure raises (no debug-retry).</strong> Cache hits validate the cached spec against current registries before returning (catches stale agent / callable references). Design failures raise immediately — runtime is latency-sensitive; the search-time debug-retry pattern is wrong here. Optional <code>fallback_spec</code> lets you provide a safe default.</p>
+</li>
+</ol>
+<h3 id="memorystorecache-online-learning-over-topologies"><code>MemoryStoreCache</code> — online learning over topologies<a class="headerlink" href="#memorystorecache-online-learning-over-topologies" title="Permanent link">&para;</a></h3>
+<p>The interesting piece. Discovered topologies become <code>MemoryEntry(memory_type="semantic", source_agent="topology_cache")</code> rows — one per goal — with the <code>TopologySpec</code> JSON in <code>structured_content</code>. Lookup uses <code>LocalMemoryStore.recall()</code> semantic similarity on the goal embedding; hit returns the prior spec.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">orqest.memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalMemoryStore</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">orqest.autonomy.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryStoreCache</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">LocalMemoryStore</span><span class="p">(</span><span class="s2">&quot;topology_cache.db&quot;</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">my_embedder</span><span class="p">)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">cache</span> <span class="o">=</span> <span class="n">MemoryStoreCache</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;topology_cache&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Embedder requirement (loud).</strong> Without an embedder configured on the backing store, recall falls back to FTS5 / LIKE — brittle for free-text goal similarity. The class still constructs and works (lookups just return <code>None</code> more often) so test wiring without an embedder doesn't crash, but production deployments should configure one.</p>
+<p><strong>Online learning is automatic.</strong> On <code>TopologyOrchestrator.execute(goal)</code>:</p>
+<ul>
+<li>On success → <code>cache.store(goal, spec, success=True)</code> adds (or refreshes) the entry.</li>
+<li>On execution exception → <code>cache.store(goal, spec, success=False)</code> calls <code>MemoryStore.update_reliability(entry_id, success=False)</code>, which decays the reliability score via the existing <code>PerKindConfig.decay_on_failure</code> machinery. With <code>MemoryStoreCache(min_reliability=0.3)</code>, chronically-failing entries drop below the floor and stop surfacing.</li>
+</ul>
+<p><strong>Why <code>semantic</code> memory_type and not <code>procedural</code>?</strong> Procedural memory's <code>_validate_procedural_shape</code> validator requires <code>structured_content</code> to be <code>Skill</code>-shaped — <code>TopologySpec</code> doesn't fit that shape and we'd be abusing the schema. Semantic with a namespaced <code>source_agent</code> keeps things clean; reliability decay still applies. If a future need surfaces (versioning topology library entries), revisit by relaxing the validator.</p>
+<h3 id="seed-library-bootstrap">Seed-library bootstrap<a class="headerlink" href="#seed-library-bootstrap" title="Permanent link">&para;</a></h3>
+<p>Tying offline + runtime together:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Once, offline (notebook 08):</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">search_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">MetaAgentSearch</span><span class="p">(</span><span class="o">...</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">gold_set</span><span class="p">)</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">seed_library</span> <span class="o">=</span> <span class="p">[</span><span class="n">entry</span><span class="o">.</span><span class="n">spec</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">search_result</span><span class="o">.</span><span class="n">raw</span><span class="o">.</span><span class="n">pareto</span><span class="p">()]</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Persist seed_library to disk: json.dump([s.model_dump() for s in seed_library], ...)</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># At deploy time:</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">designer</span> <span class="o">=</span> <span class="n">RuntimeTopologyDesigner</span><span class="p">(</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="n">designer_agent</span><span class="o">=</span><span class="n">designer_agent</span><span class="p">,</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">callable_registry</span><span class="o">=</span><span class="n">callable_registry</span><span class="p">,</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">agent_registry</span><span class="o">=</span><span class="n">agent_registry</span><span class="p">,</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="n">seed_library</span><span class="o">=</span><span class="n">seed_library</span><span class="p">,</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="n">cache</span><span class="o">=</span><span class="n">MemoryStoreCache</span><span class="p">(</span><span class="n">memory_store</span><span class="p">,</span> <span class="o">...</span><span class="p">),</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="p">)</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">orchestrator</span> <span class="o">=</span> <span class="n">TopologyOrchestrator</span><span class="p">(</span><span class="n">designer</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="c1"># Per request:</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">orchestrator</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">goal</span><span class="o">=</span><span class="n">incoming_goal</span><span class="p">)</span>
+</code></pre></div>
+<p>The seed library is rendered into the design prompt as: <em>"Library of validated topologies — prefer composing or specializing one of these; only design from scratch when none fit."</em> That gives the designer a strong inductive bias toward proven structures while still allowing novel composition for genuinely-different requests. YAGNI today is "list of <code>TopologySpec</code> inline in the prompt"; when libraries grow past ~20 entries, a <code>RetrievalPolicy</code> Protocol layer (W3.D, deferred) becomes worthwhile.</p>
+<h3 id="honest-tradeoffs">Honest tradeoffs<a class="headerlink" href="#honest-tradeoffs" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Per-request latency tax.</strong> A cold design call adds the meta-agent LLM round-trip (typically 1-3 s) before execution. <code>MemoryStoreCache</code> is the production answer — embedded recall is fast (single cosine pass over a few hundred entries) and a hit short-circuits the design call entirely. The break-even is roughly: "if cache hit ratio &gt; 50%, runtime topology design beats fresh-design-every-time on average latency."</li>
+<li><strong>Cost compounds.</strong> Designer cost stacks on top of execution cost. For workloads where every request is similar (e.g., the same kind of QA over a fresh paragraph), <code>MetaOrchestrator</code>'s flat-subtask path is cheaper and good enough. Use <code>TopologyOrchestrator</code> when the structural variation across requests is real enough to pay for the design cost.</li>
+<li><strong>Decay only fires on exceptions, not bad outputs.</strong> Today reliability decay is exception-driven. A topology that runs cleanly but produces a wrong answer won't decay automatically. Wiring an <code>output_judge</code> callable into <code>TopologyOrchestrator.execute</code> is the W3.E item that fixes this.</li>
+<li><strong>Asymmetry with <code>MetaAgentSearch</code>.</strong> Search-time uses <code>pydantic_ai.Agent</code> directly; runtime uses <code>BaseAgent</code>. Acceptable because search-time is internal-only (no consumer-side composition) while runtime is consumer-facing.</li>
+</ul>
+<p>Notebook <code>10_runtime_topology.ipynb</code> walks through cold design, cache hit reuse, the <code>TopologyOrchestrator</code> loop, seed-library bootstrap, and the online-learning failure decay end-to-end.</p>
+<h2 id="caveat-llm-generated-tests-as-evaluator-feedback">Caveat: LLM-generated tests as evaluator feedback<a class="headerlink" href="#caveat-llm-generated-tests-as-evaluator-feedback" title="Permanent link">&para;</a></h2>
+<p>A pattern that looks attractive but reliably misfires on imperfect models: have an LLM <strong>generate additional test cases</strong> for the candidate code at evaluation time, then score the candidate against both the gold tests AND the LLM-generated ones. The intuition is appealing — "the designer agent knows the spec, it should be able to write good edge-case tests" — and we tried exactly this in V2 of the coding benchmark (<code>benchmarks/coding/</code>). It made the combo WORSE than the baseline.</p>
+<p>Failure mode: the test-designer LLM hallucinates <em>wrong expected values</em> for its proposed tests. Whatever the test designer's confidence, on weaker models (gpt-4o-mini-tier) ~10–20% of generated tests have an incorrect expected output. The downstream fixer agent — which can't tell hallucinated tests from real ones — then "fixes" code that was actually correct, rewriting it to pass the wrong tests. The aggregate accuracy regresses.</p>
+<p>This is the <strong>Unsupervised Evaluation Paradox</strong> applied to a runtime evaluator: if the LLM is competent enough to generate reliable test labels, it's competent enough to solve the task one-shot — so the test generation adds noise without adding signal. If the LLM isn't competent enough to solve the task one-shot, then any test labels it generates are equally unreliable, and using them as ground truth poisons the loop.</p>
+<p>Where LLM-generated tests <em>can</em> work:</p>
+<ul>
+<li><strong>As advisory feedback that doesn't gate exit.</strong> Surface them in the fixer's prompt as "consider these potential cases" without scoring against them — the fixer can take them as hints rather than ground truth.</li>
+<li><strong>With cross-validation across diverse models.</strong> Generate tests with model A, score with B, only trust agreed-upon tests. Adds significant cost; only worth it for high-stakes domains.</li>
+<li><strong>With explicit per-test confidence + filtering.</strong> Designer outputs a confidence; only tests above a high threshold (&gt;0.9) are scored against. Discards most generated tests.</li>
+<li><strong>When the candidate must produce a verifiable artifact</strong> (executable code, proof, schema) — the verifier IS the ground truth, the LLM-generated "tests" are just inputs to it.</li>
+</ul>
+<p>What worked in <code>benchmarks/coding/</code>:</p>
+<ul>
+<li>Drop the test designer entirely.</li>
+<li>Score the candidate only against the <strong>visible examples shipped with the problem</strong> (the first <code>k</code> real test cases — labels the user wrote, not the LLM).</li>
+<li>Use keep-best (<a href="../orchestration/#keep-best-safety-default-on"><code>RefinementLoop(keep_best=True)</code></a>) so a regression on visible tests never makes the final answer worse.</li>
+</ul>
+<p>This is the conservative-but-correct shape. The combo wins because the agent gets to <em>iterate</em> using real-but-limited test feedback — not because new feedback got synthesized. If you find yourself reaching for "let an LLM generate the test labels," step back: you're probably dressing up unsupervised evaluation in a different costume.</p>
+<h2 id="whats-next-deferred">What's next (deferred)<a class="headerlink" href="#whats-next-deferred" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>W3.C — <code>orqest/sandbox/</code>.</strong> A <code>Sandbox</code> Protocol (subprocess + e2b implementations) so the meta agent can emit raw Python <code>forward()</code> for tasks where compositions of registered primitives are too constrained. This is the original ADAS surface; we ship it later only if users prove the expressivity ceiling matters.</li>
+<li><strong>MCTS search.</strong> AFlow-style MCTS over the same <code>TopologySpec</code> IR — a one-strategy swap inside <code>MetaAgentSearch</code> once a <code>SearchStrategy</code> Protocol abstraction lands.</li>
+<li><strong>Per-step cost capture.</strong> Walk the topology, hook <code>BaseAgent.call_model</code>, sum <code>Usage</code> across all agents. Plumbs <code>cost_usd</code> through to the optimizer's Pareto front.</li>
+<li><strong><code>Pipeline.to_spec()</code> round-trip.</strong> The inverse of <code>topology_from_spec</code> — lets users round-trip a hand-built <code>Pipeline</code> into the IR for evolution.</li>
+<li><strong>Cross-task topology transfer.</strong> Discovered topologies as warm-starts for new tasks; requires a topology-similarity metric.</li>
+</ul>
+<h2 id="runnable-demos">Runnable demos<a class="headerlink" href="#runnable-demos" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://github.com/Kareemlsd/orqest/blob/main/notebooks/08_topology_search_basic.ipynb"><code>notebooks/08_topology_search_basic.ipynb</code></a> — ADAS-style offline topology search</li>
+<li><a href="https://github.com/Kareemlsd/orqest/blob/main/notebooks/09_topology_with_gepa.ipynb"><code>notebooks/09_topology_with_gepa.ipynb</code></a> — two-phase: discover topology, then evolve prompts</li>
+<li><a href="https://github.com/Kareemlsd/orqest/blob/main/notebooks/10_runtime_topology.ipynb"><code>notebooks/10_runtime_topology.ipynb</code></a> — per-request synthesis with semantic cache</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.annotate", "navigation.sections", "navigation.top", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

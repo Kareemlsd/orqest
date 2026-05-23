@@ -1,0 +1,2708 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Python framework for building autonomous agentic AI systems on top of pydantic-ai">
+      
+      
+      
+        <link rel="canonical" href="https://kareemlsd.github.io/orqest/changelog/">
+      
+      
+        <link rel="prev" href="../api/io-utils/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+    
+    
+      
+        <title>Changelog - Orqest</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Orqest" class="md-header__button md-logo" aria-label="Orqest" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Orqest
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Changelog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Kareemlsd/orqest" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Kareemlsd/orqest
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Orqest" class="md-nav__button md-logo" aria-label="Orqest" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Orqest
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Kareemlsd/orqest" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Kareemlsd/orqest
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Notebooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Composition
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Composition
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/state-and-history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State & History
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/agent-as-tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent as Tool
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/orchestration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Orchestration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/hooks-and-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hooks & Lifecycle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/session-persistence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session Persistence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/compound-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compound Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/sub-agent-tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sub-Agent Tool
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/execution-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Autonomy
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Autonomy
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/autonomy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime Agent Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory & Cognition
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Memory & Cognition
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/metacognition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metacognition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/topology_optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Topology Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/web-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Production
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/workbench/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workbench
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/sse-sidecar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SSE Sidecar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/event-bus-publish-hook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event Bus Hook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/healing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Self-Healing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/generative_ui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generative UI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/orchestration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Orchestration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/autonomy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Autonomy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/metacognition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metacognition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/topology_optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Topology Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/healing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Healing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generative UI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/workbench/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workbench
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/compound/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compound Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Resolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/io-utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [Unreleased]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[Unreleased]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#040-2026-05-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.4.0] - 2026-05-14
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.4.0] - 2026-05-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preview
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#030-2026-05-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.0] - 2026-05-14
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.0] - 2026-05-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#breaking-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breaking Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preview_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preview
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#020-2026-04-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.0] - 2026-04-25
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.0] - 2026-04-25">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#010-2026-04-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.0] - 2026-04-24
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.0] - 2026-04-24">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#001-2025-07-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.0.1] - 2025-07-21
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.0.1] - 2025-07-21">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [Unreleased]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[Unreleased]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#040-2026-05-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.4.0] - 2026-05-14
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.4.0] - 2026-05-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preview
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#030-2026-05-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.0] - 2026-05-14
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.0] - 2026-05-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#breaking-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breaking Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preview_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preview
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#020-2026-04-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.0] - 2026-04-25
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.0] - 2026-04-25">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#010-2026-04-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.0] - 2026-04-24
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.0] - 2026-04-24">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#001-2025-07-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.0.1] - 2025-07-21
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.0.1] - 2025-07-21">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<p>All notable changes to Orqest are documented here.</p>
+<p>Format based on <a href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a>,
+and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
+<h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>BaseAgent(reasoning=...)</code> — a provider-agnostic reasoning/thinking knob (<code>"minimal"</code> | <code>"low"</code> | <code>"medium"</code> | <code>"high"</code>). pydantic-ai exposes thinking through a different <code>ModelSettings</code> key per provider (<code>anthropic_thinking</code> / <code>openai_reasoning_effort</code> / <code>google_thinking_config</code> / <code>openrouter_reasoning</code>); <code>reasoning</code> collapses that into one effort level, translated and merged into <code>model_settings</code> — explicit <code>model_settings</code> keys win on conflict. For budget-based providers (Anthropic, Google) a sensible <code>max_tokens</code> is filled when unset so reasoning works out of the box. New <code>orqest.utils.reasoning</code> module (<code>ReasoningEffort</code>, <code>resolve_reasoning_settings</code>); <code>ReasoningEffort</code> is re-exported from <code>orqest.agents</code>.</li>
+</ul>
+<h2 id="040-2026-05-14">[0.4.0] - 2026-05-14<a class="headerlink" href="#040-2026-05-14" title="Permanent link">&para;</a></h2>
+<p>The advance pass — "complete &amp; honest." Finishes the <code>[0.3.0]</code> preview tier into Tier 1: every capability that was a designed-but-unwired seam is now wired and test-covered. Test suite: 664 → 670.</p>
+<h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>PerKindConfig.ttl_days</code> + <code>LocalMemoryStore.prune_expired()</code> — per-kind retention windows; a best-effort maintenance call deletes entries past their TTL and returns the count. A kind with <code>ttl_days=None</code> is never pruned.</li>
+<li><code>PerKindConfig.version_on_edit</code> — when enabled, re-storing a procedural skill by name bumps its <code>version</code> one past the highest stored version and keeps the prior rows as an audit trail.</li>
+<li><code>LocalMemoryStore(embedder=...)</code> — a pluggable sync-or-async embedder. When set, <code>store()</code> embeds entry content and <code>SemanticStrategy</code> ranks recall by cosine similarity over stored vectors; FTS5 / LIKE otherwise. New <code>default_strategy_table(embedder=...)</code> parameter and <code>embed_text</code> / <code>_cosine</code> helpers in <code>orqest.memory.strategies</code>.</li>
+<li><code>MCPDiscovery(well_known_urls=...)</code> — <code>search()</code> probes the configured base URLs for <code>/.well-known/mcp.json</code> (highest intent, tried first), then queries the registry endpoints, deduplicating by name. The documented well-known-manifest discovery source is now real.</li>
+</ul>
+<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The <code>RecoveryAction</code> union stays lean (<code>AbortRun</code> | <code>EscalateToUser</code>) by design — model-level recovery is <code>FallbackModel</code>, tool-level recovery is <code>DiscoveryHook</code>. The advance pass evaluated re-introducing <code>RetryDifferentModel</code> / <code>DiscoverAndRetry</code> / <code>RetrySameTool</code> and concluded they duplicated those dedicated, composable mechanisms.</li>
+</ul>
+<h3 id="preview">Preview<a class="headerlink" href="#preview" title="Permanent link">&para;</a></h3>
+<p>Still accepted but not yet wired:</p>
+<ul>
+<li><code>MemoryConfig.backend="supabase"</code> / <code>supabase_*</code> — the pgvector backend.</li>
+<li><code>MCPDiscovery</code> registry response-shape parsing — untested against live registries; no web-search fallback.</li>
+</ul>
+<h2 id="030-2026-05-14">[0.3.0] - 2026-05-14<a class="headerlink" href="#030-2026-05-14" title="Permanent link">&para;</a></h2>
+<p>The reconcile pass. A contradiction audit found ~27 places where the code and the docs disagreed — most often an "intent layer" (configs, types, hooks) built ahead of the "effect layer" that consumes it. This release wires the cheap gaps, deletes the dead ones, and corrects every stale claim. Tiered honesty contract: each subsystem's primary path is functional end-to-end; specific advanced capabilities are explicitly labelled <strong>Preview</strong>. Test suite: 655 → 664.</p>
+<h3 id="breaking-changes">Breaking Changes<a class="headerlink" href="#breaking-changes" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>compound.sub_agent_tool.EvalResult</code> renamed to <code>SubAgentEvalResult</code> — it collided by name with <code>orchestration.loop.EvalResult</code> (a different shape).</li>
+<li><code>RecoveryAction</code> union reduced to <code>EscalateToUser | AbortRun</code>. <code>RetrySameTool</code> / <code>RetryDifferentModel</code> / <code>DiscoverAndRetry</code> are removed — they produced payloads no compound flow consumed.</li>
+<li><code>PerKindConfig</code> reduced to <code>decay_on_failure</code> + <code>prune_below</code>; <code>ttl_days</code> and <code>version_on_edit</code> removed (no maintenance routine / versioning logic ever existed).</li>
+<li><code>LocalMemoryStore.__init__</code> — <code>db_path</code> is now optional and a <code>config: MemoryConfig</code> keyword param was added.</li>
+<li>Prompt delivery — <code>CompoundTool.run</code> and <code>SubAgentTool.run</code> now inject the prompt into <code>state</code> as a user message. <code>CompoundTool</code> previously never passed the prompt to the agent at all; <code>SubAgentTool</code> passed it only as a <code>note=</code> kwarg (still forwarded for agents that read it).</li>
+<li><code>RefinementLoop.__init__</code> raises <code>ValueError</code> when <code>agent_self_eval</code> is set but the agent has no <code>confidence_protocol</code>.</li>
+<li>Default model is <code>openai:gpt-4.1</code> everywhere (was <code>openai:gpt-3.5-turbo</code> in config, <code>openai:gpt-4o</code> in autonomy / the MCP server).</li>
+<li>Packaging — the explicit <code>openai</code> dependency is removed (still bundled transitively by <code>pydantic-ai</code>); <code>pytest</code>, the duplicate <code>dotenv</code>, and the unused <code>markdown</code> deps are removed.</li>
+</ul>
+<h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>on_error</code> hook decisions are now consumed — <code>CompoundTool</code> and <code>MetaOrchestrator</code> honor a <code>Redirect</code> from <code>on_error</code> as a bounded single retry. <code>DiscoveryHook</code> (whose only behaviour is an <code>on_error</code> <code>Redirect</code>) is functional again.</li>
+<li><code>PerKindConfig.decay_on_failure</code> / <code>prune_below</code> are now wired into <code>LocalMemoryStore.update_reliability</code> (the decay factor and prune floor were hardcoded; the config was inert).</li>
+<li><code>MCPConnection.connect()</code> branches on <code>config.transport</code> — <code>sse</code> servers (including everything <code>MCPDiscovery</code> returns) can now actually connect instead of being driven through the stdio client with an empty command.</li>
+<li><code>MetaOrchestrator</code> memory-reuse is keyed consistently on <code>subtask.name</code> — the recall query, skill trigger, and spawned-agent cache were mismatched, so reuse was effectively never hit.</li>
+<li><code>RefinementLoop</code> no longer silently accepts an <code>agent_self_eval</code> agent with no confidence protocol (the loop could never exit via <code>"confident"</code>).</li>
+<li>~12 stale doc / docstring claims corrected: the <code>salience</code> "side-table cache", the <code>WatchdogHook</code> "hook.shadowed event", <code>MCPDiscovery</code>'s "three discovery sources", the <code>ContextManager</code> salience threshold, generative UI's "5 first-party components" (it is 17 across 3 layers), the MetaOrchestrator "successful specs" persistence claim, the "pay for what you use" provider claim, <code>load_sys_prompt</code> typing, and missing <code>__all__</code> exports (<code>WebSearchResponse</code>, <code>budget_tool_results</code>).</li>
+</ul>
+<h3 id="removed">Removed<a class="headerlink" href="#removed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>RetrySameTool</code>, <code>RetryDifferentModel</code>, <code>DiscoverAndRetry</code> recovery actions and the <code>healing.retry_initiated</code> event.</li>
+<li><code>HealingConfig.abort_on_unresolved_loop</code> — dead config flag, never read.</li>
+<li><code>MCPConfig.connection_timeout</code> — dead config field, never read.</li>
+<li><code>metacognition.protocol._SelfRating</code> — dead class, never referenced.</li>
+<li><code>PerKindConfig.ttl_days</code> / <code>version_on_edit</code> and the <code>_episodic_default</code> / <code>_procedural_default</code> factories.</li>
+</ul>
+<h3 id="preview_1">Preview<a class="headerlink" href="#preview_1" title="Permanent link">&para;</a></h3>
+<p>The following are accepted but not yet wired end-to-end, and are now labelled as such in their docstrings and concept docs:</p>
+<ul>
+<li><code>MemoryConfig.backend</code> / <code>supabase_*</code> / <code>embedding_*</code> — designed seams for a future pgvector backend and embedding-based retrieval.</li>
+<li><code>MCPDiscovery</code> online registry search — untested against live registries; <code>probe_wellknown</code> exists but is not wired into <code>search()</code>.</li>
+</ul>
+<h2 id="020-2026-04-25">[0.2.0] - 2026-04-25<a class="headerlink" href="#020-2026-04-25" title="Permanent link">&para;</a></h2>
+<p>The cognitive-substrate completion. Three implementation waves landed in sequence on the same day (Wave 1: HookDecision + procedural memory + metacognition; Wave 2: healing + MCP auto-wire; Wave 3: generative UI). Test suite: 360 → 612 (+252).</p>
+<h3 id="added_2">Added<a class="headerlink" href="#added_2" title="Permanent link">&para;</a></h3>
+<p><strong><code>orqest.metacognition</code> (Wave 1.3 — vision feature #3 "Metacognition primitives"):</strong>
+- <code>EnrichedOutput[OutputT]</code> — Pydantic generic pairing an output with <code>confidence</code> (<code>float | None</code> in <code>[0, 1]</code>), <code>uncertainty_targets: list[str]</code>, <code>capability_boundary: bool</code>, <code>protocol_name</code>, and free-form <code>metadata</code>
+- <code>ConfidenceProtocol</code> Protocol + three concrete strategies: <code>StructuredOutputProtocol</code> (zero-cost; lifts <code>self_confidence</code>/<code>uncertain_about</code>/<code>outside_my_capability</code> off the agent's own <code>OutputT</code>), <code>LLMSelfRatingProtocol</code> (+1 LLM call; rater agent emits JSON, markdown-fence-tolerant parser), <code>EnsembleProtocol(k=N)</code> (+k–1 parallel calls; pairwise-agreement confidence)
+- <code>MetacognitionHook</code> — <code>ToolHook</code> that emits <code>metacognition.confidence</code> events whenever a tool result is an <code>EnrichedOutput</code>
+- <code>MetacognitionConfig</code> frozen dataclass with <code>redecompose_threshold</code> / <code>max_redecompositions</code> / <code>confidence_floor</code>
+- <code>confidence_salience</code> / <code>recency_salience</code> — pure salience scorers for <code>ContextManager</code> integration
+- <code>BaseAgent.run_enriched(state, *, confidence_protocol=None) -&gt; EnrichedOutput[OutputT]</code> (additive; <code>run</code> untouched)
+- <code>BaseAgent</code> ctor gains keyword-only <code>confidence_protocol</code> for an agent-level default
+- <code>RefinementLoop</code> ctor gains <code>confidence_threshold: float | None</code> (new exit reason <code>"confident"</code>) and <code>agent_self_eval: BaseAgent | None</code>
+- <code>SubAgentResult.confidence</code> / <code>uncertainty_targets</code> / <code>capability_boundary</code> (additive optional fields); <code>SubAgentTool.run(use_enriched=True)</code> lifts the final-iteration enrichment
+- <code>ContextManager(salience_fn=...)</code> — pluggable per-message salience scorer; emergency truncation rescues high-salience old messages
+- <code>MetaOrchestrator(metacognition: MetacognitionConfig | None = None)</code> — re-decomposes remaining subtasks when <code>_extract_confidence(result.output) &lt; redecompose_threshold</code></p>
+<p><strong><code>orqest.healing</code> (Wave 2 — vision feature #4 "Self-healing primitives"):</strong>
+- <code>HookDecision</code> discriminated union: <code>Continue</code> / <code>Skip(reason, stub_result)</code> / <code>Redirect(new_args, new_tool, reason)</code> / <code>Abort(reason)</code> (Wave 1.1 — also a Wave 2 prerequisite)
+- <code>HookAbortError</code> — propagated when a hook returns <code>Abort</code>
+- <code>ToolHook</code> protocol upgrade: methods may return <code>HookDecision | None</code>. <code>HookRunner._safe_call</code> auto-wraps <code>None</code> → <code>Continue</code>. <code>HookRunner._aggregate</code> first-non-Continue-wins with <code>Abort</code> short-circuit (Wave 1.1)
+- <code>CompoundTool.run</code>, <code>run_with_retry</code>, <code>MetaOrchestrator._execute_subtask</code> honor <code>Skip</code> / <code>Redirect</code> / <code>Abort</code> (Wave 1.1)
+- <code>Watchdog</code> Protocol + <code>Detection</code> Pydantic model (Wave 2.C)
+- <code>StallDetector</code> (timeout on open tool calls, idempotent subscribe), <code>LoopDetector</code> (sliding window of <code>(tool_name, args_hash)</code>), <code>RegressionDetector</code> (subscribes to <code>metacognition.confidence</code> events; graceful no-op without metacog) (Wave 2.C)
+- <code>RecoveryAction</code> discriminated union: <code>RetrySameTool</code> / <code>RetryDifferentModel</code> / <code>EscalateToUser</code> / <code>AbortRun</code> / <code>DiscoverAndRetry</code> + <code>default_policy</code> (Wave 2.C)
+- <code>WatchdogHook</code> — <code>ToolHook</code> mapping Detection → policy → <code>HookDecision</code>. Emits <code>healing.action</code> events (Wave 2.C)
+- <code>FallbackModel</code> — subclasses <code>pydantic_ai.models.Model</code>; sticky failover; transient classifier (5xx/timeout → fall back; auth/validation → propagate); emits <code>healing.model_fallback</code> (Wave 2.C)
+- <code>resolve_model_with_fallback(models, *, api_key, bus, transient_predicate)</code> — accepts a chain; per-provider key map with graceful skip on missing keys (Wave 2.C)
+- <code>HealingRunner</code> async context manager — wires watchdogs to a bus, runs poll loop, emits <code>healing.detection</code> events, owns the <code>WatchdogHook</code> and (optional) <code>FallbackModel</code> (Wave 2.C)
+- <code>Workbench.with_healing(config, *, api_key=...)</code> convenience factory (lazy import) (Wave 2.C)
+- <code>HealingConfig</code> frozen dataclass (Wave 2.C)
+- <code>ToolRegistry.get_or_discover(name, *, discovery, manager, permission, audit_bus, max_servers)</code> — deliberate auto-discovery path (Wave 2.D)
+- <code>DiscoveryHook</code> — <code>ToolHook</code> recovering from "tool not found" runtime errors via MCP discovery; returns <code>Redirect(new_tool=name)</code> after registration (Wave 2.D)
+- <code>PermissionGate</code> Protocol + <code>AllowAll</code> / <code>DenyAll</code> (default) / <code>AllowList</code> (regex) (Wave 2.D)
+- Audit-log events: <code>discovery.requested</code> / <code>discovery.connected</code> / <code>discovery.denied</code> / <code>discovery.failed</code> (Wave 2.D)</p>
+<p><strong><code>orqest.ui</code> (Wave 3 — vision feature #5 "Generative UI"):</strong>
+- <code>UIComponentSpec[T]</code> — generic Pydantic with <code>component_type</code> <code>Literal</code> discriminator, <code>component_id</code>, typed <code>data: T</code>, <code>metadata</code>, <code>created_at</code>
+- <code>UIDeltaEvent</code> — partial update with <code>op: Literal["replace","merge","append","remove"]</code> + dot-path + value
+- <code>UIDeltaOp</code> type alias
+- <code>ComponentRegistry</code> per-Workbench (no module singleton): <code>register</code>, <code>get</code>, <code>list_types</code>, <code>validate_payload</code>
+- <code>default_registry()</code> — pre-loads first-party components
+- <code>UIEmitter(bus)</code> — <code>init</code> / <code>delta</code> / <code>remove</code> convenience over <code>EventBus</code>
+- <code>ui_init_event_type</code> / <code>ui_delta_event_type</code> / <code>ui_remove_event_type</code> helpers (event-type convention <code>ui.&lt;component_type&gt;.{init,delta,remove}</code>)
+- First-party components: <code>PlanComponent</code>, <code>ChartComponent</code> (line/bar/scatter/pie/heatmap with typed <code>ChartSeries</code>), <code>TableComponent</code> (typed <code>TableColumn</code>), <code>FormComponent</code> (typed <code>FormField</code>), <code>TakeoverDialogComponent</code> (confirm/input/choice), plus declarative grammars (<code>VegaChartComponent</code>, <code>MermaidComponent</code>, <code>LatexComponent</code>, <code>JsonViewerComponent</code>) and the <code>SandboxedHTMLComponent</code> escape hatch
+- <code>ExecutionPlan.enable_ui_events(*, component_id="plan")</code> — opt-in flag-gated dual emission of <code>ui.plan.init</code>/<code>ui.plan.delta</code> alongside legacy <code>plan.init</code>/<code>plan.task.updated</code>
+- <code>ExecutionPlan.as_component()</code> — wraps the plan as a <code>PlanComponent</code>
+- <code>Workbench(ui_registry=..., auto_register_first_party_ui=True)</code> ctor kwargs</p>
+<p><strong>Cognitive memory typology (Wave 1.2 — vision feature #2 "Cognitive memory typology" completion):</strong>
+- <code>MemoryEntry.memory_type</code> extended to <code>Literal["semantic", "episodic", "procedural"]</code>
+- <code>Skill</code> / <code>ToolCallSpec</code> / <code>SkillExample</code> Pydantic shapes (procedural payload in <code>MemoryEntry.structured_content</code>)
+- <code>MemoryEntry.structured_content: dict[str, Any] | None</code> (validation gated to <code>memory_type == "procedural"</code>)
+- <code>MemoryFilter.skill_name</code> / <code>skill_min_version</code> for procedural filtering
+- <code>RetrievalStrategy</code> Protocol + <code>SemanticStrategy</code> (legacy FTS5/LIKE behavior preserved) / <code>EpisodicStrategy</code> (<code>ORDER BY created_at DESC</code>) / <code>ProceduralStrategy</code> (exact trigger match + optional injected fuzzy judge)
+- <code>default_strategy_table()</code> — the per-kind dispatch table consumed by <code>LocalMemoryStore</code>
+- <code>LocalMemoryStore(strategies=...)</code> — strategy override for custom backends
+- Best-effort <code>ALTER TABLE</code> migration for the <code>structured_content</code> column
+- <code>MemoryConfig</code> extended with <code>semantic</code> / <code>episodic</code> / <code>procedural</code> <code>PerKindConfig</code> fields (TTL / decay / version-on-edit)
+- <code>MetaOrchestrator._find_or_spawn</code> dual-write migration: persists both episodic mirror (legacy) and procedural <code>Skill</code> entries; recall is procedural-first with episodic fallback</p>
+<p><strong>Test suite:</strong> 360 → 612 at wave-3 ship (+252 across the three waves; 360 pre-existing tests stayed green at every wave boundary). Subsequent consumer-side polish (2026-04-26) brought the suite to 655.</p>
+<h2 id="010-2026-04-24">[0.1.0] - 2026-04-24<a class="headerlink" href="#010-2026-04-24" title="Permanent link">&para;</a></h2>
+<p>Phases 2–5 of the original Orqest roadmap stabilized: Memory, Autonomy, Observability, and MCP. The substrate that the Wave 1–3 cognitive features in 0.2.0 build on.</p>
+<h3 id="added_3">Added<a class="headerlink" href="#added_3" title="Permanent link">&para;</a></h3>
+<p><strong><code>orqest.memory</code> (Phase 2):</strong>
+- <code>MemoryStore</code> Protocol — <code>store</code>, <code>recall</code>, <code>forget</code>, <code>update_reliability</code>, <code>count</code>
+- <code>MemoryEntry</code> — content + <code>memory_type</code> (initially <code>"semantic" | "episodic"</code>) + source agent + confidence + reliability score + metadata + access tracking
+- <code>MemoryFilter</code> — query constraints (memory_type, source_agent, min_confidence, before/after timestamps)
+- <code>LocalMemoryStore</code> — SQLite + FTS5 backend (with <code>LIKE</code> fallback when FTS5 unavailable). Lazy init; best-effort error handling (logged, never raised). Self-healing reliability decay on failure.
+- <code>MemoryConfig</code> — frozen dataclass for backend selection and embedding model</p>
+<p><strong><code>orqest.autonomy</code> (Phase 3):</strong>
+- <code>AgentSpec</code> / <code>ToolSpec</code> — serializable contracts; LLM can emit these as structured output
+- <code>AgentFactory.spawn(spec) -&gt; DynamicAgent</code> — builds a Pydantic output model from JSON Schema via <code>pydantic.create_model()</code>; resolves tools from the registry; injects constraints into the system prompt
+- <code>ToolRegistry</code> — <code>register</code>, <code>get</code>, <code>search(query, k)</code> (keyword scoring), <code>list_all</code>, <code>remove</code>, dunder methods
+- <code>MetaOrchestrator(planner_agent, registry, default_model)</code> — goal → <code>TaskDecomposition</code> → per <code>SubTask</code> spawn-or-find agent → execute → <code>SubTaskResult</code> → aggregated <code>ExecutionResult</code>
+- <code>DynamicAgent</code> extends <code>BaseAgent[GlobalState, BaseModel]</code></p>
+<p><strong><code>orqest.observability</code> (Phase 4):</strong>
+- <code>Span</code> — <code>trace_id</code>, <code>span_id</code>, <code>parent_span_id</code>, <code>name</code>, <code>agent_name</code>, timing, <code>status</code>, <code>attributes</code>, <code>events</code>
+- <code>Tracer</code> Protocol; <code>JSONTracer</code> is the default in-memory implementation (no external deps)
+- <code>AgentEvent</code> — frozen immutable event (<code>event_type</code>, <code>agent_name</code>, <code>timestamp</code>, <code>data</code>, <code>span_id</code>, <code>trace_id</code>)
+- <code>EventBus</code> — in-process pub/sub; <code>subscribe(event_type)</code>, <code>subscribe_all</code>, <code>emit(event)</code>. Handler exceptions logged and discarded (fire-and-forget)
+- <code>EventBusPublishHook</code> — bridges <code>ToolHook</code> → <code>EventBus</code>; emits <code>tool.before</code>, <code>tool.after</code>, <code>tool.error</code> with configurable preview truncation
+- <code>sse_sidecar(bus, replay=(), heartbeat_s=15.0, queue_size=256)</code> — async iterator yielding SSE-formatted strings; ring-buffered against slow consumers; optional historical replay for reconnection</p>
+<p><strong><code>orqest.workbench</code>:</strong>
+- <code>Workbench</code> — runtime container bundling memory + tracer + event_bus + recent_events ring buffer</p>
+<p><strong><code>orqest.compound</code>:</strong>
+- <code>SubAgentTool[StateT, ResultT]</code> + <code>SubAgentResult</code> — captures agent → executor → state-update → optional refinement; refinement-loop integrated</p>
+<p><strong><code>orqest.plan</code>:</strong>
+- <code>ExecutionPlan</code>, <code>PlanTask</code>, <code>PlanSubtask</code>, <code>PlanStatus</code> — typed multi-step workflow tracking; <code>to_sse_init()</code> is byte-stable as a frontend contract</p>
+<p><strong><code>orqest.mcp</code> (Phase 5):</strong>
+- <code>MCPServerConfig</code> / <code>MCPConfig</code> — explicit server definitions + auto-discovery toggle
+- <code>MCPConnection(config)</code> — single-server lifecycle: <code>await connect()</code> → <code>.tools</code> → <code>await disconnect()</code>
+- <code>MCPServerManager</code> — multi-server orchestration, <code>async with</code> context manager, <code>connect_all</code>, <code>get_all_tools</code> (flat list), <code>search_tools</code>
+- <code>MCPToolAdapter.adapt[_many]</code> — MCP tool definitions → pydantic-ai <code>Tool</code> instances (graceful error-string return wrapper)
+- <code>MCPDiscovery.search(query, max_results)</code> — online discovery (registry + well-known manifests + web fallback)
+- Auto-discovery scans <code>~/.claude.json</code>, <code>~/.claude/claude.json</code>, <code>~/.config/Claude/claude_desktop_config.json</code>
+- <code>create_orqest_server(factory, registry, meta, default_model, api_key)</code> — FastMCP server exposing <code>create_agent</code>, <code>run_agent</code>, <code>solve_goal</code>, <code>list_agents</code>. Run with <code>python -m orqest.mcp.server</code></p>
+<p><strong><code>orqest.tools.web</code>:</strong>
+- <code>web_search(query, k, provider, api_key)</code> — pluggable provider strategy (tavily / exa / brave / serper); graceful degradation when key missing
+- <code>web_fetch(url)</code> — plain GET with <code>WebFetchResult(url, status_code, content_type, text, truncated)</code></p>
+<p><strong>Multi-modal prompts and streaming:</strong>
+- <code>BaseAgent.call_model</code> / <code>call_model_stream</code> / <code>stream_output</code> / <code>stream_events</code> accept <code>str | Sequence[UserContent]</code> (images, PDFs, audio, video via pydantic-ai's <code>ImageUrl</code> / <code>DocumentUrl</code> / <code>AudioUrl</code> / <code>VideoUrl</code> / <code>BinaryContent</code>)
+- <code>Prompt</code> type alias (<code>str | Sequence[UserContent]</code>) exported from <code>orqest.agents</code>
+- <code>call_model_stream()</code> — async context manager for streaming with history wiring
+- <code>stream_output()</code> — async generator yielding partial structured output as the LLM generates tokens
+- <code>stream_events()</code> — async generator yielding all agent events including tool call/result visibility</p>
+<p><strong>Composition extensions:</strong>
+- <code>as_tool()</code> — wrap any <code>BaseAgent</code> as a pydantic-ai <code>Tool</code> for stateless orchestrator invocation
+- <code>call_model()</code> on <code>BaseAgent</code> — multi-turn conversation support with automatic history wiring
+- <code>CompoundTool</code> pattern — agent → executor → state update with HookRunner dispatch
+- <code>run_with_retry()</code> — exception-based retry with default enrichment
+- <code>ContextManager</code> — token-aware three-tier compaction (tool-result snip → turn summarization at 60% → emergency truncation at 85%)
+- Documentation site (MkDocs Material) with concept docs + auto-generated API reference</p>
+<h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>GlobalState.message_history</code> typed as <code>list[ModelMessage]</code> instead of <code>list[Any]</code></li>
+</ul>
+<h2 id="001-2025-07-21">[0.0.1] - 2025-07-21<a class="headerlink" href="#001-2025-07-21" title="Permanent link">&para;</a></h2>
+<h3 id="added_4">Added<a class="headerlink" href="#added_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>BaseAgent[StateT, OutputT]</code> — generic, async-first abstract base class for agents</li>
+<li><code>GlobalState</code> — conversation state with app-level messages and pydantic-ai message history</li>
+<li><code>keep_recent_messages()</code> — history truncation preserving first message and turn integrity</li>
+<li><code>resolve_model()</code> — multi-provider model routing (OpenAI, Anthropic, Google, OpenRouter) using <code>provider:model_id</code> format</li>
+<li><code>OrqestConfig</code> — frozen dataclass for runtime configuration</li>
+<li><code>load_config()</code> and <code>get_default_config()</code> — explicit config loading with no import-time side effects</li>
+<li><code>load_sys_prompt()</code> — system prompt file loader with upward directory search</li>
+<li>Tool and toolset registration on <code>BaseAgent</code></li>
+<li>Custom history processor support</li>
+<li>Example notebook <code>01_basic_agent</code> with single agent and structured output</li>
+<li>Test suite covering all modules</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.code.annotate", "navigation.sections", "navigation.top", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
