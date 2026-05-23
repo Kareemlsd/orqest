@@ -8,7 +8,7 @@ Orqest is a Python framework for building autonomous agentic AI systems on top o
 
 **Domain-agnostic litmus test:** "Can a developer building a headless coding assistant use this feature without knowing what any particular consuming app does?" If no, the feature belongs in the consumer, not in Orqest.
 
-**Current version:** `0.8.0` (`pyproject.toml`). **All five novel vision features shipped (2026-04-25)** — runtime agent design, cognitive memory typology (semantic / episodic / procedural), metacognition primitives, self-healing primitives, generative UI. **Phase 13 (2026-05-16)** added the Tier-2 Docker sandbox (`DockerSandbox`) + per-user persisted MCP tool library — the published `orqest/agent-runtime` image runs an in-container FastMCP server with HMAC-JWT auth, per-agent `uv` venvs, and SQLite-backed cross-session tool persistence per user.
+**Current version:** `0.8.0` (`pyproject.toml`). **All five novel vision features shipped (2026-04-25)** — runtime agent design, cognitive memory typology (semantic / episodic / procedural), metacognition primitives, self-healing primitives, generative UI. **Phase 13 (2026-05-16)** added the Tier-2 Docker sandbox (`DockerSandbox`) + per-user persisted MCP tool library — the published `orqest/agent-runtime` image runs an in-container FastMCP server with HMAC-JWT auth (scope-separated: `agent` for code execution, `operator` for persistence), per-agent `uv` venvs, and SQLite-backed cross-session tool persistence per user. **Phase 13 hardening pass (2026-05-23, [#8](https://github.com/Kareemlsd/orqest/pull/8))** closed five safety gaps: widened the static validator to block reflection helpers (`getattr` / `setattr` / `type` / `dir` / `super`) and string-keyed dunder subscripts; restricted `__builtins__` in every subprocess wrapper via shared `_safe_builtins.py`; rejected path-traversal in `user_id` / `session_id` / `agent_id` via `_identifiers.py`; introduced JWT scope separation so `promote_tool` / `forget_tool` reject agent-scope tokens; flipped `ORQEST_ALLOWED_ORIGINS` default to localhost-only.
 
 ## Project Structure
 
@@ -54,18 +54,20 @@ orqest/
 │
 ├── sandbox/                 # Phases 12 + 13 — safe execution surface for LLM-generated Python
 │   ├── protocol.py          # Sandbox Protocol + ValidationError + ExecutionResult; execute() takes optional agent_id + dependencies
-│   ├── _static.py           # AST validator shared by all backends (default-deny imports + forbidden-names check)
-│   ├── inprocess.py         # InProcessSandbox (Tier 0 — requires unsafe=True; exec() in restricted namespace)
-│   ├── subprocess.py        # SubprocessSandbox (Tier 1 default — subprocess + RLIMIT_AS + RLIMIT_CPU + outer wait_for)
-│   ├── docker.py            # DockerSandbox (Tier 2 — per-session container; needs `docker` dep group + orqest/agent-runtime image)
-│   ├── jwt.py               # Minimal HS256 JWT (encode/decode/verify, constant-time compare)
+│   ├── _static.py           # AST validator shared by all backends (default-deny imports + forbidden-names check incl. reflection helpers + Subscript guard)
+│   ├── _safe_builtins.py    # Curated __builtins__ + restricted __import__ shared by every tier (Phase-1 hardening — load-bearing)
+│   ├── _identifiers.py      # Strict identifier grammar for user / session / agent IDs — path-traversal guard
+│   ├── inprocess.py         # InProcessSandbox (Tier 0 — requires unsafe=True; exec() in restricted namespace via _safe_builtins)
+│   ├── subprocess.py        # SubprocessSandbox (Tier 1 default — subprocess + RLIMIT_AS + RLIMIT_CPU + outer wait_for; wrapper loads helpers by file path)
+│   ├── docker.py            # DockerSandbox (Tier 2 — per-session container; needs `docker` dep group + orqest/agent-runtime image). mint_operator_token() for host persistence calls.
+│   ├── jwt.py               # Minimal HS256 JWT (encode/decode/verify, constant-time compare; `scope` claim carried verbatim)
 │   ├── _compat.py           # Soft-import boundary for the `docker` SDK (friendly ImportError when missing)
 │   └── docker_runtime/      # Phase 13 — IN-CONTAINER runtime package (runs INSIDE orqest/agent-runtime)
 │       ├── __main__.py      # Entry point — reads ORQEST_USER_ID/SESSION_ID/HMAC_SECRET, boots FastMCP on 0.0.0.0:8000
-│       ├── server.py        # build_server[_from_env]() — FastMCP w/ 4 built-in tools + persisted-library replay
-│       ├── auth.py          # SessionAuthMiddleware — JWT validation on on_call_tool + on_list_tools (FastMCP 2.x)
+│       ├── server.py        # build_server[_from_env]() — FastMCP w/ 4 built-in tools + persisted-library replay; promotion threshold check under asyncio.Lock
+│       ├── auth.py          # SessionAuthMiddleware — JWT validation + scope enforcement (DEFAULT_OPERATOR_TOOLS = {promote_tool, forget_tool}) + Origin allowlist (default localhost)
 │       ├── store.py         # ToolStore — per-user SQLite (name, version) PK + dedup by implementation_hash
-│       └── executor.py      # Per-agent uv venv + uv pip install (allowlisted) + RLIMIT-bounded subprocess
+│       └── executor.py      # Per-agent uv venv (--system-site-packages so wrapper can load _safe_builtins/_static) + uv pip install (allowlisted) + RLIMIT-bounded subprocess; ensure_venv/install_deps under per-agent lock
 │
 ├── observability/           # Phase 4 — shipped
 │   ├── tracer.py            # Span, Tracer protocol, JSONTracer (in-memory, JSON export)

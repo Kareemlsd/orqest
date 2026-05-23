@@ -99,11 +99,13 @@ Both paths route through the same `Sandbox` Protocol — the same isolation guar
 
 The full validator (`orqest/sandbox/_static.py`) also rejects:
 
-* Forbidden builtin calls — `eval`, `exec`, `compile`, `__import__`, `open`, `globals`, `locals`, `vars`, `input`, `breakpoint`
-* Dunder attribute access — `__class__`, `__bases__`, `__subclasses__`, `__mro__`, `__globals__`, `__builtins__`, `__import__`, `__loader__`, `__spec__`, `__code__`, `__closure__`, `__getattribute__`, `__reduce__`, `__reduce_ex__`
-* Bare references to forbidden names (catches `f = exec` patterns)
+* **Direct execution / namespace access** — `eval`, `exec`, `compile`, `__import__`, `open`, `globals`, `locals`, `vars`, `input`, `breakpoint`
+* **Reflection helpers** — `getattr`, `setattr`, `delattr`, `hasattr`, `type`, `dir`, `super`, `__build_class__`. Blocked because they let user code reach dunders by string lookup (`getattr(obj, "__cla" + "ss__")`), defeating the dunder-attribute blocklist below.
+* **Dunder attribute access** — `__class__`, `__bases__`, `__subclasses__`, `__mro__`, `__globals__`, `__builtins__`, `__import__`, `__loader__`, `__spec__`, `__code__`, `__closure__`, `__getattribute__`, `__reduce__`, `__reduce_ex__`, `__dict__`, `__init_subclass__`, `__init__`, `__new__`
+* **String-keyed subscript access** to any of the forbidden attributes (`obj["__class__"]`-style reach-through)
+* **Bare references** to forbidden names (catches `f = exec` patterns)
 
-The same validator is used by both `InProcessSandbox` and `SubprocessSandbox` for behavioral consistency.
+The same validator runs in every tier. Tier-1 / Tier-2 subprocess wrappers also restrict `__builtins__` to a curated set (`orqest/sandbox/_safe_builtins.py`) so reflection helpers and the unsafe builtins above aren't even reachable from inside `exec` — defense in depth against any future validator gap.
 
 ## Recipe: test-driven loops over LLM-generated code
 
@@ -260,6 +262,12 @@ Each `with_docker_sandbox(...)` opens a fresh container from the published `orqe
 **Per-user persisted tool library.** The volume `orqest-user-<user_id>:/data` holds an SQLite database (`/data/orqest-tools.sqlite`). When successful invocations of the same tool name + code-hash hit the threshold, the in-container server *self-promotes* the tool: persists it to SQLite + registers it as a first-class MCP tool + fires `notifications/tools/list_changed`. Alice's NEXT session for the same `user_id` opens a fresh container that mounts the same volume; on startup, the server replays the SQLite library into the registry; her promoted tools appear in the first `tools/list` response — no respawn needed. Cross-user isolation is enforced by the named volume scope (`orqest-user-bob` is a different volume).
 
 **Three promotion policies.** `"threshold"` (default, N=3 successful invocations of the same `(name, code_hash)`); `"eager"` (every successful invocation); `"operator_approval"` (the framework emits `tool.promotion_pending` on the bus; consumer code or a human approves via `promote_tool`).
+
+**JWT scope separation.** `promote_tool` and `forget_tool` reject agent-scope tokens — they require an `operator`-scope JWT. The host-side `DockerSandbox._mint_jwt` stamps `scope: "agent"` into every bearer the LLM-facing MCP connection uses, so the LLM cannot reach these tools through its normal path even when the underlying transport is shared. Host orchestrators that genuinely want to promote (or forget) call `DockerSandbox.mint_operator_token()` and use that bearer directly. Tokens without an explicit `scope` claim default to `agent` — least privilege.
+
+**Origin enforcement.** `ORQEST_ALLOWED_ORIGINS` defaults to `http://127.0.0.1,http://localhost` when unset — DNS-rebinding defense per the MCP spec is on by default. Operators with custom hostnames override via the env var; setting it to `""` is the documented escape hatch for "no check at all".
+
+**Identifier hardening.** `user_id` and `session_id` (validated at `DockerSandbox.__init__`) and `agent_id` (validated at the in-container `execute_python` MCP boundary) must match `^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$`. Path-traversal attempts like `agent_id="../escape"` are rejected with a clear `ValueError` before any filesystem operation runs.
 
 **Honest threat model.** Containers share the host kernel. The Docker tier hardens against accidental damage (LLM writing `rm -rf /` won't survive `--read-only`) and most prompt-injection scenarios (`--cap-drop=ALL` removes the capabilities most exploits depend on; per-user volume isolation prevents cross-user data leakage; JWT auth on every MCP call prevents siblings from running each other's code). It does *not* protect against adversarial code that targets the kernel directly — three runc CVEs in November 2025 alone allowed container-escape from inside. For adversarial multi-tenant workloads, run inside a microVM (Firecracker/Kata) or use a managed sandbox provider — that's Tier 3.
 

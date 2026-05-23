@@ -150,6 +150,12 @@ Each `with_docker_sandbox` opens a fresh container from the published `orqest/ag
 
 **Three promotion policies.** `"threshold"` (default, N successful invocations); `"eager"` (every success); `"operator_approval"` (emits `tool.promotion_pending` on the bus; consumer/human approves via `promote_tool`).
 
+**JWT scope separation.** `promote_tool` and `forget_tool` require an `operator`-scope JWT. The agent-facing MCP connection holds an `agent`-scope token (what `DockerSandbox._mint_jwt` stamps by default), so the LLM cannot bypass the promotion gate. Host code that needs to promote calls `DockerSandbox.mint_operator_token()` and uses that bearer directly.
+
+**Origin allowlist** defaults to `http://127.0.0.1,http://localhost` when unset (DNS-rebinding defense). Override via `ORQEST_ALLOWED_ORIGINS`; set to `""` to disable.
+
+**Identifier validation.** `user_id` / `session_id` / `agent_id` must match `^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$` (alphanumeric start; alphanum/_/-; max 64 chars). Rejected at `DockerSandbox.__init__` and at the in-container `execute_python` boundary — closes `agent_id="../escape"` path-traversal.
+
 **Setup.** Build the image once: `docker buildx build --build-arg ORQEST_VERSION=0.8.0 -t orqest/agent-runtime:0.8.0 .`. Host deps: `uv sync --group docker`.
 
 ## `DynamicToolFactory` — the agent-callable path

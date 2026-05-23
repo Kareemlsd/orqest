@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Sandbox Phase 1 — defense-in-depth hardening** ([#8](https://github.com/Kareemlsd/orqest/pull/8)). Five focused commits closing documented and undocumented holes in `orqest.sandbox`. None of the changes break the public API or constructor signatures; behavior changes are strictly "things that were quietly unsafe now refuse to run."
+
+  - **Static validator widened.** `_static.py` blocks reflection helpers that previously let LLM-emitted code reach dunder attributes by string lookup: `getattr`, `setattr`, `delattr`, `hasattr`, `type`, `dir`, `super`, `__build_class__`. Forbidden-attributes set adds `__dict__`, `__init_subclass__`, `__init__`, `__new__`. A new `ast.Subscript` check catches `obj["__class__"]`-style string-keyed reach-through.
+
+  - **Subprocess wrappers restrict `__builtins__`.** Tier-1 (`SubprocessSandbox`) and Tier-2 (in-container `Executor`) previously ran user code with the full Python builtin set — `getattr` / `type` / `open` reachable at runtime even when the static validator had a gap. New `orqest/sandbox/_safe_builtins.py` carries the curated set + a factory; every tier now builds its `__builtins__` from the same allowlist. The wrappers load `_safe_builtins.py` + `_static.py` by file path (`importlib.util.spec_from_file_location`) to bypass the heavy `orqest/__init__.py` import chain that would blow past the 128 MB `RLIMIT_AS` cap.
+
+  - **Path-traversal hardening on identifiers.** New `orqest/sandbox/_identifiers.py` exposes the grammar `^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$` and a fail-fast check. Wired in at three layers: `DockerSandbox.__init__` validates `user_id` / `session_id` before any Docker call; `Executor.execute` validates `agent_id` at the in-container boundary. Closes `agent_id="../escape"` paths that would have resolved out of the per-agent workspace.
+
+  - **JWT scope separation.** New `scope` claim on the bearer JWT — `"agent"` (LLM-facing connection — what `DockerSandbox._mint_jwt` stamps by default) or `"operator"` (host-orchestrator only). `SessionAuthMiddleware` enforces a per-tool allowlist: `promote_tool` and `forget_tool` reject `agent`-scope tokens. Tokens minted before this change (no `scope` claim) default to agent-scope — least privilege. New `DEFAULT_OPERATOR_TOOLS` / `SCOPE_AGENT` / `SCOPE_OPERATOR` constants in `docker_runtime/auth.py`; new public helper `DockerSandbox.mint_operator_token()` for host code that needs to call persistence APIs.
+
+  - **Origin enforcement on by default.** `SessionAuthMiddleware.from_env` defaults `ORQEST_ALLOWED_ORIGINS` to `http://127.0.0.1,http://localhost` when unset (was: empty = skip check). DNS-rebinding defense matches the MCP spec out of the box. Explicit empty value (`""`) is the documented escape hatch. New `DEFAULT_ALLOWED_ORIGINS` constant.
+
+  - **Concurrency hardening.** `asyncio.Lock` around the promotion threshold check in `build_server` (prevents duplicate `promote_tool` fires on concurrent invocations of the same `(name, hash)`). Per-agent `asyncio.Lock` around `Executor.ensure_venv` + `install_deps` (prevents `uv venv` from racing when multiple concurrent `execute_python` calls target the same `agent_id`). The execution subprocess itself stays outside the lock so cross-agent concurrency is preserved.
+
+- **Test resilience for optional `optimization` deps** ([#9](https://github.com/Kareemlsd/orqest/pull/9)). `tests/optimization/test_adapter.py` and `tests/optimization/test_runner.py` previously failed with confusing errors when the `optimization` dep group was absent from the venv (`OrqestEvalBatch.__init__() got an unexpected keyword argument 'outputs'` from the stubbed `EvaluationBatch` base; `ModuleNotFoundError: litellm` from tests patching `litellm.completion`). Added `pytest.importorskip("gepa")` at module level on `test_adapter.py` and per-test `pytest.importorskip("litellm")` on the two `TestMakeReflectionLM` tests that touch it. Test outcomes now reflect *test code*, not optional-dep installation state — 1096 pass / 4 skip without `gepa[full]`; 1107 pass / 0 fail with it.
+
 ### Removed
 
 - **`SKILLS.md`** at the repository root — superseded by `docs/concepts/skills.md` and the bundled skill at `orqest/skills/orqest/SKILL.md`. The single inbound reference in `README.md` now points at the docs page and the bundled skill.
