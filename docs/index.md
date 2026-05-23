@@ -1,17 +1,23 @@
 # Orqest
 
-A lightweight Python framework for building AI agents on top of [pydantic-ai](https://ai.pydantic.dev). Orqest provides a typed base agent class, multi-provider model routing, conversation state management, and agent composition primitives — so you can focus on your agent's logic instead of infrastructure.
+A Python library for building **agentic harnesses** on top of [pydantic-ai](https://ai.pydantic.dev). Not an agent framework with a runtime, server, or UI of its own — Orqest ships the plumbing you import to build those: typed agent primitives, orchestration, lifecycle hooks, a cognitive memory typology, runtime agent design, metacognition, self-healing, and generative UI. All opt-in.
 
-> **Status:** Early development (v0.0.1). The API may change as the project matures.
+> **Status:** v0.4.0. The five novel cognitive-substrate features have shipped — runtime agent design, cognitive memory typology, metacognition primitives, self-healing primitives, generative UI. The `[0.3.0]` reconcile pass brought code and docs into honest agreement; the `[0.4.0]` advance pass finished the preview tier into Tier 1.
 
-## Features
+## What Orqest gives you
 
-- **Generic base agent** — `BaseAgent[StateT, OutputT]` gives you a typed, async-first foundation. Define your state and output models, implement `_run_implementation()`, done.
-- **Multi-turn conversations** — `call_model()` automatically wires conversation history through pydantic-ai, with built-in sliding-window truncation that preserves turn integrity.
-- **Multi-provider routing** — A single `provider:model_id` string routes to OpenAI, Anthropic, Google, or OpenRouter. No provider-specific code needed.
-- **Agent-as-tool composition** — Wrap any agent as a pydantic-ai `Tool` with `as_tool()` for orchestrator patterns where specialized agents are called on demand.
-- **Environment-based config** — `load_config()` reads `.env` files explicitly, with no import-time side effects.
-- **System prompt loader** — Load `.txt` prompts from a `system_prompts/` directory with automatic upward search.
+Eight composable batteries — **opt-in**, picked à-la-carte per application:
+
+- **Composition** — `Pipeline`, `Parallel`, `Router`, `RefinementLoop`. Sequence agents, fan out and merge, route by classifier, iterate until "good enough."
+- **Memory** — `LocalMemoryStore` (SQLite + FTS5, or embedding-cosine recall via a pluggable embedder) with typed `semantic` / `episodic` / `procedural` retrieval, per-kind reliability decay, TTL retention, and skill versioning.
+- **Autonomy** — `AgentSpec` + `AgentFactory` + `ToolRegistry` + `MetaOrchestrator`. Agents that decompose a goal and spawn the specialists to do it, at runtime.
+- **Metacognition** — `EnrichedOutput[OutputT]` carrying `confidence`, `uncertainty_targets`, `capability_boundary`. Three pluggable `ConfidenceProtocol` strategies (free / +1 call / +k calls). Agents that know what they don't know.
+- **Self-healing** — `Watchdog` + `StallDetector` / `LoopDetector` / `RegressionDetector`, the `RecoveryAction` → `HookDecision` flow, and `FallbackModel` for transparent provider failover.
+- **Generative UI** — `UIComponentSpec[T]` typed components across three layers. Agents emit; the frontend resolves.
+- **Observability** — `EventBus`, `JSONTracer`, `sse_sidecar` (with replay + heartbeat + ring buffer). Wire once, every tool emits.
+- **MCP** — client (`MCPServerManager`) + server (`create_orqest_server`) + auto-discovery, gated by an explicit `PermissionGate`.
+
+`BaseAgent[StateT, OutputT]` is the typed, async-first foundation underneath all of it: define your state and output models, implement `_run_implementation()`, done. `Workbench` bundles memory + tracer + event bus + UI registry into one container you pass around.
 
 ## Quick Start
 
@@ -53,9 +59,21 @@ async def main():
 asyncio.run(main())
 ```
 
-## What's Next
+For multi-agent workflows, compose agents with orchestration primitives:
 
-- [Getting Started](getting-started.md) — full walkthrough from installation to multi-turn conversations
-- [Concepts](concepts/agents.md) — deep dives into agents, state management, and composition
-- [API Reference](api/config.md) — auto-generated documentation from source
+```python
+from orqest.orchestration import Pipeline
+
+pipeline = Pipeline([research_agent, draft_agent, review_agent], name="content")
+result = await pipeline.run("Write about quantum computing")
+```
+
+## Documentation
+
+- [Getting Started](getting-started.md) — installation, configuration, and your first agent
+- **Composition** — [Agents](concepts/agents.md), [State & History](concepts/state-and-history.md), [Orchestration](concepts/orchestration.md), [Hooks & Lifecycle](concepts/hooks-and-lifecycle.md), [Compound Tools](concepts/compound-tools.md), [Sub-Agent Tool](concepts/sub-agent-tool.md), [Execution Plan](concepts/execution-plan.md)
+- **Autonomy** — [Runtime Agent Design](concepts/autonomy.md), [MCP](concepts/mcp.md)
+- **Memory & Cognition** — [Memory](concepts/memory.md), [Metacognition](concepts/metacognition.md), [Web Tools](concepts/web-tools.md)
+- **Production** — [Workbench](concepts/workbench.md), [Observability](concepts/observability.md), [SSE Sidecar](concepts/sse-sidecar.md), [Self-Healing](concepts/healing.md), [Generative UI](concepts/generative_ui.md)
+- [API Reference](api/config.md) — auto-generated from source
 - [Changelog](changelog.md) — version history

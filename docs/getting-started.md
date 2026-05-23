@@ -33,7 +33,7 @@ Create a `.env` file in your project root:
 ```bash
 # Required
 LLM_API_KEY=your_api_key_here
-LLM_MODEL=openai:gpt-4o
+LLM_MODEL=openai:gpt-4.1
 
 # Optional (defaults to LLM_API_KEY if not set)
 EMBEDDING_API_KEY=your_embedding_key
@@ -44,7 +44,7 @@ The `LLM_MODEL` value uses `provider:model_id` format:
 
 | Provider | Prefix | Example |
 |----------|--------|---------|
-| OpenAI | `openai:` | `openai:gpt-4o` |
+| OpenAI | `openai:` | `openai:gpt-4.1` |
 | Anthropic | `anthropic:` | `anthropic:claude-sonnet-4-20250514` |
 | Google | `google:` | `google:gemini-2.0-flash` |
 | OpenRouter | `openrouter:` | `openrouter:anthropic/claude-3.5-sonnet` |
@@ -55,7 +55,7 @@ Load config in your code — orqest never reads environment variables at import 
 from orqest import load_config
 
 config = load_config()
-print(config.llm_model)  # "openai:gpt-4o"
+print(config.llm_model)  # "openai:gpt-4.1"
 ```
 
 ## Define an Agent
@@ -139,3 +139,7 @@ The LLM sees the full conversation on the second call, so it can factor in both 
 - [Agents](concepts/agents.md) — constructor parameters, `call_model()` vs `self.agent.run()`, tools and toolsets
 - [State & History](concepts/state-and-history.md) — how `GlobalState` works, custom state types, history processing
 - [Agent as Tool](concepts/agent-as-tool.md) — composing agents with the `as_tool()` wrapper
+- [Orchestration](concepts/orchestration.md) — pipeline, parallel, router, and refinement loop patterns
+- [Hooks & Lifecycle](concepts/hooks-and-lifecycle.md) — fire-and-forget hook system for tool execution
+- [Memory](concepts/memory.md) — pluggable memory with SQLite backend and full-text search
+- [Observability](concepts/observability.md) — structured tracing and event bus

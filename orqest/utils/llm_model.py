@@ -13,30 +13,69 @@ def _build_registry() -> dict[str, tuple[type, type]]:
     """Lazily import provider classes and return the registry.
 
     Imports are deferred so the module has no import-time side effects beyond
-    defining names, and so users only pay for the providers they actually use.
+    defining names. Providers that fail to import (e.g. due to missing or
+    incompatible SDK versions) are skipped and raise at resolve_model() time
+    only if actually requested — defensive belt-and-suspenders, since the
+    full ``pydantic-ai`` dependency already bundles every provider SDK.
     """
-    from pydantic_ai.models.anthropic import AnthropicModel
-    from pydantic_ai.models.google import GoogleModel
-    from pydantic_ai.models.openai import OpenAIChatModel
-    from pydantic_ai.models.openrouter import OpenRouterModel
-    from pydantic_ai.providers.anthropic import AnthropicProvider
-    from pydantic_ai.providers.google import GoogleProvider
-    from pydantic_ai.providers.openai import OpenAIProvider
-    from pydantic_ai.providers.openrouter import OpenRouterProvider
+    import logging
 
-    return {
-        "openai": (OpenAIChatModel, OpenAIProvider),
-        "anthropic": (AnthropicModel, AnthropicProvider),
-        "google": (GoogleModel, GoogleProvider),
-        "openrouter": (OpenRouterModel, OpenRouterProvider),
-    }
+    logger = logging.getLogger(__name__)
+
+    registry: dict[str, tuple[type, type]] = {}
+
+    try:
+        from pydantic_ai.models.openai import OpenAIChatModel
+        from pydantic_ai.providers.openai import OpenAIProvider
+
+        registry["openai"] = (OpenAIChatModel, OpenAIProvider)
+    except ImportError:
+        logger.debug("OpenAI provider unavailable, skipping")
+
+    try:
+        from pydantic_ai.models.openai import OpenAIResponsesModel
+        from pydantic_ai.providers.openai import OpenAIProvider
+
+        # OpenAI Responses API path — required for gpt-5* + function tools +
+        # reasoning_effort. The chat/completions path rejects that combo and
+        # also tends to desynchronize tool_call/tool message pairs after a
+        # ContextManager-driven summarization (observed in Polymath 2026-05-16).
+        registry["openai-responses"] = (OpenAIResponsesModel, OpenAIProvider)
+    except ImportError:
+        logger.debug("OpenAI Responses provider unavailable, skipping")
+
+    try:
+        from pydantic_ai.models.anthropic import AnthropicModel
+        from pydantic_ai.providers.anthropic import AnthropicProvider
+
+        registry["anthropic"] = (AnthropicModel, AnthropicProvider)
+    except ImportError:
+        logger.debug("Anthropic provider unavailable, skipping")
+
+    try:
+        from pydantic_ai.models.google import GoogleModel
+        from pydantic_ai.providers.google import GoogleProvider
+
+        registry["google"] = (GoogleModel, GoogleProvider)
+    except ImportError:
+        logger.debug("Google provider unavailable, skipping")
+
+    try:
+        from pydantic_ai.models.openrouter import OpenRouterModel
+        from pydantic_ai.providers.openrouter import OpenRouterProvider
+
+        registry["openrouter"] = (OpenRouterModel, OpenRouterProvider)
+    except ImportError:
+        logger.debug("OpenRouter provider unavailable, skipping")
+
+    return registry
 
 
 def resolve_model(model_name: str, *, api_key: str) -> Model:
     """Resolve a 'provider:model_id' string into a pydantic-ai Model.
 
     Args:
-        model_name: In 'provider:model_id' format (e.g. 'openai:gpt-4o').
+        model_name: In 'provider:model_id' format (e.g. 'openai:gpt-4.1').
         api_key: API key passed to the provider constructor.
 
     Raises:
@@ -45,7 +84,7 @@ def resolve_model(model_name: str, *, api_key: str) -> Model:
     if ":" not in model_name:
         raise ValueError(
             f"Model name {model_name!r} must use 'provider:model_id' format "
-            f"(e.g., 'openai:gpt-4o'). Update your LLM_MODEL environment variable."
+            f"(e.g., 'openai:gpt-4.1'). Update your LLM_MODEL environment variable."
         )
 
     provider_prefix, model_id = model_name.split(":", maxsplit=1)

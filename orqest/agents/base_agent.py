@@ -7,17 +7,96 @@ is handled here.
 """
 from __future__ import annotations
 
+import typing
 from abc import abstractmethod
+from collections.abc import AsyncIterator, Sequence
+from contextlib import asynccontextmanager
+from dataclasses import replace as dc_replace
 from functools import partial
 from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 from pydantic_ai import Agent, Tool
-from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse
+from pydantic_ai.messages import (
+    AgentStreamEvent,
+    ModelMessage,
+    ModelRequest,
+    ModelResponse,
+    ToolReturnPart,
+    UserContent,
+)
 from pydantic_ai.models import Model
+from pydantic_ai.result import StreamedRunResult
 from pydantic_ai.run import AgentRunResult
+from pydantic_ai.settings import ModelSettings
 
+from orqest.agents.context_manager import ContextManager
 from orqest.utils.llm_model import resolve_model
+from orqest.utils.reasoning import ReasoningEffort, resolve_reasoning_settings
+
+
+class BaseAgentSchemaError(ValueError):
+    """Raised at agent construction when ``output_type`` has a field shape
+    LLM providers reliably reject — most commonly a top-level ``Any``-typed
+    field, which OpenAI's structured-output API surfaces as the opaque
+    ``Invalid schema for function 'final_result'`` error at first inference.
+
+    Failing fast at construction (rather than at first agent.run() call)
+    saves a debugging round-trip and points directly at the offending field.
+    """
+
+
+def _validate_output_type_for_llm_structured_output(
+    agent_name: str,
+    output_type: type[Any],
+) -> None:
+    """Reject ``output_type``s with top-level ``Any``-typed fields.
+
+    LLM providers (OpenAI in particular) reject JSON Schemas where a property
+    has no concrete type. Pydantic emits ``"type": "any"`` (or just an empty
+    schema) for ``field: Any``, and OpenAI's structured-output endpoint
+    returns ``400 Invalid schema for function 'final_result'`` with no
+    breadcrumb. We catch the common case eagerly so the error names the
+    actual field.
+
+    Scalars (``str``, ``int``, etc.) and non-``BaseModel`` types are skipped
+    — there's no field-level schema to inspect.
+
+    Containers with ``Any`` inside (``list[Any]``, ``dict[str, Any]``) are
+    *allowed* — those serialize to typed arrays/objects and the providers
+    accept them. Only top-level ``Any`` (or its alias ``object`` from
+    typing's perspective) triggers the rejection.
+    """
+    if not isinstance(output_type, type) or not issubclass(output_type, BaseModel):
+        return  # scalar / non-Pydantic types — no model_fields to check
+
+    offending: list[str] = []
+    for field_name, field_info in output_type.model_fields.items():
+        annotation = field_info.annotation
+        if annotation is Any or annotation is typing.Any:
+            offending.append(field_name)
+
+    if not offending:
+        return
+
+    field_list = ", ".join(f"'{f}'" for f in offending)
+    plural = "s" if len(offending) > 1 else ""
+    raise BaseAgentSchemaError(
+        f"Agent '{agent_name}': output_type '{output_type.__name__}' has "
+        f"field{plural} {field_list} annotated as `Any`. Most LLM providers "
+        f"(OpenAI in particular) reject `Any`-typed structured outputs at "
+        f"first inference with the opaque error "
+        f"`Invalid schema for function 'final_result'`. Fix one of these ways:\n"
+        f"  - Narrow the type to something concrete: `str`, `int`, a Pydantic "
+        f"model, a discriminated union, or `Literal[...]`.\n"
+        f"  - Use a container holding `Any` (`list[Any]`, `dict[str, Any]`) — "
+        f"those serialise to typed arrays/objects and are accepted.\n"
+        f"  - Use a `str` field carrying a JSON blob you parse downstream.\n"
+        f"To bypass this check (at your own risk), wrap the field in "
+        f"`Annotated[Any, ...]` — but expect runtime rejection from OpenAI."
+    )
+
+Prompt = str | Sequence[UserContent]
 
 StateT = TypeVar("StateT", bound=BaseModel)
 OutputT = TypeVar("OutputT", bound=BaseModel)
@@ -63,6 +142,47 @@ def keep_recent_messages(
     return truncated
 
 
+def budget_tool_results(
+    messages: list[ModelMessage],
+    *,
+    max_result_chars: int = 20_000,
+    preview_chars: int = 2_000,
+) -> list[ModelMessage]:
+    """Truncate oversized ToolReturnPart content in message history.
+
+    Walks all messages, finds ToolReturnPart instances with content
+    exceeding max_result_chars, and replaces with a preview prefix
+    plus truncation notice. Returns a new list — never mutates input.
+    """
+    result: list[ModelMessage] = []
+    for msg in messages:
+        if isinstance(msg, ModelRequest):
+            new_parts = []
+            modified = False
+            for part in msg.parts:
+                if isinstance(part, ToolReturnPart):
+                    content_str = str(part.content)
+                    if len(content_str) > max_result_chars:
+                        truncated = (
+                            content_str[:preview_chars]
+                            + f"\n\n[TRUNCATED — {len(content_str)} chars total. "
+                            f"Full result was too large for context window.]"
+                        )
+                        new_parts.append(dc_replace(part, content=truncated))
+                        modified = True
+                    else:
+                        new_parts.append(part)
+                else:
+                    new_parts.append(part)
+            if modified:
+                result.append(dc_replace(msg, parts=new_parts))
+            else:
+                result.append(msg)
+        else:
+            result.append(msg)
+    return result
+
+
 class BaseAgent(Generic[StateT, OutputT]):
     """Abstract base class for orqest agents.
 
@@ -87,6 +207,11 @@ class BaseAgent(Generic[StateT, OutputT]):
         toolsets: list[Any] | None = None,
         truncated_history: int = 100,
         history_processors: list | None = None,
+        result_budget: int | None = 20_000,
+        context_manager: ContextManager | None = None,
+        model_settings: ModelSettings | None = None,
+        reasoning: ReasoningEffort | None = None,
+        confidence_protocol: Any = None,
     ):
         """Initialize the agent.
 
@@ -101,6 +226,27 @@ class BaseAgent(Generic[StateT, OutputT]):
             toolsets: Toolset objects providing collections of tools.
             truncated_history: Max recent messages kept by the default history processor.
             history_processors: Custom processors; defaults to keep_recent_messages.
+            result_budget: Max chars for tool result content before truncation.
+                None disables budgeting. Default 20,000.
+            context_manager: Optional ContextManager for token-aware compaction.
+                When present, its compact method is prepended as the first
+                history processor.
+            model_settings: Optional pydantic-ai ``ModelSettings`` applied to
+                every model call (e.g. ``ModelSettings(temperature=0.0,
+                seed=42)``). Default ``None`` preserves provider defaults.
+            reasoning: Optional provider-agnostic reasoning/thinking effort —
+                one of ``'minimal'`` | ``'low'`` | ``'medium'`` | ``'high'``.
+                Translated to the right provider-specific ``ModelSettings``
+                key (``anthropic_thinking`` / ``openai_reasoning_effort`` /
+                ``google_thinking_config`` / ``openrouter_reasoning``) and
+                merged into ``model_settings`` — explicit ``model_settings``
+                keys win on conflict. The model's provider must be one
+                orqest can resolve, or construction raises ``ValueError``.
+            confidence_protocol: Optional agent-level default
+                ``ConfidenceProtocol`` used by :meth:`run_enriched`.
+                ``None`` means ``run_enriched`` returns a bare
+                ``EnrichedOutput`` unless a protocol is passed per call.
+
         """
         if isinstance(model, str):
             if api_key is None:
@@ -117,11 +263,22 @@ class BaseAgent(Generic[StateT, OutputT]):
                 f"got {type(model).__name__}"
             )
 
+        self.reasoning = reasoning
+        if reasoning is not None:
+            provider = model if isinstance(model, str) else self._model.system
+            reasoning_settings = resolve_reasoning_settings(
+                provider, reasoning, base=model_settings
+            )
+            # Reasoning fills in; explicit model_settings keys win on conflict.
+            model_settings = {**reasoning_settings, **(model_settings or {})}
+
         self.agent_name = agent_name
         self.system_prompt = system_prompt
+        _validate_output_type_for_llm_structured_output(agent_name, output_type)
         self.output_type = output_type
         self.retries = retries
         self.truncated_history = truncated_history
+        self.model_settings = model_settings
 
         self.tools: list[Tool] = [
             t if isinstance(t, Tool) else Tool(t) for t in (tools or [])
@@ -135,12 +292,40 @@ class BaseAgent(Generic[StateT, OutputT]):
                 partial(keep_recent_messages, max_messages=truncated_history)
             ]
 
+        if result_budget is not None:
+            self._history_processors.insert(
+                0, partial(budget_tool_results, max_result_chars=result_budget)
+            )
+
+        if context_manager is not None:
+            self._history_processors.insert(0, context_manager.compact)
+
+        # ALWAYS run an orphan-tool-return sweep last. Any earlier processor
+        # (custom or built-in) can split a tool_call/tool_return pair across
+        # the trim boundary; both the OpenAI chat/completions transport AND
+        # the Responses transport reject orphan tool returns with a 400.
+        # See :func:`orqest.agents.context_manager._repair_orphan_tool_returns`.
+        from orqest.agents.context_manager import _repair_orphan_tool_returns
+        self._history_processors.append(_repair_orphan_tool_returns)
+
+        self._confidence_protocol = confidence_protocol
         self._agent: Agent | None = None
 
     @property
     def model(self) -> Model:
         """The resolved pydantic-ai Model instance."""
         return self._model
+
+    @property
+    def confidence_protocol(self) -> Any:
+        """The agent-level default ``ConfidenceProtocol``, or ``None``.
+
+        Set via the constructor's ``confidence_protocol`` keyword; used by
+        :meth:`run_enriched` and consulted by callers (e.g.
+        :class:`~orqest.orchestration.loop.RefinementLoop`) that need the
+        agent to be confidence-aware.
+        """
+        return self._confidence_protocol
 
     @property
     def agent(self) -> Agent:
@@ -155,10 +340,37 @@ class BaseAgent(Generic[StateT, OutputT]):
                 retries=self.retries,
                 model=self._model,
                 history_processors=self._history_processors,
+                model_settings=self.model_settings,
             )
         return self._agent
 
-    async def call_model(self, prompt: str, state: StateT) -> AgentRunResult:
+    def add_tool(self, tool: Tool) -> None:
+        """Add a :class:`pydantic_ai.Tool` at runtime; invalidate the cache.
+
+        Appends *tool* to ``self.tools`` and resets the cached internal
+        ``pydantic_ai.Agent`` so the next call to :attr:`agent` rebuilds
+        with the new tool list.
+
+        Idempotent for tools sharing a ``name``: an existing entry is
+        replaced (last write wins). Useful when an LLM-spawned tool needs
+        to update its implementation.
+
+        **In-flight runs do NOT see the new tool** — the rebuild happens
+        on the next :attr:`agent` access; any ``Agent.run()`` call already
+        in flight uses the tool list it captured at start time.
+        """
+        if not isinstance(tool, Tool):
+            raise TypeError(
+                f"add_tool expects a pydantic_ai.Tool instance, got {type(tool).__name__}"
+            )
+        # Replace existing entry with same name (idempotent / last-write-wins)
+        self.tools = [t for t in self.tools if t.name != tool.name]
+        self.tools.append(tool)
+        # Critical: invalidate the cached pydantic_ai.Agent so the next
+        # access rebuilds with the updated tool list.
+        self._agent = None
+
+    async def call_model(self, prompt: Prompt, state: StateT) -> AgentRunResult:
         """Run the pydantic-ai agent with conversation history from state.
 
         Passes state.message_history into Agent.run() and stores the updated
@@ -174,9 +386,129 @@ class BaseAgent(Generic[StateT, OutputT]):
             state.message_history = result.all_messages()
         return result
 
+    @asynccontextmanager
+    async def call_model_stream(
+        self, prompt: Prompt, state: StateT
+    ) -> AsyncIterator[StreamedRunResult]:
+        """Stream the pydantic-ai agent with conversation history from state.
+
+        Async context manager that wraps Agent.run_stream(). Yields a
+        StreamedRunResult for full control over the stream. Updates
+        state.message_history after the context exits (once the stream
+        is consumed).
+
+        This is the low-level streaming primitive — stream_text() and
+        stream_output() are built on top of it.
+        """
+        history = getattr(state, "message_history", None) or None
+        async with self.agent.run_stream(prompt, message_history=history) as streamed:
+            yield streamed
+        if hasattr(state, "message_history"):
+            state.message_history = streamed.all_messages()
+
+    async def stream_output(
+        self, prompt: Prompt, state: StateT, *, debounce_by: float | None = None
+    ) -> AsyncIterator[OutputT]:
+        """Stream partial structured output from the LLM.
+
+        Async generator yielding partial OutputT Pydantic model instances
+        as the model produces them. Each yield is the latest validated
+        partial of the structured output.
+
+        Args:
+            prompt: The user prompt to send.
+            state: Conversation state — history is read and updated.
+            debounce_by: Optional minimum interval (seconds) between yields.
+
+        """
+        kwargs: dict[str, Any] = {}
+        if debounce_by is not None:
+            kwargs["debounce_by"] = debounce_by
+        async with self.call_model_stream(prompt, state) as streamed:
+            async for partial in streamed.stream_output(**kwargs):
+                yield partial
+
+    async def stream_events(
+        self, prompt: Prompt, state: StateT
+    ) -> AsyncIterator[AgentStreamEvent]:
+        """Stream all agent events including model responses and tool calls.
+
+        Async generator yielding AgentStreamEvent instances as the agent runs.
+        This includes model response tokens (PartStartEvent, PartDeltaEvent,
+        PartEndEvent, FinalResultEvent) and tool execution events
+        (FunctionToolCallEvent, FunctionToolResultEvent).
+
+        Uses Agent.iter() under the hood for full node-by-node control,
+        making tool calls visible during streaming.
+
+        Args:
+            prompt: The user prompt to send.
+            state: Conversation state — history is read and updated.
+
+        """
+        history = getattr(state, "message_history", None) or None
+        async with self.agent.iter(prompt, message_history=history) as agent_run:
+            async for node in agent_run:
+                if Agent.is_model_request_node(node):
+                    async with node.stream(agent_run.ctx) as stream:
+                        async for event in stream:
+                            yield event
+                elif Agent.is_call_tools_node(node):
+                    async with node.stream(agent_run.ctx) as stream:
+                        async for event in stream:
+                            yield event
+        if hasattr(state, "message_history"):
+            state.message_history = agent_run.result.all_messages()
+
     async def run(self, state: StateT, **kwargs: Any) -> OutputT:
         """Execute the agent. Exceptions propagate to the caller."""
         return await self._run_implementation(state, **kwargs)
+
+    async def run_enriched(
+        self,
+        state: StateT,
+        *,
+        confidence_protocol: Any = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Execute the agent and pair its output with self-assessment.
+
+        Returns :class:`~orqest.metacognition.EnrichedOutput[OutputT]`.
+        Best-effort: a protocol that fails surfaces ``confidence=None``
+        and a ``protocol_error`` in the metadata; the underlying output
+        is always returned. Exceptions raised by ``_run_implementation``
+        propagate, exactly like :meth:`run`.
+
+        Args:
+            state: The agent's state, same as ``run``.
+            confidence_protocol: Per-call override of the agent-level
+                default (set via constructor). When neither is provided,
+                returns ``EnrichedOutput(output=...)`` with all
+                metacognitive fields at their defaults.
+            **kwargs: Forwarded to ``_run_implementation`` and to the
+                protocol's ``enrich`` call.
+
+        """
+        from orqest.metacognition.enriched import EnrichedOutput
+
+        output = await self._run_implementation(state, **kwargs)
+        protocol = confidence_protocol or self._confidence_protocol
+        if protocol is None:
+            return EnrichedOutput(output=output)
+        try:
+            return await protocol.enrich(self, state, output, **kwargs)
+        except Exception as exc:
+            from loguru import logger as _logger
+
+            _logger.debug(
+                "ConfidenceProtocol {p} failed: {e}",
+                p=getattr(protocol, "name", type(protocol).__name__),
+                e=str(exc),
+            )
+            return EnrichedOutput(
+                output=output,
+                metadata={"protocol_error": type(exc).__name__},
+            )
 
     @abstractmethod
     async def _run_implementation(self, state: StateT, **kwargs: Any) -> OutputT:

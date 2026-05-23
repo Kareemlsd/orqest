@@ -8,7 +8,7 @@ from orqest.config import OrqestConfig
 def test_config():
     return OrqestConfig(
         llm_api_key="test-key-123",
-        llm_model="openai:gpt-3.5-turbo",
+        llm_model="openai:gpt-4.1",
         embedding_model="all-MiniLM-L6-v2",
         embedding_api_key="test-key-123",
     )

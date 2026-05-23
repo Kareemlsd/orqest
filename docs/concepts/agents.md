@@ -19,18 +19,87 @@
 | `toolsets` | `list[Any] \| None` | `None` | Toolset objects providing collections of tools |
 | `truncated_history` | `int` | `100` | Max recent messages for the default history processor |
 | `history_processors` | `list \| None` | `None` | Custom processors; defaults to `keep_recent_messages` |
+| `model_settings` | `ModelSettings \| None` | `None` | pydantic-ai `ModelSettings` applied to every model call |
+| `reasoning` | `ReasoningEffort \| None` | `None` | Provider-agnostic reasoning/thinking effort — see below |
 
 The `model` parameter can be provided in two ways:
 
 ```python
 # Option 1: String format (most common)
-agent = MyAgent(..., model="openai:gpt-4o", api_key="sk-...")
+agent = MyAgent(..., model="openai:gpt-4.1", api_key="sk-...")
 
 # Option 2: Pre-built pydantic-ai Model instance
 from orqest.utils.llm_model import resolve_model
-model = resolve_model("openai:gpt-4o", api_key="sk-...")
+model = resolve_model("openai:gpt-4.1", api_key="sk-...")
 agent = MyAgent(..., model=model)
 ```
+
+## Output type constraints
+
+`output_type` must be a Pydantic `BaseModel` subclass (or a scalar like `str`/`int`). At agent construction, `BaseAgent` inspects the model's fields and rejects any field annotated as top-level `Any` — most LLM providers (OpenAI in particular) reject such schemas at first inference with the opaque `Invalid schema for function 'final_result'` 400 error and no breadcrumb. Catching it eagerly saves debugging time.
+
+```python
+from typing import Any
+from pydantic import BaseModel
+from orqest.agents import BaseAgent
+
+class BadOutput(BaseModel):
+    text: str
+    payload: Any  # ← top-level Any, will be rejected
+
+agent = MyAgent(output_type=BadOutput, ...)
+# raises BaseAgentSchemaError naming 'payload' as the offending field
+```
+
+What's accepted:
+
+- Concrete types: `str`, `int`, `bool`, `float`, lists/dicts of concrete types, Pydantic models, discriminated unions, `Literal[...]`.
+- **Containers** holding `Any`: `list[Any]`, `dict[str, Any]` — these serialize to typed arrays/objects and are accepted by providers. Only top-level `Any` is the killer.
+- Scalar output types: `output_type=str` etc. — skips the check entirely.
+
+If you genuinely need a free-form payload, the standard pattern is `field: str` carrying a JSON blob you parse downstream — keeps the schema concrete for the provider while preserving flexibility.
+
+## Reasoning / thinking
+
+Modern LLMs can spend extra tokens "thinking" before they answer. Each provider exposes
+this differently — Anthropic uses a thinking-token budget, OpenAI uses a categorical
+reasoning effort, Google uses a thinking config, OpenRouter uses a reasoning object. The
+`reasoning` parameter collapses all of that into one provider-agnostic knob:
+
+```python
+agent = MyAgent(
+    ...,
+    model="anthropic:claude-sonnet-4-6",
+    api_key="sk-...",
+    reasoning="high",
+)
+```
+
+`reasoning` accepts one of `"minimal"`, `"low"`, `"medium"`, `"high"`. Orqest translates it
+to the right provider-specific `ModelSettings` key — keyed off the same `provider:` prefix
+`resolve_model()` uses — and merges it into `model_settings`:
+
+| Provider | Translated to |
+|----------|---------------|
+| `openai` | `openai_reasoning_effort` (categorical, passed through) |
+| `anthropic` | `anthropic_thinking` with a `budget_tokens` derived from the effort |
+| `google` | `google_thinking_config` with a `thinking_budget` derived from the effort |
+| `openrouter` | `openrouter_reasoning` (`"minimal"` collapses to `"low"`) |
+
+For the budget-based providers (Anthropic, Google), orqest also fills a sensible `max_tokens`
+when you haven't set one — Anthropic *requires* `max_tokens` to exceed the thinking budget,
+so reasoning works out of the box. If you pass `model_settings` with explicit keys, those win
+on conflict; `reasoning` only fills what you left unset.
+
+!!! note "The model must support reasoning"
+    `reasoning` translates the setting — it does not check that your chosen model is a
+    reasoning-capable one. Pair it with a model that actually supports thinking (e.g. a
+    Claude Sonnet/Opus, an OpenAI o-series or GPT-5 model, a Gemini 2.5 model). The model's
+    provider must be one orqest can resolve, or construction raises `ValueError`.
+    Effort-value support also varies *by model* — the `"minimal"` … `"high"` vocabulary is
+    the union across providers, and not every model accepts every level (OpenAI's `gpt-5.2`,
+    for instance, accepts `"low"` / `"medium"` / `"high"` but rejects `"minimal"`). An
+    unsupported value surfaces as a provider error at call time, not at construction.
 
 ## Implementing `_run_implementation()`
 
@@ -70,6 +139,53 @@ async def _run_implementation(self, state, **kwargs):
 
 Use this when you want multi-turn conversations where the agent remembers prior context.
 
+#### Multi-modal prompts
+
+All `BaseAgent` methods that accept a `prompt` support multi-modal input. Pass a list mixing text and content objects instead of a plain string:
+
+```python
+from pydantic_ai import ImageUrl, DocumentUrl, BinaryContent
+
+# URL-based image
+result = await self.call_model(
+    ["Describe this image:", ImageUrl(url="https://example.com/photo.jpg")],
+    state,
+)
+
+# URL-based PDF document
+result = await self.call_model(
+    ["Summarize:", DocumentUrl(url="https://example.com/report.pdf")],
+    state,
+)
+
+# Local file via BinaryContent
+content = BinaryContent.from_path("chart.png")
+result = await self.call_model(["Analyze this chart:", content], state)
+
+# Mixed content
+result = await self.call_model(
+    [
+        "Compare the image with the document:",
+        ImageUrl(url="https://example.com/diagram.png"),
+        DocumentUrl(url="https://example.com/spec.pdf"),
+    ],
+    state,
+)
+```
+
+The available content types (from `pydantic_ai`) are:
+
+| Type | Use case |
+|------|----------|
+| `ImageUrl` | URL-referenced images (JPEG, PNG, GIF, WebP) |
+| `AudioUrl` | URL-referenced audio (MP3, WAV, FLAC, etc.) |
+| `VideoUrl` | URL-referenced video (MP4, MKV, WebM, etc.) |
+| `DocumentUrl` | URL-referenced documents (PDF, TXT, CSV, DOCX, etc.) |
+| `BinaryContent` | Raw bytes with media type — works with any modality |
+
+!!! note "Provider support varies"
+    Not all providers support all modalities. For example, Anthropic supports images and PDFs but not audio or video. Check your provider's documentation for details.
+
 ### `self.agent.run(prompt)` — Stateless
 
 Calls the pydantic-ai agent directly with no history management:
@@ -81,6 +197,16 @@ async def _run_implementation(self, state, **kwargs):
 ```
 
 Use this for one-shot tasks where conversation history isn't needed. The [agent-as-tool](agent-as-tool.md) pattern uses this approach implicitly.
+
+## Streaming
+
+`BaseAgent` also provides streaming variants of `call_model()` for real-time output. See the [Streaming](streaming.md) page for full details.
+
+- **`stream_output(prompt, state)`** — async generator yielding partial `OutputT` instances as the LLM generates tokens
+- **`stream_events(prompt, state)`** — async generator yielding `AgentStreamEvent` instances, including tool call and result events
+- **`call_model_stream(prompt, state)`** — async context manager yielding the raw `StreamedRunResult` for full control
+
+All streaming methods manage `state.message_history` identically to `call_model()`.
 
 ## Lazy Agent Construction
 

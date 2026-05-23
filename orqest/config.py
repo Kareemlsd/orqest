@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
-from dotenv import load_dotenv, find_dotenv
+from dotenv import find_dotenv, load_dotenv
 
 
 @dataclass(frozen=True)
@@ -47,7 +47,7 @@ def load_config(*, dotenv_path: str | Path | None = None) -> OrqestConfig:
             "Set it in your environment or in a .env file."
         )
 
-    llm_model = os.getenv("LLM_MODEL", "openai:gpt-3.5-turbo")
+    llm_model = os.getenv("LLM_MODEL", "openai:gpt-4.1")
     embedding_model = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
     embedding_api_key = os.getenv("EMBEDDING_API_KEY", llm_api_key)
 

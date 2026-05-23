@@ -1,3 +1,4 @@
+from pydantic_ai import ImageUrl, DocumentUrl
 from pydantic_ai.messages import ModelRequest, ModelResponse, UserPromptPart, TextPart
 
 from orqest.agents.state import GlobalState
@@ -66,3 +67,25 @@ class TestMessageHistory:
     def test_empty_by_default(self):
         state = GlobalState()
         assert state.message_history == []
+
+
+class TestMultiModalMessages:
+    def test_add_multimodal_message(self):
+        state = GlobalState()
+        content = ["Describe:", ImageUrl(url="https://example.com/img.png")]
+        state.add_message("user", content)
+        assert len(state.messages) == 1
+        assert state.messages[0]["content"] is content
+
+    def test_get_latest_multimodal_message(self):
+        state = GlobalState()
+        content = ["Analyze:", DocumentUrl(url="https://example.com/doc.pdf")]
+        state.add_message("user", content)
+        assert state.get_latest_message("user") is content
+
+    def test_mixed_string_and_multimodal(self):
+        state = GlobalState()
+        state.add_message("user", "plain text")
+        multimodal = ["Look:", ImageUrl(url="https://example.com/img.png")]
+        state.add_message("user", multimodal)
+        assert state.get_latest_message("user") is multimodal
