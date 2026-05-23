@@ -209,8 +209,10 @@ class TestMakeReflectionLM:
         # Make sure no env var sneaks in
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
-        import litellm
-
+        litellm = pytest.importorskip(
+            "litellm",
+            reason="reflection-LM tests require 'gepa[full]' (brings litellm)",
+        )
         monkeypatch.setattr(litellm, "completion", fake_completion)
 
         lm = _make_reflection_lm("openai:gpt-4.1", "sk-explicit-key")
@@ -232,8 +234,10 @@ class TestMakeReflectionLM:
             captured.update(kwargs)
             return fake
 
-        import litellm
-
+        litellm = pytest.importorskip(
+            "litellm",
+            reason="reflection-LM tests require 'gepa[full]' (brings litellm)",
+        )
         monkeypatch.setattr(litellm, "completion", fake_completion)
 
         lm = _make_reflection_lm("openai:gpt-4.1", "sk-x")

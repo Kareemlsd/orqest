@@ -5,8 +5,20 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from pydantic import BaseModel
-from pydantic_ai.models.test import TestModel
+
+# The whole module exercises ``OrqestEvalBatch`` — a dataclass that inherits
+# from gepa's ``EvaluationBatch``. When ``gepa`` is missing, ``_compat`` swaps
+# in a stub base that drops the parent fields, so ``OrqestEvalBatch(outputs=…)``
+# raises ``TypeError: got an unexpected keyword argument 'outputs'``. Skip the
+# module cleanly in that case rather than emit confusing failures — install
+# with ``uv sync --group optimization`` to enable.
+pytest.importorskip(
+    "gepa",
+    reason="orqest.optimization tests require the 'optimization' dep group",
+)
+
+from pydantic import BaseModel  # noqa: E402  — must follow importorskip
+from pydantic_ai.models.test import TestModel  # noqa: E402
 
 from orqest.agents.base_agent import BaseAgent
 from orqest.agents.state import GlobalState
