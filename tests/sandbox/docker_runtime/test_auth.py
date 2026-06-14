@@ -122,7 +122,15 @@ def test_empty_bearer_rejected(mw):
 
 def test_tampered_token_rejected(mw):
     token = _valid_token()
-    bad = token[:-2] + "XX"
+    # Tamper the FIRST signature char, not the last: a 32-byte signature
+    # base64url-encodes to 43 chars whose final char carries 2 discardable
+    # bits, so mutating the tail can decode back to the same bytes (~0.1% of
+    # secrets/claims) and slip through verification — a flaky tamper. The
+    # first signature char always carries significant bits, so flipping it to
+    # a guaranteed-different value reliably changes the decoded signature.
+    h, c, s = token.split(".")
+    flipped = "B" if s[0] != "B" else "C"
+    bad = f"{h}.{c}.{flipped}{s[1:]}"
     with patch(
         "fastmcp.server.dependencies.get_http_headers",
         return_value={"authorization": f"Bearer {bad}"},
