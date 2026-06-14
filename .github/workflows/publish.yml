@@ -15,6 +15,10 @@ on:
           - testpypi
         default: testpypi
 
+# Default to read-only; the publish jobs override with `id-token: write` (OIDC).
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build sdist + wheel

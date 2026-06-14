@@ -1,0 +1,50 @@
+name: Bug report
+description: Report a defect in Orqest
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug! Please provide a minimal reproduction — it is
+        the single most helpful thing for getting a fast fix.
+
+        ⚠️ **Security issue?** Do NOT file it here. Follow
+        [SECURITY.md](../../SECURITY.md) for private disclosure.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, including the expected vs. actual behavior.
+      placeholder: I expected X, but got Y.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: The smallest code snippet or steps that reproduce the issue.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: traceback
+    attributes:
+      label: Traceback / logs
+      description: Paste the full traceback or relevant logs, if any.
+      render: shell
+    validations:
+      required: false
+  - type: input
+    id: orqest-version
+    attributes:
+      label: Orqest version
+      placeholder: "0.8.0 (or git commit SHA)"
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Python / OS
+      placeholder: "Python 3.12 on Ubuntu 24.04"
+    validations:
+      required: true
