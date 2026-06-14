@@ -1,0 +1,27 @@
+# Code owners for Orqest.
+#
+# Owners are automatically requested for review when a PR touches a matching
+# path. Combined with the branch ruleset on `main` (which requires code-owner
+# review on protected paths), this ensures sensitive surfaces get maintainer
+# eyes before merge.
+#
+# Order matters: the LAST matching pattern takes precedence.
+
+# Default owner for everything in the repo.
+*                                   @Kareemlsd
+
+# --- Security-sensitive surfaces (LLM-generated-code execution + auth) ---
+/orqest/sandbox/                    @Kareemlsd
+/orqest/sandbox/docker_runtime/     @Kareemlsd
+
+# --- Supply chain: CI/CD, publishing, packaging, dependencies ---
+/.github/                           @Kareemlsd
+/.github/workflows/                 @Kareemlsd
+/pyproject.toml                     @Kareemlsd
+/uv.lock                            @Kareemlsd
+
+# --- Project governance ---
+/CODEOWNERS                         @Kareemlsd
+/.github/CODEOWNERS                 @Kareemlsd
+/SECURITY.md                        @Kareemlsd
+/CONTRIBUTING.md                    @Kareemlsd
